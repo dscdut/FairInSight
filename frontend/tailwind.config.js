@@ -49,7 +49,7 @@ export default {
         'btn-small': ['var(--font-size-btn-small)', { lineHeight: 'var(--line-height-btn-small)', fontWeight: 'var(--font-weight-btn-small)' }],
         'btn-tiny': ['var(--font-size-btn-tiny)', { lineHeight: 'var(--line-height-btn-tiny)', fontWeight: 'var(--font-weight-btn-tiny)' }],
       },
-      
+
       // 4. Border Radius
       borderRadius: {
         xss: "var(--radius-xss)",
@@ -61,6 +61,7 @@ export default {
       },
       // 5. Colors Pallets
       colors: {
+        
         background: {
           primary: "var(--background-primary)",
           secondary: "var(--background-secondary)",

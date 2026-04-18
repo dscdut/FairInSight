@@ -6,7 +6,7 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          'bg-primary text-primary-foreground shadow hover:opacity-90',
+          'bg-primary text-white shadow hover:opacity-90',
         destructive:
           'bg-error-primary text-white shadow-sm hover:bg-error-secondary',
         outline:
@@ -17,7 +17,7 @@ export const buttonVariants = cva(
         link: 'text-primary underline-offset-4 hover:underline'
       },
       size: {
-        default: 'h-10 px-4 py-2 text-btn-medium [&_svg]:size-5',
+        default: 'h-10 px-4 py-2 text-btn-medium [&_svg]:size-5 ',
         sm: 'h-8 px-3 text-btn-small [&_svg]:size-4',
         lg: 'h-12 px-8 text-btn-large [&_svg]:size-6',
         icon: 'h-10 w-10 text-btn-medium [&_svg]:size-5'

@@ -148,7 +148,7 @@ const Header = () => {
               >
                 <Link to={ROUTE.AUTH.LOGIN}>{tAuth('auth.login')}</Link>
               </Button>
-              <Button className='px-4 py-2 font-medium text-white bg-blue-600 rounded-md transition-all duration-200 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 focus-visible:ring-2 focus-visible:ring-blue-500'>
+              <Button className='px-4 py-2 font-medium text-white bg-primary rounded-md transition-all duration-200 dark:bg-primary/80 hover:bg-primary/80 dark:hover:bg-primary/80 focus-visible:ring-2 focus-visible:ring-primary/80'>
                 <Link to={ROUTE.AUTH.REGISTER}>{tAuth('auth.register')}</Link>
               </Button>
             </div>
