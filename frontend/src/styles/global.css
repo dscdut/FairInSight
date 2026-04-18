@@ -5,6 +5,7 @@
 *::-webkit-scrollbar-track {
   background: transparent;
   border-radius: 5px;
+
 }
 
 *::-webkit-scrollbar-thumb {
@@ -16,12 +17,141 @@
 @tailwind utilities;
 @layer base {
   :root {
-    --radius: 0.5rem;
+  /* 1. Radius */
+    --radius-xss: 4px;
+    --radius-xs: 8px;
+    --radius-sm: 12px;
+    --radius-md: 16px;
+    --radius-lg: 20px;
+    --radius-xl: 24px;
+
+    /* Shadcn Base Radius */
+    --radius: var(--radius-md);
+
+    /* =========================================
+    GRID SYSTEM
+    12-column grid setup
+    ========================================= */
+    --container-max-width: 1440px;
+    --grid-columns: 12;
+    --grid-gutter: 24px;
+
+    /* Mobile margin (Default) */
+    --grid-margin: 16px;
+
+
+    /* =========================================
+    SHADOW & ELEVATION (Effects)
+    ========================================= */
+    --shadow-100: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-200: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    --shadow-300: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    --shadow-400: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    --shadow-500: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    --shadow-600: 0 35px 60px -15px rgba(0, 0, 0, 0.3); 
+    --shadow-700: 0 45px 70px -20px rgba(0, 0, 0, 0.4); 
+    --shadow-800: 0 50px 100px -20px rgba(0, 0, 0, 0.5);
+
+    /* =========================================
+    TYPOGRAPHY SYSTEM
+    ========================================= */
+    /* Heading Styles */
+    --font-size-h1: 48px;
+    --line-height-h1: 58px;
+    --font-weight-h1: 700;
+
+    --font-size-h2: 40px;
+    --line-height-h2: 48px;
+    --font-weight-h2: 700;
+
+    --font-size-h3: 32px;
+    --line-height-h3: 38px;
+    --font-weight-h3: 600;
+
+    --font-size-h4: 28px;
+    --line-height-h4: 34px;
+    --font-weight-h4: 600;
+
+    --font-size-h5: 24px;
+    --line-height-h5: 28px;
+    --font-weight-h5: 600;
+
+    /* Body Text Styles */
+    --font-size-p: 16px;
+    --line-height-p: 28px;
+    --font-weight-p: 400;
+
+    --font-size-p-medium: 16px;
+    --line-height-p-medium: 28px;
+    --font-weight-p-medium: 500;
+
+    --font-size-large: 18px;
+    --line-height-large: 28px;
+    --font-weight-large: 400;
+
+    --font-size-small: 16px;
+    --line-height-small: 24px;
+    --font-weight-small: 400;
+
+    /* Specialty Text */
+    --font-size-blockquote: 16px;
+    --line-height-blockquote: 24px;
+    --font-weight-blockquote: 400;
+
+    --font-size-placeholder: 14px;
+    --line-height-placeholder: 20px;
+    --font-weight-placeholder: 400;
+
+    /* Button Fonts */
+    --font-size-btn-giant: 18px;
+    --line-height-btn-giant: 24px;
+    --font-weight-btn-giant: 600;
+
+    --font-size-btn-large: 16px;
+    --line-height-btn-large: 20px;
+    --font-weight-btn-large: 600;
+
+    --font-size-btn-medium: 14px;
+    --line-height-btn-medium: 24px;
+    --font-weight-btn-medium: 600;
+
+    --font-size-btn-small: 12px;
+    --line-height-btn-small: 16px;
+    --font-weight-btn-small: 600;
+
+    --font-size-btn-tiny: 10px;
+    --line-height-btn-tiny: 12px;
+    --font-weight-btn-tiny: 600;  
   }
 }
 
+/* Responsive Grid Margins */
+  @media (min-width: 768px) {
+    :root {
+      --grid-margin: 32px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    :root {
+      --grid-margin: 64px;
+      --grid-gutter: 32px;
+    }
+  }
+
+/* Add Google Sans Flex font */
+@font-face {
+  font-family: 'Google Sans Flex';
+  src: url('../assets/fonts/GoogleSansFlex-VariableFont.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Google Sans Flex', sans-serif;
+  background-color: var(--background);
+  color: var(--foreground);
   font-weight: 400;
 }
 /* box shadown */
