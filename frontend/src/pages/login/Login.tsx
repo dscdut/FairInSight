@@ -192,7 +192,9 @@ export default function Login() {
               <motion.div variants={itemVariants}>
                 <Button
                   loading={isLoading}
-                  className='w-full text-white bg-indigo-600 transition-all duration-300 hover:bg-indigo-700 hover:shadow-lg'
+                  variant='default'
+                  size='lg'
+                  className='w-full'
                   type='submit'
                 >
                   Đăng nhập

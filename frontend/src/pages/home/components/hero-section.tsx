@@ -1,7 +1,11 @@
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
+
+import { Button } from '@/components/ui/button'
 
 export const HeroSection = () => {
+  const navigate = useNavigate();
   const { t } = useTranslation('home')
 
   return (
@@ -45,24 +49,20 @@ export const HeroSection = () => {
             {t('home.hero.description')}
           </p>
           <div className='flex flex-col sm:flex-row items-center justify-center gap-4'>
-            <motion.a
-              href='#getting-started'
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className='px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors'
+            <Button
+              variant='default'
+              size='lg'
+              onClick={() => navigate('/login')}
             >
               {t('home.hero.getStarted')}
-            </motion.a>
-            <motion.a
-              href='https://github.com/vophuocthanh/react-boilerplate-practices-2025'
-              target='_blank'
-              rel='noopener noreferrer'
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className='px-8 py-3 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors'
+            </Button>
+            <Button
+              onClick={() => window.open('https://github.com/vophuocthanh/react-boilerplate-practices-2025', '_blank')}
+              variant='secondary'
+              size='lg'
             >
               {t('home.hero.viewGithub')}
-            </motion.a>
+            </Button>
           </div>
         </motion.div>
       </div>
