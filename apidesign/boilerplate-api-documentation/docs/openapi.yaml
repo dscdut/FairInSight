@@ -12,476 +12,1297 @@ externalDocs:
 servers:
   - url: http://localhost:3000
 tags:
-  - name: authentication
-    description: Operations about authentication
-  - name: users
-    description: Operations about user
-  - name: admin
-    description: Operations about admin
-  - name: payment
-    description: Operations about payment
+  - name: auth
+    description: Authentication & session management
+  - name: user
+    description: User management (admin)
+  - name: lawyer
+    description: Lawyer directory & profiles
+  - name: rating
+    description: Lawyer ratings
+  - name: report
+    description: Reports & moderation
+ 
+# ─────────────────────────────────────────────
+# PATHS
+# ─────────────────────────────────────────────
 paths:
-  /auth/login:
+ 
+  #AUTH
+ 
+  /api/v1/auth/register:
     post:
       tags:
-        - authentication
-      operationId: login
-      requestBody:
-        description: default email and password, seeded in the database
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                email:
-                  type: string
-                  example: user@gmail.com
-                password:
-                  type: string
-                  example: Password123
-              required:
-                - email
-                - password
-      responses:
-        "200":
-          description: The user is authenticated, and an access token is returned.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  access_token:
-                    type: string
-                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
-                required:
-                  - access_token
-        "400":
-          description: "Return this response if one of the following error occurs: 104"
-          content:
-            application/json:
-              examples:
-                error_104_example:
-                  value:
-                    error_code: 104
-                    message: Invalid syntax
-                    details:
-                      [
-                        The email field is required,
-                        The password field is required,
-                      ]
-        "401":
-          description: "Return this response if one of the following error occurs: 102"
-          content:
-            application/json:
-              examples:
-                error_102_example:
-                  $ref: "#/components/examples/error_102_example"
-        "500":
-          description: "Return this response if one of the following error occurs: 103, 117, 118, 119"
-          content:
-            application/json:
-              examples:
-                error_103_example:
-                  $ref: "#/components/examples/error_103_example"
-  /auth/register:
-    post:
-      tags:
-        - authentication
+        - auth
       operationId: register
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                full_name:
-                  type: string
-                  example: Pham Tien
-                  description: |-
-                    ^[a-zA-Z]+(([',. -][a-zA-Z ])?[a-zA-Z]*)*$
-                    (Starts with one or more letters,
-                    allows for characters like spaces,
-                    hyphens, apostrophes, commas,
-                    and periods within the name,
-                    and does not allow trailing spaces)
-                email:
-                  type: string
-                  example: user@gmail.com
-                  description: |-
-                    ^.*@.*\.(com|net|org)$
-                    (The email address must contain at least one character before and after the '@' symbol,
-                    and end with an extension like .com, .net, .org.)
-                password:
-                  type: string
-                  example: Password123
-                  description: |-
-                    ^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$
-                     (Minimum eight characters, at least one letter(uppercase or lowercase) and one number)
-                confirm_password:
-                  type: string
-                  example: Password123
-              required:
-                - full_name
-                - email
-                - password
-                - confirm_password
+              oneOf:
+                - title: UserRegisterRequest
+                  type: object
+                  properties:
+                    role:
+                      type: string
+                      enum: [user]
+                      example: "user"
+                    email:
+                      type: string
+                      example: "nguyenvana@example.com"
+                      description: >
+                        ^.*@.*\.(com|net|org)$
+                        (The email address must contain at least one character before and after the '@' symbol,
+                        and end with an extension like .com, .net, .org.)
+                    password:
+                      type: string
+                      example: "Abc@123456"
+                      description: >
+                        ^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$
+                        (Minimum eight characters, at least one letter (uppercase or lowercase) and one number.)
+                    confirmPassword:
+                      type: string
+                      example: "Abc@123456"
+                  required:
+                    - role
+                    - email
+                    - password
+                    - confirmPassword
+ 
+                - title: LawyerRegisterRequest
+                  type: object
+                  properties:
+                    role:
+                      type: string
+                      enum: [lawyer]
+                      example: "lawyer"
+                    email:
+                      type: string
+                      example: "luatsu@example.com"
+                      description: >
+                        ^.*@.*\.(com|net|org)$
+                        (The email address must contain at least one character before and after the '@' symbol,
+                        and end with an extension like .com, .net, .org.)
+                    password:
+                      type: string
+                      example: "Abc@123456"
+                      description: >
+                        ^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$
+                        (Minimum eight characters, at least one letter (uppercase or lowercase) and one number.)
+                    confirmPassword:
+                      type: string
+                      example: "Abc@123456"
+                    licenseNumber:
+                      type: string
+                      example: "LS-12345"
+                    licenseIssuer:
+                      type: string
+                      example: "Bộ Tư pháp"
+                    licenseIssueDate:
+                      type: string
+                      format: date
+                      example: "2020-05-15"
+                    licenseFile:
+                      type: string
+                      format: byte
+                      description: Base64-encoded license file content.
+                      example: "base64encodedfilecontent"
+                    referralCode:
+                      type: string
+                      example: "REF888"
+                  required:
+                    - role
+                    - email
+                    - password
+                    - confirmPassword
+                    - licenseNumber
+                    - licenseIssuer
+                    - licenseIssueDate
+                    - licenseFile
+              discriminator:
+                propertyName: role
+            examples:
+              user_example:
+                summary: Register as user
+                value:
+                  role: "user"
+                  email: "nguyenvana@example.com"
+                  password: "Abc@123456"
+                  confirmPassword: "Abc@123456"
+              lawyer_example:
+                summary: Register as lawyer
+                value:
+                  role: "lawyer"
+                  email: "luatsu@example.com"
+                  password: "Abc@123456"
+                  confirmPassword: "Abc@123456"
+                  licenseNumber: "LS-12345"
+                  licenseIssuer: "Bộ Tư pháp"
+                  licenseIssueDate: "2020-05-15"
+                  licenseFile: "base64encodedfilecontent"
+                  referralCode: "REF888"
       responses:
         "201":
-          description: User registered successfully. Email and full_name are returned.
+          description: User registered successfully.
           content:
             application/json:
               schema:
-                properties:
-                  id:
-                    type: integer
-                    example: 1
-                  full_name:
-                    type: string
-                    example: Pham Tien
-                  email:
-                    type: string
-                    example: user@gmail.com
-                required:
-                  - id
-                  - full_name
-                  - email
-        "400":
-          description: "Return this response if one of the following error occurs: 104"
-          content:
-            application/json:
+                oneOf:
+                  - title: UserRegisterResponse
+                    type: object
+                    properties:
+                      code:
+                        type: integer
+                        example: 201
+                      message:
+                        type: string
+                        example: "Đăng ký thành công"
+                      data:
+                        $ref: "#/components/schemas/UserBasic"
+                    required:
+                      - code
+                      - message
+                      - data
+ 
+                  - title: LawyerRegisterResponse
+                    type: object
+                    properties:
+                      code:
+                        type: integer
+                        example: 201
+                      message:
+                        type: string
+                        example: "Đăng ký thành công"
+                      data:
+                        $ref: "#/components/schemas/LawyerBasic"
+                    required:
+                      - code
+                      - message
+                      - data
               examples:
-                error_104_example:
+                user_success:
+                  summary: User registration success
                   value:
-                    error_code: 104
-                    message: Invalid syntax
-                    details: [
-                        "Missing required email field",
-                        "Missing required full_name field",
-                        "Invalid full_name field format: Starts with one or more letters, allows for characters like spaces, hyphens, apostrophes, commas, periods within the name, does not allow trailing spaces",
-                        "Invalid email field format: The email address must contain at least one character before and after the '@' symbol and end with an extension like .com, .net, .org.",
-                        "Invalid password field format: The length of the string must be between 7 and 50 characters.
-                        It must contain at least one digit.
-                        It must contain at least one uppercase letter ",
-                        "Password and confirm password do not match",
-                      ]
+                    code: 201
+                    message: "Đăng ký thành công"
+                    data:
+                      userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                      role: "user"
+                      email: "nguyenvana@example.com"
+                lawyer_success:
+                  summary: Lawyer registration success
+                  value:
+                    code: 201
+                    message: "Đăng ký thành công"
+                    data:
+                      userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                      role: "lawyer"
+                      email: "nguyenvana@example.com"
+                      status: "pending_activation"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "409":
-          description: "Return this response if one of the following error occurs: 108"
+          description: Email đã tồn tại (error_code 105)
           content:
             application/json:
-              examples:
-                error_108_example:
-                  $ref: "#/components/examples/error_108_example"
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error_code: 105
+                message: Email already exists
+                details: []
         "500":
-          description: "Return this response if one of the following error occurs: 103, 117, 118, 119"
-          content:
-            application/json:
-              examples:
-                error_103_example:
-                  $ref: "#/components/examples/error_103_example"
-  /users:
-    get:
-      tags:
-        - users
-      operationId: get_users
-      parameters:
-        - $ref: "#/components/parameters/page_size_param"
-        - $ref: "#/components/parameters/page_param"
+          $ref: "#/components/responses/InternalError"
+ 
+  /api/v1/auth/login:
+    post:
+      tags: [auth]
+      summary: Đăng nhập
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [login, password]
+              properties:
+                login:
+                  type: string
+                  format: email
+                  example: nguyenvana@example.com
+                password:
+                  type: string
+                  example: Abc@123456
       responses:
         "200":
-          description: A paginated list of users
+          description: Đăng nhập thành công
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: "#/components/schemas/paginated_total"
+                type: object
                 properties:
+                  code: { type: integer, example: 200 }
+                  message: { type: string, example: Đăng nhập thành công }
                   data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/user_info"
-                required:
-                  - data
+                    $ref: "#/components/schemas/AuthTokens"
         "400":
-          description: "Return this response if one of the following error occurs: 104"
-          content:
-            application/json:
-              examples:
-                error_104_example:
-                  value:
-                    error_code: 104
-                    message: Invalid syntax
-                    details:
-                      [
-                        The invalid parameter is passed to the page. The 'page' parameter must be a number greater than 0,
-                        The invalid parameter is passed to the page_size. The 'page_size' parameter must be a number greater than 0,
-                      ]
+          $ref: "#/components/responses/BadRequest"
         "401":
-          description: "Return this response if one of the following error occurs: 116"
-          content:
-            application/json:
-              examples:
-                error_116_example:
-                  $ref: "#/components/examples/error_116_example"
-        "404":
-          description: "Return this response if one of the following error occurs: 115"
-          content:
-            application/json:
-              examples:
-                error_115_example:
-                  value:
-                    error_code: 115
-                    message: The resource does not exist
-                    details: [Path does not exist]
+          $ref: "#/components/responses/Unauthorized"
         "500":
-          description: "Return this response if one of the following error occurs: 103, 117, 118, 119"
-          content:
-            application/json:
-              examples:
-                error_103_example:
-                  $ref: "#/components/examples/error_103_example"
-    put:
-      tags:
-        - users
-      operationId: update_user
-      description: Users can edit their own information
-      parameters:
-        - in: body
-          name: data
-          required: true
-          description: User information data to be updated
-          schema:
-            type: object
-            properties:
-              full_name:
-                type: string
-                example: Pham Tien
-                description: |-
-                  ^[a-zA-Z]+(([',. -][a-zA-Z ])?[a-zA-Z]*)*$
-                  (Starts with one or more letters,
-                  allows for characters like spaces,
-                  hyphens, apostrophes, commas,
-                  and periods within the name,
-                  and does not allow trailing spaces)
-              email:
-                type: string
-                example: user@gmail.com
-                description: |-
-                  ^.*@.*\.(com|net|org)$
-                  (The email address must contain at least one character before and after the '@' symbol,
-                  and end with an extension like .com, .net, .org.)
-            required:
-              - full_name
-              - email
+          $ref: "#/components/responses/InternalError"
+ 
+  /api/v1/auth/logout:
+    post:
+      tags: [auth]
+      summary: Đăng xuất
+      operationId: logout
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+                  example: "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4..."
       responses:
         "200":
-          description: User information updated successfully.
+          description: Đăng xuất thành công
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: "#/components/schemas/user_info"
-        "400":
-          description: "Return this response if one of the following error occurs: 104"
-          content:
-            application/json:
-              examples:
-                error_104_example:
-                  value:
-                    error_code: 104
-                    message: Invalid syntax
-                    details:
-                      [
-                        "Missing required email field",
-                        "Missing required full_name field",
-                        "Invalid full_name field format: Starts with one or more letters, allows for characters like spaces, hyphens, apostrophes, commas, periods within the name, does not allow trailing spaces",
-                        "Invalid email field format: The email address must contain at least one character before and after the '@' symbol and end with an extension like .com, .net, .org.",
-                      ]
+                $ref: "#/components/schemas/SuccessMessage"
+              example:
+                code: 200
+                message: Đăng xuất thành công
         "401":
-          description: "Return this response if one of the following error occurs: 116"
-          content:
-            application/json:
-              examples:
-                error_116_example:
-                  $ref: "#/components/examples/error_116_example"
-        "409":
-          description: "Return this response if one of the following error occurs: 108"
-          content:
-            application/json:
-              examples:
-                error_108_example:
-                  $ref: "#/components/examples/error_108_example"
+          $ref: "#/components/responses/Unauthorized"
         "500":
-          description: "Return this response if one of the following error occurs: 103, 117, 118, 119"
+          $ref: "#/components/responses/InternalError"
+ 
+  /api/v1/auth/refresh-token:
+    post:
+      tags: [auth]
+      summary: Làm mới access token
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+                  example: "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4..."
+      responses:
+        "200":
+          description: Token mới được cấp
           content:
             application/json:
-              examples:
-                error_103_example:
-                  $ref: "#/components/examples/error_103_example"
-  admin/users/{id}:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 200 }
+                  message: { type: string, example: Token refreshed }
+                  data:
+                    type: object
+                    properties:
+                      accessToken:
+                        type: string
+                        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                      expiresIn:
+                        type: integer
+                        example: 3600
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+ 
+  /api/v1/auth/me:
+    get:
+      tags: [auth]
+      summary: Lấy thông tin tài khoản hiện tại
+      operationId: getMe
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Thông tin người dùng hiện tại
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 200 }
+                  message: { type: string, example: OK }
+                  data:
+                    $ref: "#/components/schemas/UserDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+ 
+  # USER
+ 
+  /api/v1/users:
+    get:
+      tags: [user]
+      summary: Lấy danh sách người dùng (admin)
+      operationId: listUsers
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/LimitParam"
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [user, lawyer, admin]
+          description: Lọc theo role
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, inactive, banned]
+          description: Lọc theo trạng thái
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Tìm theo tên hoặc email
+      responses:
+        "200":
+          description: Danh sách người dùng
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 200 }
+                  message: { type: string, example: OK }
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/UserBasic"
+                      pagination:
+                        $ref: "#/components/schemas/Pagination"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+ 
+  /api/v1/users/{id}:
+    get:
+      tags: [user]
+      summary: Lấy chi tiết người dùng (admin)
+      operationId: getUserById
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Chi tiết người dùng
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 200 }
+                  message: { type: string, example: OK }
+                  data:
+                    $ref: "#/components/schemas/UserDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
     delete:
-      tags:
-        - admin
-      operationId: delete_user
+      tags: [user]
+      summary: Xoá người dùng (admin)
+      operationId: deleteUser
+      security:
+        - BearerAuth: []
       parameters:
-        - in: path
-          name: id
-          required: true
-          description: The ID of the user to delete information.
-          schema:
-            type: integer
-            example: 123
-      responses:
-        "204":
-          description: User information deleted successfully
-        "400":
-          description: "Return this response if one of the following error occurs: 104"
-          content:
-            application/json:
-              examples:
-                error_104_example:
-                  value:
-                    error_code: 104
-                    message: Invalid syntax
-                    details:
-                      [
-                        The provided user ID is in an invalid format. The ID must be a number greater than 0,
-                      ]
-        "401":
-          description: "Return this response if one of the following error occurs: 116"
-          content:
-            application/json:
-              examples:
-                error_116_example:
-                  $ref: "#/components/examples/error_116_example"
-        "403":
-          description: "Return this response if one of the following error occurs: 113"
-          content:
-            application/json:
-              examples:
-                error_113_example:
-                  $ref: "#/components/examples/error_113_example"
-        "404":
-          description: "Return this response if one of the following error occurs: 115"
-          content:
-            application/json:
-              examples:
-                error_115_example:
-                  value:
-                    error_code: 115
-                    message: The resource does not exist
-                    details: [The user Id does not exits]
-        "500":
-          description: "Return this response if one of the following error occurs: 103, 117, 118, 119"
-          content:
-            application/json:
-              examples:
-                error_103_example:
-                  $ref: "#/components/examples/error_103_example"
-    put:
-      tags:
-        - admin
-      operationId: update_user
-      description: The admin can edit user information
-      parameters:
-        - in: path
-          name: id
-          required: true
-          description: The ID of the user to update information
-          schema:
-            type: integer
-            example: 123
-        - in: body
-          name: data
-          required: true
-          description: User information data to be updated
-          schema:
-            type: object
-            properties:
-              full_name:
-                type: string
-                example: Pham Tien
-                description: |-
-                  ^[a-zA-Z]+(([',. -][a-zA-Z ])?[a-zA-Z]*)*$
-                  (Starts with one or more letters,
-                  allows for characters like spaces,
-                  hyphens, apostrophes, commas,
-                  and periods within the name,
-                  and does not allow trailing spaces)
-              email:
-                type: string
-                example: user@gmail.com
-                description: |-
-                  ^.*@.*\.(com|net|org)$
-                  (The email address must contain at least one character before and after the '@' symbol,
-                  and end with an extension like .com, .net, .org.)
-              role_id:
-                type: integer
-                example: 2
-            required:
-              - full_name
-              - email
-              - role_id
+        - $ref: "#/components/parameters/IdParam"
       responses:
         "200":
-          description: User information updated successfully.
+          description: Xoá người dùng thành công
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: "#/components/schemas/user_info"
-        "400":
-          description: "Return this response if one of the following error occurs: 104"
-          content:
-            application/json:
-              examples:
-                error_104_example:
-                  value:
-                    error_code: 104
-                    message: Invalid syntax
-                    details:
-                      [
-                        "Missing required email field",
-                        "Missing required full_name field",
-                        "Missing required role_id field",
-                        "Invalid full_name field format: Starts with one or more letters, allows for characters like spaces, hyphens, apostrophes, commas, periods within the name, does not allow trailing spaces",
-                        "Invalid email field format: The email address must contain at least one character before and after the '@' symbol and end with an extension like .com, .net, .org.",
-                        "The provided user ID is in an invalid format. The ID must be a number greater than 0",
-                        "Role with the provided ID does not exist",
-                      ]
+                $ref: "#/components/schemas/SuccessMessage"
+              example:
+                code: 200
+                message: User deleted successfully
         "401":
-          description: "Return this response if one of the following error occurs: 116"
-          content:
-            application/json:
-              examples:
-                error_116_example:
-                  $ref: "#/components/examples/error_116_example"
+          $ref: "#/components/responses/Unauthorized"
         "403":
-          description: "Return this response if one of the following error occurs: 114"
-          content:
-            application/json:
-              examples:
-                error_114_example:
-                  $ref: "#/components/examples/error_114_example"
+          $ref: "#/components/responses/Forbidden"
         "404":
-          description: "Return this response if one of the following error occurs: 115"
-          content:
-            application/json:
-              examples:
-                error_115_example:
-                  $ref: "#/components/examples/error_115_example"
-        "409":
-          description: "Return this response if one of the following error occurs: 108"
-          content:
-            application/json:
-              examples:
-                error_108_example:
-                  $ref: "#/components/examples/error_108_example"
+          $ref: "#/components/responses/NotFound"
         "500":
-          description: "Return this response if one of the following error occurs: 103, 117, 118, 119"
+          $ref: "#/components/responses/InternalError"
+ 
+  /api/v1/users/{id}/role:
+    put:
+      tags: [user]
+      summary: Cập nhật role người dùng (admin)
+      operationId: updateUserRole
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  type: string
+                  enum: [user, lawyer, admin]
+                  example: lawyer
+      responses:
+        "200":
+          description: Cập nhật role thành công
           content:
             application/json:
-              examples:
-                error_103_example:
-                  $ref: "#/components/examples/error_103_example"
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 200 }
+                  message: { type: string, example: Role updated successfully }
+                  data:
+                    oneOf:
+                       - $ref: "#/components/schemas/UserDetail"      # role: user / admin
+                       - $ref: "#/components/schemas/LawyerDetail"    # role: lawyer
+                    discriminator:
+                      propertyName: role
+                
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+ 
+  #LAWYER
+ 
+  /api/v1/lawyers:
+    get:
+      tags: [lawyer]
+      summary: Lấy danh sách luật sư
+      operationId: listLawyers
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/LimitParam"
+        - name: specialization
+          in: query
+          schema:
+            type: string
+          description: Lọc theo chuyên ngành
+        - name: city
+          in: query
+          schema:
+            type: string
+          description: Lọc theo thành phố
+        - name: minRating
+          in: query
+          schema:
+            type: number
+            format: float
+            minimum: 0
+            maximum: 5
+          description: Lọc theo rating tối thiểu
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Tìm theo tên hoặc chuyên ngành
+      responses:
+        "200":
+          description: Danh sách luật sư
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 200 }
+                  message: { type: string, example: OK }
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/LawyerSummary"
+                      pagination:
+                        $ref: "#/components/schemas/Pagination"
+        "500":
+          $ref: "#/components/responses/InternalError"
+ 
+  /api/v1/lawyers/{id}:
+    get:
+      tags: [lawyer]
+      summary: Lấy chi tiết hồ sơ luật sư
+      operationId: getLawyerById
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Chi tiết luật sư
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 200 }
+                  message: { type: string, example: OK }
+                  data:
+                    $ref: "#/components/schemas/LawyerDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+ 
+  /api/v1/lawyers/profile:
+    put:
+      tags: [lawyer]
+      summary: Cập nhật hồ sơ luật sư (chính mình)
+      operationId: updateLawyerProfile
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                  example: Nguyễn Văn A
+                phone:
+                  type: string
+                  example: "0901234567"
+                address:
+                  type: string
+                  example: 123 Lê Lợi, Quận 1, TP.HCM
+                city:
+                  type: string
+                  example: TP. Hồ Chí Minh
+                specializations:
+                  type: array
+                  items:
+                    type: string
+                  example: [Hình sự, Dân sự]
+                bio:
+                  type: string
+                  example: Luật sư với hơn 10 năm kinh nghiệm...
+                licenseNumber:
+                  type: string
+                  example: LS-2015-001234
+                experience:
+                  type: integer
+                  description: Số năm kinh nghiệm
+                  example: 10
+      responses:
+        "200":
+          description: Cập nhật hồ sơ thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 200 }
+                  message: { type: string, example: Profile updated successfully }
+                  data:
+                    $ref: "#/components/schemas/LawyerDetail"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+ 
+  #RATING 
+ 
+  /api/v1/lawyers/{id}/rating:
+    post:
+      tags: [rating]
+      summary: Đánh giá luật sư
+      operationId: rateLawyer
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [score]
+              properties:
+                score:
+                  type: number
+                  format: float
+                  minimum: 1
+                  maximum: 5
+                  example: 4.5
+                comment:
+                  type: string
+                  example: Luật sư tư vấn rất nhiệt tình và chuyên nghiệp.
+      responses:
+        "201":
+          description: Đánh giá thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 201 }
+                  message: { type: string, example: Rating submitted successfully }
+                  data:
+                    $ref: "#/components/schemas/Rating"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Người dùng đã đánh giá luật sư này rồi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error_code: 109
+                message: You have already rated this lawyer
+                details: []
+        "500":
+          $ref: "#/components/responses/InternalError"
+ 
+    get:
+      tags: [rating]
+      summary: Lấy danh sách đánh giá của luật sư
+      operationId: getLawyerRatings
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/LimitParam"
+      responses:
+        "200":
+          description: Danh sách đánh giá
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 200 }
+                  message: { type: string, example: OK }
+                  data:
+                    type: object
+                    properties:
+                      averageScore:
+                        type: number
+                        format: float
+                        example: 4.3
+                      totalRatings:
+                        type: integer
+                        example: 27
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Rating"
+                      pagination:
+                        $ref: "#/components/schemas/Pagination"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+ 
+  # REPORT / MODERATION 
+ 
+  /api/v1/reports:
+    post:
+      tags: [report]
+      summary: Tạo báo cáo vi phạm
+      operationId: createReport
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [targetId, targetType, reason]
+              properties:
+                targetId:
+                  type: string
+                  format: uuid
+                  example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                targetType:
+                  type: string
+                  enum: [user, lawyer, review, post]
+                  example: lawyer
+                reason:
+                  type: string
+                  enum: [spam, fake_info, harassment, inappropriate_content, other]
+                  example: fake_info
+                description:
+                  type: string
+                  example: Luật sư cung cấp thông tin bằng cấp giả mạo.
+      responses:
+        "201":
+          description: Báo cáo được gửi thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 201 }
+                  message: { type: string, example: Report submitted successfully }
+                  data:
+                    $ref: "#/components/schemas/Report"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+ 
+    get:
+      tags: [report]
+      summary: Lấy danh sách báo cáo (admin/moderator)
+      operationId: listReports
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/LimitParam"
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, resolved, dismissed]
+          description: Lọc theo trạng thái xử lý
+        - name: targetType
+          in: query
+          schema:
+            type: string
+            enum: [user, lawyer, review, post]
+          description: Lọc theo loại đối tượng bị báo cáo
+      responses:
+        "200":
+          description: Danh sách báo cáo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 200 }
+                  message: { type: string, example: OK }
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Report"
+                      pagination:
+                        $ref: "#/components/schemas/Pagination"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+ 
+  /api/v1/reports/{id}:
+    get:
+      tags: [report]
+      summary: Lấy chi tiết báo cáo (admin/moderator)
+      operationId: getReportById
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Chi tiết báo cáo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 200 }
+                  message: { type: string, example: OK }
+                  data:
+                    $ref: "#/components/schemas/Report"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+ 
+  /api/v1/reports/{id}/resolve:
+    put:
+      tags: [report]
+      summary: Xử lý báo cáo (admin/moderator)
+      operationId: resolveReport
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [resolved, dismissed]
+                  example: resolved
+                note:
+                  type: string
+                  example: Đã xác minh và xoá tài khoản vi phạm.
+                action:
+                  type: string
+                  enum: [none, warn, ban, delete_content]
+                  example: ban
+      responses:
+        "200":
+          description: Xử lý báo cáo thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 200 }
+                  message: { type: string, example: Report resolved successfully }
+                  data:
+                    $ref: "#/components/schemas/Report"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+# ─────────────────────────────────────────────
+# COMPONENTS
+# ─────────────────────────────────────────────
+components:
+ 
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+ 
+  # PARAMETERS 
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: UUID của đối tượng
+ 
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: Số trang
+ 
+    LimitParam:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      description: Số bản ghi mỗi trang
+ 
+  # SCHEMAS
+  schemas:
+ 
+    SuccessMessage:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: OK
+ 
+    ErrorResponse:
+      type: object
+      properties:
+        error_code:
+          type: integer
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: string
+ 
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          example: 150
+        totalPages:
+          type: integer
+          example: 8
+ 
+    UserBasic:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        email:
+          type: string
+          format: email
+          example: nguyenvana@example.com
+        fullName:
+          type: string
+          example: Nguyễn Văn A
+        role:
+          type: string
+          enum: [user, lawyer, admin]
+          example: user
+        status:
+          type: string
+          enum: [active, inactive, banned]
+          example: active
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T08:30:00Z"
+ 
+    UserDetail:
+      allOf:
+        - $ref: "#/components/schemas/UserBasic"
+        - type: object
+          properties:
+            phone:
+              type: string
+              example: "0901234567"
+            avatar:
+              type: string
+              format: uri
+              example: https://cdn.example.com/avatars/user123.jpg
+            updatedAt:
+              type: string
+              format: date-time
+              example: "2024-06-01T10:00:00Z"
+ 
+    AuthTokens:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        refreshToken:
+          type: string
+          example: "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4..."
+        expiresIn:
+          type: integer
+          description: Thời gian hết hạn access token (giây)
+          example: 3600
+        role:
+          type: string
+          enum: [user, lawyer, admin]
+          example: user
+      required:
+        - accessToken
+        - refreshToken
+        - expiresIn
+        - role
+        
+ 
+    LawyerBasic:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: b2c3d4e5-f6a7-8901-bcde-f12345678901
+        email:
+          type: string
+          format: email
+          example: luatsu@example.com
+        fullName:
+          type: string
+          example: Trần Thị B
+        role:
+          type: string
+          enum: [lawyer]
+          example: lawyer
+        status:
+          type: string
+          enum: [active, inactive, pending_activation]
+          example: active
+        createdAt:
+          type: string
+          format: date-time
+          example: "2023-03-10T09:00:00Z"
+
+    LawyerSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: b2c3d4e5-f6a7-8901-bcde-f12345678901
+        fullName:
+          type: string
+          example: Trần Thị B
+        avatar:
+          type: string
+          format: uri
+          example: https://cdn.example.com/avatars/lawyer456.jpg
+        city:
+          type: string
+          example: Hà Nội
+        specializations:
+          type: array
+          items:
+            type: string
+          example: [Hôn nhân & Gia đình, Dân sự]
+        experience:
+          type: integer
+          example: 8
+        averageRating:
+          type: number
+          format: float
+          example: 4.6
+        totalRatings:
+          type: integer
+          example: 34
+ 
+    LawyerDetail:
+      allOf:
+        - $ref: "#/components/schemas/LawyerSummary"
+        - type: object
+          properties:
+            phone:
+              type: string
+              example: "0912345678"
+            address:
+              type: string
+              example: 45 Hoàng Diệu, Ba Đình, Hà Nội
+            bio:
+              type: string
+              example: Luật sư với hơn 8 năm kinh nghiệm trong lĩnh vực dân sự và hôn nhân gia đình.
+            licenseNumber:
+              type: string
+              example: LS-2016-005678
+            status:
+              type: string
+              enum: [active, inactive, suspended]
+              example: active
+            createdAt:
+              type: string
+              format: date-time
+              example: "2023-03-10T09:00:00Z"
+            updatedAt:
+              type: string
+              format: date-time
+              example: "2024-05-20T14:30:00Z"
+ 
+    Rating:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: c3d4e5f6-a7b8-9012-cdef-123456789012
+        lawyerId:
+          type: string
+          format: uuid
+          example: b2c3d4e5-f6a7-8901-bcde-f12345678901
+        userId:
+          type: string
+          format: uuid
+          example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        score:
+          type: number
+          format: float
+          minimum: 1
+          maximum: 5
+          example: 4.5
+        comment:
+          type: string
+          example: Luật sư tư vấn rất nhiệt tình và chuyên nghiệp.
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-04-10T11:00:00Z"
+ 
+    Report:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: d4e5f6a7-b8c9-0123-defa-234567890123
+        reporterId:
+          type: string
+          format: uuid
+          example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        targetId:
+          type: string
+          format: uuid
+          example: b2c3d4e5-f6a7-8901-bcde-f12345678901
+        targetType:
+          type: string
+          enum: [user, lawyer, review, post]
+          example: lawyer
+        reason:
+          type: string
+          enum: [spam, fake_info, harassment, inappropriate_content, other]
+          example: fake_info
+        description:
+          type: string
+          example: Luật sư cung cấp thông tin bằng cấp giả mạo.
+        status:
+          type: string
+          enum: [pending, resolved, dismissed]
+          example: pending
+        note:
+          type: [string, "null"]
+          example: null
+        action:
+          type: [string, "null"]
+          enum: [none, warn, ban, delete_content]
+          example: null
+        resolvedBy:
+          type: [string, "null"]
+          format: uuid
+          example: null
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-06-05T08:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-06-05T08:00:00Z"
+ 
+  # RESPONSE
+  responses:
+    BadRequest:
+      description: Dữ liệu đầu vào không hợp lệ (error_code 104)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error_code: 104
+            message: Invalid syntax
+            details:
+              - The email field is required
+ 
+    Unauthorized:
+      description: Chưa xác thực hoặc token không hợp lệ (error_code 102)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error_code: 102
+            message: Unauthorized
+            details: []
+ 
+    Forbidden:
+      description: Không có quyền truy cập (error_code 106)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error_code: 106
+            message: Forbidden
+            details: []
+ 
+    NotFound:
+      description: Không tìm thấy tài nguyên (error_code 107)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error_code: 107
+            message: Resource not found
+            details: []
+ 
+    InternalError:
+      description: Lỗi máy chủ nội bộ (error_code 103)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error_code: 103
+            message: Internal server error
+            details: []
