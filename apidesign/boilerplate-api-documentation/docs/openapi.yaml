@@ -201,7 +201,62 @@ paths:
                       email: "nguyenvana@example.com"
                       status: "pending_activation"
         "400":
-          $ref: "#/components/responses/BadRequest"
+          description: Yêu cầu không hợp lệ 
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - title: UserRegisterError
+                    type: object
+                    properties:
+                      error_code:
+                        type: integer
+                        example: 100
+                      message:
+                        type: string
+                        example: "Invalid request data"
+                      details:
+                        type: array
+                        items:
+                          type: string
+                        example: ["Email is required", 
+                          "Password is required",
+                          "Email must be a valid email address", 
+                          "Password must be at least 8 characters"]
+                  - title: LawyerRegisterError
+                    type: object
+                    properties:
+                      error_code:
+                        type: integer
+                        example: 100
+                      message:
+                        type: string
+                        example: "Invalid request data"
+                      details:
+                        type: array
+                        items:
+                          type: string
+                        example: ["Email is required", 
+                          "Password is required", 
+                          "License number is required", 
+                          "License issuer is required", 
+                          "License issue date is required", 
+                          "License file is required", 
+                          "Email must be a valid email address", 
+                          "Password must be at least 8 characters"]
+              examples:
+                user_error:
+                  summary: User registration error
+                  value:
+                    error_code: 100
+                    message: "Invalid request data"
+                    details: ["Email is required", "Password is required"]
+                lawyer_error:
+                  summary: Lawyer registration error
+                  value:
+                    error_code: 100
+                    message: "Invalid request data"
+                    details: ["Email is required", "Password is required", "License number is required", "License issuer is required", "License issue date is required", "License file is required"]
         "409":
           description: Email đã tồn tại (error_code 105)
           content:
@@ -248,7 +303,15 @@ paths:
                   data:
                     $ref: "#/components/schemas/AuthTokens"
         "400":
-          $ref: "#/components/responses/BadRequest"
+          description: Yêu cầu không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error_code: 101
+                message: Invalid login data
+                details: ["Login is required", "Password is required"]
         "401":
           $ref: "#/components/responses/Unauthorized"
         "500":
@@ -399,6 +462,16 @@ paths:
                           $ref: "#/components/schemas/UserBasic"
                       pagination:
                         $ref: "#/components/schemas/Pagination"
+        "400":
+          description: Yêu cầu không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error_code: 103
+                message: Invalid query parameters
+                details: ["Invalid role value", "Invalid status value"]
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -501,7 +574,15 @@ paths:
                       propertyName: role
                 
         "400":
-          $ref: "#/components/responses/BadRequest"
+          description: Yêu cầu không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error_code: 102
+                message: Invalid role value
+                details: ["Role must be one of: user, lawyer, admin"]
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -563,6 +644,21 @@ paths:
                           $ref: "#/components/schemas/LawyerSummary"
                       pagination:
                         $ref: "#/components/schemas/Pagination"
+        "400":
+          description: Yêu cầu không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error_code: 103
+                message: Invalid query parameters
+                details: ["Invalid role value", "Invalid status value"]
+
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
  
@@ -644,7 +740,15 @@ paths:
                   data:
                     $ref: "#/components/schemas/LawyerDetail"
         "400":
-          $ref: "#/components/responses/BadRequest"
+          description: Yêu cầu không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error_code: 103
+                message: Invalid profile data
+                details: ["Full name is required", "Phone number is invalid"]
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -693,7 +797,15 @@ paths:
                   data:
                     $ref: "#/components/schemas/Rating"
         "400":
-          $ref: "#/components/responses/BadRequest"
+          description: Yêu cầu không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error_code: 104
+                message: Invalid rating data
+                details: ["Score is required", "Score must be between 1 and 5"]
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -795,7 +907,15 @@ paths:
                   data:
                     $ref: "#/components/schemas/Report"
         "400":
-          $ref: "#/components/responses/BadRequest"
+          description: Yêu cầu không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error_code: 105
+                message: Invalid report data
+                details: ["Target ID is required", "Target type is invalid"]
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -921,7 +1041,15 @@ paths:
                   data:
                     $ref: "#/components/schemas/Report"
         "400":
-          $ref: "#/components/responses/BadRequest"
+          description: Yêu cầu không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error_code: 106
+                message: Invalid resolution data
+                details: ["Status is required", "Invalid status value"]
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -1251,18 +1379,6 @@ components:
  
   # RESPONSE
   responses:
-    BadRequest:
-      description: Dữ liệu đầu vào không hợp lệ (error_code 104)
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-          example:
-            error_code: 104
-            message: Invalid syntax
-            details:
-              - The email field is required
- 
     Unauthorized:
       description: Chưa xác thực hoặc token không hợp lệ (error_code 102)
       content:
