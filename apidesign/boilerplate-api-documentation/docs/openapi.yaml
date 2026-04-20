@@ -148,132 +148,61 @@ paths:
           content:
             application/json:
               schema:
-                oneOf:
-                  - title: UserRegisterResponse
-                    type: object
-                    properties:
-                      code:
-                        type: integer
-                        example: 201
-                      message:
-                        type: string
-                        example: "Đăng ký thành công"
-                      data:
-                        $ref: "#/components/schemas/UserBasic"
-                    required:
-                      - code
-                      - message
-                      - data
- 
-                  - title: LawyerRegisterResponse
-                    type: object
-                    properties:
-                      code:
-                        type: integer
-                        example: 201
-                      message:
-                        type: string
-                        example: "Đăng ký thành công"
-                      data:
-                        $ref: "#/components/schemas/LawyerBasic"
-                    required:
-                      - code
-                      - message
-                      - data
-              examples:
-                user_success:
-                  summary: User registration success
-                  value:
-                    code: 201
-                    message: "Đăng ký thành công"
-                    data:
-                      userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
-                      role: "user"
-                      email: "nguyenvana@example.com"
-                lawyer_success:
-                  summary: Lawyer registration success
-                  value:
-                    code: 201
-                    message: "Đăng ký thành công"
-                    data:
-                      userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
-                      role: "lawyer"
-                      email: "nguyenvana@example.com"
-                      status: "pending_activation"
+                type: object
+                properties:
+                  message: { type: string, example: Đăng ký thành công }
+              example:
+                message: User registered successfully
         "400":
-          description: Yêu cầu không hợp lệ 
+          description: Invalid request data
           content:
             application/json:
               schema:
-                oneOf:
-                  - title: UserRegisterError
-                    type: object
-                    properties:
-                      error_code:
-                        type: integer
-                        example: 100
-                      message:
-                        type: string
-                        example: "Invalid request data"
-                      details:
-                        type: array
-                        items:
-                          type: string
-                        example: ["Email is required", 
-                          "Password is required",
-                          "Email must be a valid email address", 
-                          "Password must be at least 8 characters"]
-                  - title: LawyerRegisterError
-                    type: object
-                    properties:
-                      error_code:
-                        type: integer
-                        example: 100
-                      message:
-                        type: string
-                        example: "Invalid request data"
-                      details:
-                        type: array
-                        items:
-                          type: string
-                        example: ["Email is required", 
-                          "Password is required", 
-                          "License number is required", 
-                          "License issuer is required", 
-                          "License issue date is required", 
-                          "License file is required", 
-                          "Email must be a valid email address", 
-                          "Password must be at least 8 characters"]
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
-                user_error:
-                  summary: User registration error
+                user_register_error:
+                  summary: User registration validation error
                   value:
-                    error_code: 100
-                    message: "Invalid request data"
-                    details: ["Email is required", "Password is required"]
-                lawyer_error:
-                  summary: Lawyer registration error
+                     
+                    message: Invalid request data
+                    details:
+                      - "Email is required"
+                      - "Password is required"
+                      - "Email must be a valid email address"
+                      - "Password must be at least 8 characters"
+                      - "Role must be one of: user, lawyer"
+                      - "Password and confirm password do not match"
+                lawyer_register_error:
+                  summary: Lawyer registration validation error
                   value:
-                    error_code: 100
-                    message: "Invalid request data"
-                    details: ["Email is required", "Password is required", "License number is required", "License issuer is required", "License issue date is required", "License file is required"]
+                     
+                    message: Invalid request data
+                    details:
+                      - "Email is required"
+                      - "Password is required"
+                      - "License number is required"
+                      - "License issuer is required"
+                      - "License issue date is required"
+                      - "License file is required"
+                      - "Email must be a valid email address"
+                      - "Password must be at least 8 characters"
+                      - "Password and confirm password do not match"
+              
         "409":
-          description: Email đã tồn tại (error_code 105)
+          description: Email đã tồn tại 
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               example:
-                error_code: 105
                 message: Email already exists
-                details: []
         "500":
           $ref: "#/components/responses/InternalError"
  
   /api/v1/auth/login:
     post:
       tags: [auth]
-      summary: Đăng nhập
+      summary: Login
       operationId: login
       requestBody:
         required: true
@@ -281,9 +210,9 @@ paths:
           application/json:
             schema:
               type: object
-              required: [login, password]
+              required: [email, password]
               properties:
-                login:
+                email:
                   type: string
                   format: email
                   example: nguyenvana@example.com
@@ -292,35 +221,39 @@ paths:
                   example: Abc@123456
       responses:
         "200":
-          description: Đăng nhập thành công
+          description: Login successful
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  code: { type: integer, example: 200 }
-                  message: { type: string, example: Đăng nhập thành công }
                   data:
                     $ref: "#/components/schemas/AuthTokens"
         "400":
-          description: Yêu cầu không hợp lệ
+          description: Invalid request
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               example:
-                error_code: 101
                 message: Invalid login data
-                details: ["Login is required", "Password is required"]
+                details: ["Login is required", "Password is required","Role must be one of: user, lawyer, admin"]
         "401":
-          $ref: "#/components/responses/Unauthorized"
+          description: Unauthorized (invalid credentials or account not activated)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                 
+                message: Invalid email or password, or account not activated
         "500":
           $ref: "#/components/responses/InternalError"
  
   /api/v1/auth/logout:
     post:
       tags: [auth]
-      summary: Đăng xuất
+      summary: Logout
       operationId: logout
       security:
         - BearerAuth: []
@@ -337,23 +270,29 @@ paths:
                   example: "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4..."
       responses:
         "200":
-          description: Đăng xuất thành công
+          description: Logout successful
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessMessage"
-              example:
-                code: 200
-                message: Đăng xuất thành công
+                type: object
+                properties:
+                  message: { type: string, example: Logout successful }
         "401":
-          $ref: "#/components/responses/Unauthorized"
+          description: Unauthorized (invalid or expired token)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                 
+                message: Invalid or expired token
         "500":
           $ref: "#/components/responses/InternalError"
  
   /api/v1/auth/refresh-token:
     post:
       tags: [auth]
-      summary: Làm mới access token
+      summary: Refresh access token
       operationId: refreshToken
       requestBody:
         required: true
@@ -368,121 +307,912 @@ paths:
                   example: "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4..."
       responses:
         "200":
-          description: Token mới được cấp
+          description: Token refreshed successfully
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  code: { type: integer, example: 200 }
-                  message: { type: string, example: Token refreshed }
                   data:
+                    description: New access token and refresh token
                     type: object
                     properties:
                       accessToken:
                         type: string
                         example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                      expiresIn:
-                        type: integer
-                        example: 3600
+                      refreshToken:
+                        type: string
+                        example: "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4..."
+                      
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: Invalid refresh token
+                details: ["Refresh token is required"]
         "401":
-          $ref: "#/components/responses/Unauthorized"
+          description: Unauthorized (invalid or expired refresh token)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                 
+                message: Invalid or expired refresh token
         "500":
           $ref: "#/components/responses/InternalError"
- 
-  /api/v1/auth/me:
-    get:
-      tags: [auth]
-      summary: Lấy thông tin tài khoản hiện tại
-      operationId: getMe
-      security:
-        - BearerAuth: []
+  /api/v1/auth/forgot-password:
+    post:
+      tags:
+        - auth
+      operationId: forgotPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: "nguyenvana@example.com"
+                  description: >
+                    ^.*@.*\.(com|net|org)$
+                    (The email address must contain at least one character before and after the '@' symbol,
+                    and end with an extension like .com, .net, .org.)
+              required:
+                - email
+            example:
+              email: "nguyenvana@example.com"
       responses:
         "200":
-          description: Thông tin người dùng hiện tại
+          description: OTP sent successfully.
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  code: { type: integer, example: 200 }
-                  message: { type: string, example: OK }
-                  data:
-                    $ref: "#/components/schemas/UserDetail"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "OTP has been sent to your email"
+              example:
+                 
+                message: "OTP has been sent to your email"
+        "400":
+          description: Invalid email format 
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                invalid_email:
+                  summary: Email format is invalid
+                  value:
+                     
+                    message: "Invalid request data"
+                    details:
+                      - "Email is required"
+                      - "Email must be a valid email address"
+        "404":
+          description: Email not found in the system 
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                 
+                message: "Email does not exist"
         "500":
           $ref: "#/components/responses/InternalError"
+  /api/v1/auth/verify-otp:
+    post:
+      tags:
+        - auth
+      operationId: verifyOtp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: "nguyenvana@example.com"
+                otp:
+                  type: string
+                  example: "123456"
+                  description: A 6-digit OTP code sent to the user's email.
+              required:
+                - email
+                - otp
+            example:
+              email: "nguyenvana@example.com"
+              otp: "123456"
+      responses:
+        "200":
+          description: OTP verified successfully. Returns a reset token for password reset.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      resetToken:
+                        type: string
+                        description: A short-lived token used to authorize the password reset request.
+                        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+              example:
+                data:
+                  resetToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        "400":
+          description: Missing or invalid OTP format 
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                missing_otp:
+                  summary: OTP is missing
+                  value:
+                     
+                    message: "Invalid request data"
+                    details:
+                      - "OTP is required"
+                invalid_otp_format:
+                  summary: OTP format is invalid
+                  value:
+                     
+                    message: "Invalid request data"
+                    details:
+                      - "OTP must be a 6-digit number"
+        "401":
+          description: OTP is incorrect or has expired 
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                wrong_otp:
+                  summary: OTP is incorrect
+                  value:
+                     
+                    message: "Invalid OTP"
+                    details:
+                      - field: "otp"
+                        issue: "OTP is incorrect"
+                        hint: "Please check the OTP sent to your email"
+                expired_otp:
+                  summary: OTP has expired
+                  value:
+                     
+                    message: "OTP has expired"
+                    details:
+                      - field: "otp"
+                        issue: "OTP has expired"
+                        hint: "Please request a new OTP"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/v1/auth/reset-password:
+    post:
+      tags:
+        - auth
+      operationId: resetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  description: The token received after successfully verifying the OTP.
+                newPassword:
+                  type: string
+                  example: "NewAbc@123456"
+                  description: >
+                    ^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$
+                    (Minimum eight characters, at least one letter (uppercase or lowercase) and one number.)
+                confirmNewPassword:
+                  type: string
+                  example: "NewAbc@123456"
+              required:
+                - token
+                - newPassword
+                - confirmNewPassword
+            example:
+              token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+              newPassword: "NewAbc@123456"
+              confirmNewPassword: "NewAbc@123456"
+      responses:
+        "200":
+          description: Password reset successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Password has been reset successfully"
+              example:
+                 
+                message: "Password has been reset successfully"
+        "400":
+          description: Invalid request data 
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                missing_fields:
+                  summary: Required fields are missing
+                  value:
+                     
+                    message: "Invalid request data"
+                    details:
+                      - "New password is required"
+                      - "Confirm new password is required"
+                weak_password:
+                  summary: Password does not meet requirements
+                  value:
+                    message: "Invalid request data"
+                    details:
+                      - "Password must be at least 8 characters"
+                      - "Password must contain at least one letter and one number"
+                password_mismatch:
+                  summary: Passwords do not match
+                  value:
+                    message: "Invalid request data"
+                    details:
+                      - "Password and confirm password do not match"
+        "401":
+          description: Unauthorized (invalid or expired token) 
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: "Invalid or expired token"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/auth/me:
+    get:
+      tags: [auth]
+      summary: Get current user's profile
+      description: >
+        Returns the current logged-in user's profile information
+        to pre-fill the "Chỉnh sửa hồ sơ" form.
+      operationId: getMyProfile
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/UserProfile"
+              example:
+                data:
+                  id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  userCode: "LX-99283-AN"
+                  avatar: "https://cdn.example.com/avatars/usr_001.jpg"
+                  displayName: "Nguyễn Văn An"
+                  email: "an.nguyen@lexjurist.ai"
+                  phoneNumber: "090 123 4567"
+                  birthDate: "1990-01-01"
+                  address: "Số 123 Đường Lê Lợi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh"
+                  membershipType: "premium"
+                  joinedAt: "2025-12-01"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: Unauthorized or insufficient permissions
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: Internal server error
+ 
+    patch:
+      tags: [auth]
+      summary: Update current user's profile
+      description: >
+        Allows a logged-in user to update their own personal information.
+        Email is read-only and cannot be changed here.
+        All fields are optional — only provided fields will be updated.
+      operationId: updateMyProfile
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                avatar:
+                  type: string
+                  format: binary
+                  description: Profile picture file (jpg, png). Max size 5MB.
+                displayName:
+                  type: string
+                  maxLength: 100
+                  example: "Nguyễn Văn An"
+                  description: Display name shown on profile.
+                phoneNumber:
+                  type: string
+                  example: "090 123 4567"
+                  description: Phone number.
+                birthDate:
+                  type: string
+                  format: date
+                  example: "1990-01-01"
+                  description: Date of birth (YYYY-MM-DD).
+                address:
+                  type: string
+                  maxLength: 500
+                  example: "Số 123 Đường Lê Lợi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh"
+                  description: Residential address.
+      responses:
+        "200":
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/UserProfile"
+              example:
+                data:
+                  id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  userCode: "LX-99283-AN"
+                  avatar: "https://cdn.example.com/avatars/usr_001.jpg"
+                  displayName: "Nguyễn Văn An"
+                  email: "an.nguyen@lexjurist.ai"
+                  phoneNumber: "090 123 4567"
+                  birthDate: "1990-01-01"
+                  address: "Số 123 Đường Lê Lợi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh"
+                  membershipType: "premium"
+                  joinedAt: "2025-12-01"
+        "400":
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                invalid_fields:
+                  summary: Validation errors
+                  value:
+                    message: Invalid request data
+                    details:
+                      - "displayName must not exceed 100 characters"
+                      - "birthDate must be a valid date (YYYY-MM-DD)"
+                      - "address must not exceed 500 characters"
+                invalid_avatar:
+                  summary: Avatar file invalid
+                  value:
+                    message: Invalid request data
+                    details:
+                      - "avatar must be a jpg or png file"
+                      - "avatar must not exceed 5MB"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: Unauthorized or insufficient permissions
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: Internal server error
  
   # USER
  
   /api/v1/users:
     get:
       tags: [user]
-      summary: Lấy danh sách người dùng (admin)
+      summary:  Get list of users with pagination and filtering (admin)
       operationId: listUsers
       security:
         - BearerAuth: []
       parameters:
         - $ref: "#/components/parameters/PageParam"
         - $ref: "#/components/parameters/LimitParam"
-        - name: role
-          in: query
-          schema:
-            type: string
-            enum: [user, lawyer, admin]
-          description: Lọc theo role
-        - name: status
-          in: query
-          schema:
-            type: string
-            enum: [active, inactive, banned]
-          description: Lọc theo trạng thái
-        - name: search
-          in: query
-          schema:
-            type: string
-          description: Tìm theo tên hoặc email
       responses:
         "200":
-          description: Danh sách người dùng
+          description: List of users
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  code: { type: integer, example: 200 }
-                  message: { type: string, example: OK }
                   data:
                     type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: "#/components/schemas/UserBasic"
+                          type: object
+                          properties:
+                            userCode:
+                              type: string
+                              description: Mã định danh người dùng hiển thị trên bảng.
+                              example: "USR-8291"
+                            avatar:
+                              type: string
+                              format: uri
+                              description: URL ảnh đại diện. Null nếu chưa có ảnh (hiển thị chữ viết tắt).
+                              example: "https://cdn.example.com/avatars/usr_9023.jpg"
+                            fullName:
+                              type: string
+                              example: "Nguyễn Huy"
+                            email:
+                              type: string
+                              format: email
+                              example: "huy.nguyen@juristai.vn"
+                            role:
+                              type: string
+                              enum: [user, lawyer, admin]
+                              description: >
+                                Vai trò hiển thị dưới dạng badge màu trên bảng.
+                                admin = xanh navy, lawyer = xanh dương, user = xám.
+                              example: "admin"
+                            status:
+                              type: string
+                              enum: [active, pending, banned]
+                              description: >
+                                Trạng thái tài khoản.
+                                active = "Hoạt động" (chấm xanh),
+                                pending = "Đang chờ" (chấm vàng),
+                                banned = "Đã khóa" (chấm đỏ).
+                              example: "active"
+                            actions:
+                              type: object
+                              description: >
+                                Các hành động khả dụng với người dùng này.
+                                Nếu status = "pending" và role = "lawyer", trả về approve/reject.
+                                Ngược lại trả về edit/view/lock.
+                              properties:
+                                type:
+                                  type: string
+                                  enum: [default, pending_lawyer]
+                                  description: >
+                                    "default" = hiển thị icon chỉnh sửa, xem, khóa.
+                                    "pending_lawyer" = hiển thị nút "Chấp nhận" và "Từ chối".
+                                  example: "default"
                       pagination:
-                        $ref: "#/components/schemas/Pagination"
+                        type: object
+                        properties:
+                          page:
+                            type: integer
+                            example: 1
+                          limit:
+                            type: integer
+                            example: 20
+                          total:
+                            type: integer
+                            example: 2842
+                          totalPages:
+                            type: integer
+                            example: 28
+              example:
+                data:
+                  items:
+                    - userCode: "USR-8291"
+                      avatar: null
+                      fullName: "Nguyễn Huy"
+                      email: "huy.nguyen@juristai.vn"
+                      role: "admin"
+                      status: "active"
+                      actions:
+                        type: "default"
+                    - userCode: "USR-9023"
+                      avatar: "https://cdn.example.com/avatars/usr_9023.jpg"
+                      fullName: "Lê Thị Mai"
+                      email: "mai.le@hanoi.law"
+                      role: "lawyer"
+                      status: "pending"
+                      actions:
+                        type: "pending_lawyer"
+                    - userCode: "USR-4412"
+                      avatar: null
+                      fullName: "Trần Văn Tú"
+                      email: "vantu88@gmail.com"
+                      role: "user"
+                      status: "banned"
+                      actions:
+                        type: "default"
+                  pagination:
+                    page: 1
+                    limit: 20
+                    total: 2842
+                    totalPages: 28
         "400":
-          description: Yêu cầu không hợp lệ
+          description: Invalid query parameters
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               example:
-                error_code: 103
                 message: Invalid query parameters
-                details: ["Invalid role value", "Invalid status value"]
+                details:
+                  - "Invalid role value"
+                  - "Invalid status value"
         "401":
-          $ref: "#/components/responses/Unauthorized"
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: Unauthorized or insufficient permissions
         "403":
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
- 
+  /api/v1/users/{id}/ban:
+    patch:
+      tags: [user]
+      summary: Ban a user account (admin)
+      operationId: banUser
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 500
+                  example: "Tài khoản vi phạm điều khoản sử dụng."
+                  description: Reason for banning the account (optional). Maximum 500 characters.
+            examples:
+              ban_with_reason:
+                summary: Ban with reason
+                value:
+                  reason: "Tài khoản vi phạm điều khoản sử dụng."
+              ban_no_reason:
+                summary: Ban without reason
+                value:
+                  reason: null
+      responses:
+        "200":
+          description: User banned successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                      fullName:
+                        type: string
+                        example: "Nguyễn Văn A"
+                      email:
+                        type: string
+                        format: email
+                        example: "nguyenvana@example.com"
+                      role:
+                        type: string
+                        enum: [user, lawyer, admin]
+                        example: "user"
+                      status:
+                        type: string
+                        enum: [banned]
+                        example: "banned"
+                      bannedAt:
+                        type: string
+                        format: date-time
+                        example: "2024-07-20T10:00:00Z"
+                      bannedBy:
+                        type: string
+                        description: ID of the admin who performed the ban.
+                        example: "admin_001"
+                      reason:
+                        type: string
+                        example: "Tài khoản vi phạm điều khoản sử dụng."
+              example:
+                data:
+                  id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  fullName: "Nguyễn Văn A"
+                  email: "nguyenvana@example.com"
+                  role: "user"
+                  status: "banned"
+                  bannedAt: "2024-07-20T10:00:00Z"
+                  bannedBy: "admin_001"
+                  reason: "Tài khoản vi phạm điều khoản sử dụng."
+        "400":
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                already_banned:
+                  summary: User is already banned
+                  value:
+                    message: Invalid request
+                    details:
+                      - "User is already banned"
+                reason_too_long:
+                  summary: Reason exceeds maximum length
+                  value:
+                    message: Invalid request
+                    details:
+                      - "reason must not exceed 500 characters"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: Unauthorized or insufficient permissions
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: You do not have permission to access this resource
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: Resource not found
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: Internal server error
+
+  /api/v1/users/{id}/unban:
+    patch:
+      tags: [user]
+      summary: Unban a user account (admin)
+      operationId: unbanUser
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 500
+                  example: "Người dùng đã cam kết tuân thủ điều khoản."
+                  description: Reason for unbanning the account (optional). Maximum 500 characters.
+            examples:
+              unban_with_reason:
+                summary: Unban with reason
+                value:
+                  reason: "Người dùng đã cam kết tuân thủ điều khoản."
+              unban_no_reason:
+                summary: Unban without reason
+                value:
+                  reason: null
+      responses:
+        "200":
+          description: User unbanned successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        example: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                      fullName:
+                        type: string
+                        example: "Trần Thị B"
+                      email:
+                        type: string
+                        format: email
+                        example: "tranthib@example.com"
+                      role:
+                        type: string
+                        enum: [user, lawyer, admin]
+                        example: "lawyer"
+                      status:
+                        type: string
+                        enum: [active]
+                        example: "active"
+                      unbannedAt:
+                        type: string
+                        format: date-time
+                        example: "2024-07-21T08:00:00Z"
+                      unbannedBy:
+                        type: string
+                        description: ID of the admin who performed the unban.
+                        example: "admin_001"
+                      reason:
+                        type: string
+                        example: "Người dùng đã cam kết tuân thủ điều khoản."
+              example:
+                data:
+                  id: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                  fullName: "Trần Thị B"
+                  email: "tranthib@example.com"
+                  role: "lawyer"
+                  status: "active"
+                  unbannedAt: "2024-07-21T08:00:00Z"
+                  unbannedBy: "admin_001"
+                  reason: "Người dùng đã cam kết tuân thủ điều khoản."
+        "400":
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                not_banned:
+                  summary: User is not banned
+                  value:
+                    message: Invalid request
+                    details:
+                      - "User is not banned"
+                reason_too_long:
+                  summary: Reason exceeds maximum length
+                  value:
+                    message: Invalid request
+                    details:
+                      - "reason must not exceed 500 characters"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: Unauthorized or insufficient permissions
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/users/banned:
+    get:
+      tags: [user]
+      summary: Get list of banned users (admin)
+      operationId: listBannedUsers
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/LimitParam"
+      responses:
+        "200":
+          description: List of banned users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                              example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                            fullName:
+                              type: string
+                              example: "Nguyễn Văn A"
+                            email:
+                              type: string
+                              format: email
+                              example: ""
+                      pagination:
+                        $ref: "#/components/schemas/Pagination"
+              example:
+                data:
+                  items:
+                    - id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                      fullName: "Nguyễn Văn A"
+                      email: "nguyenvana@example.com"
+                      userCode: "USR-1001"
+                      avatar: "https://cdn.example.com/avatars/usr_1001.jpg"
+                      role: "user"
+                      bannedAt: "2024-06-10T08:30:00Z"
+                      bannedBy: "admin_001"
+                      banReason: "Phát ngôn thù ghét"
+                    - id: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                      fullName: "Trần Thị B"
+                      email: "tranthib@example.com"
+                      userCode: "USR-1042"
+                      avatar: "https://cdn.example.com/avatars/usr_1042.jpg"
+                      role: "lawyer"
+                      bannedAt: "2024-07-01T14:00:00Z"
+                      bannedBy: "admin_002"
+                      banReason: "Cung cấp thông tin chứng chỉ giả mạo"
+                  pagination:
+                    page: 1
+                    limit: 20
+                    total: 2
+                    totalPages: 1
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                 
+                message: Unauthorized or insufficient permissions
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /api/v1/users/{id}:
     get:
       tags: [user]
-      summary: Lấy chi tiết người dùng (admin)
+      summary: Get user details (admin)
       operationId: getUserById
       security:
         - BearerAuth: []
@@ -490,18 +1220,23 @@ paths:
         - $ref: "#/components/parameters/IdParam"
       responses:
         "200":
-          description: Chi tiết người dùng
+          description: User details
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  code: { type: integer, example: 200 }
-                  message: { type: string, example: OK }
                   data:
                     $ref: "#/components/schemas/UserDetail"
         "401":
-          $ref: "#/components/responses/Unauthorized"
+          description: Unauthorized (invalid token or insufficient permissions)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                 
+                message: Unauthorized or insufficient permissions
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
@@ -510,7 +1245,7 @@ paths:
           $ref: "#/components/responses/InternalError"
     delete:
       tags: [user]
-      summary: Xoá người dùng (admin)
+      summary: Delete user (admin)
       operationId: deleteUser
       security:
         - BearerAuth: []
@@ -518,86 +1253,253 @@ paths:
         - $ref: "#/components/parameters/IdParam"
       responses:
         "200":
-          description: Xoá người dùng thành công
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SuccessMessage"
-              example:
-                code: 200
-                message: User deleted successfully
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
- 
-  /api/v1/users/{id}/role:
-    put:
-      tags: [user]
-      summary: Cập nhật role người dùng (admin)
-      operationId: updateUserRole
-      security:
-        - BearerAuth: []
-      parameters:
-        - $ref: "#/components/parameters/IdParam"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [role]
-              properties:
-                role:
-                  type: string
-                  enum: [user, lawyer, admin]
-                  example: lawyer
-      responses:
-        "200":
-          description: Cập nhật role thành công
+          description: User deleted successfully
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  code: { type: integer, example: 200 }
-                  message: { type: string, example: Role updated successfully }
-                  data:
-                    oneOf:
-                       - $ref: "#/components/schemas/UserDetail"      # role: user / admin
-                       - $ref: "#/components/schemas/LawyerDetail"    # role: lawyer
-                    discriminator:
-                      propertyName: role
-                
-        "400":
-          description: Yêu cầu không hợp lệ
+                  message: { type: string, example: User deleted successfully }
+        "401":
+          description: Unauthorized (invalid token or insufficient permissions)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               example:
-                error_code: 102
-                message: Invalid role value
-                details: ["Role must be one of: user, lawyer, admin"]
-        "401":
-          $ref: "#/components/responses/Unauthorized"
+                 
+                message: Unauthorized or insufficient permissions
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+
+  /api/v1/users/{id}/role:
+    put:
+      tags: [user]
+      summary: Update user role (admin)
+      operationId: updateUserRole
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID of the user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - title: UpdateToUserOrAdmin
+                  type: object
+                  required: [role]
+                  properties:
+                    role:
+                      type: string
+                      enum: [user, admin]
+                      example: "user"
+                - title: UpdateToLawyer
+                  type: object
+                  required: [role, licenseNumber, licenseIssuer]
+                  properties:
+                    role:
+                      type: string
+                      enum: [lawyer]
+                      example: "lawyer"
+                    licenseNumber:
+                      type: string
+                      example: "LS-19283-HN"
+                      description: Lawyer's license number.
+                    licenseIssuer:
+                      type: string
+                      example: "Sở Tư Pháp Hà Nội"
+                      description: Authority that issued the license.
+              discriminator:
+                propertyName: role
+            examples:
+              update_to_user:
+                summary: Change to user role
+                value:
+                  role: "user"
+              update_to_lawyer:
+                summary: Change to lawyer role
+                value:
+                  role: "lawyer"
+                  licenseNumber: "LS-19283-HN"
+                  licenseIssuer: "Sở Tư Pháp Hà Nội"
+              update_to_admin:
+                summary: Change to admin role
+                value:
+                  role: "admin"
+      responses:
+        "200":
+          description: User role updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Role updated successfully
+                  data:
+                    type: object
+                    properties:
+                      fullName:
+                        type: string
+                        example: "Lê Thị Mai"
+                      email:
+                        type: string
+                        format: email
+                        example: "mai.le@hanoi.law"
+                      avatar:
+                        type: string
+                        format: uri
+                        example: "https://cdn.example.com/avatars/usr_9023.jpg"
+                      role:
+                        type: string
+                        enum: [user, lawyer, admin]
+                        example: "lawyer"
+                      licenseInfo:
+                        type: object
+                        description: Only present when role is "lawyer". Null for other roles.
+                        properties:
+                          licenseNumber:
+                            type: string
+                            example: "LS-19283-HN"
+                          licenseIssuer:
+                            type: string
+                            example: "Sở Tư Pháp Hà Nội"
+                          licenseFileUrl:
+                            type: string
+                            format: uri
+                            example: "https://cdn.example.com/licenses/usr_9023_license.pdf"
+              example:
+                data:
+                  fullName: "Lê Thị Mai"
+                  email: "mai.le@hanoi.law"
+                  avatar: "https://cdn.example.com/avatars/usr_9023.jpg"
+                  role: "lawyer"
+                  licenseInfo:
+                    licenseNumber: "LS-19283-HN"
+                    licenseIssuer: "Sở Tư Pháp Hà Nội"
+                    licenseFileUrl: "https://cdn.example.com/licenses/usr_9023_license.pdf"
+        "400":
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error_code: { type: integer }
+                  message: { type: string }
+                  details:
+                    type: array
+                    items:
+                      type: string
+              examples:
+                invalid_role:
+                  summary: Invalid role value
+                  value:
+                    message: Invalid request data
+                    details:
+                      - "role must be one of: user, lawyer, admin"
+                missing_license_info:
+                  summary: Missing license info when role is lawyer
+                  value:
+                    message: Invalid request data
+                    details:
+                      - "licenseNumber is required when role is lawyer"
+                      - "licenseIssuer is required when role is lawyer"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error_code: { type: integer }
+                  message: { type: string }
+              example:
+                message: Unauthorized or insufficient permissions
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/users/stats:
+    get:
+      tags: [user]
+      summary: Get total number of users (admin)
+      operationId: getUserStats
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: OK
+                  data:
+                    type: object
+                    properties:
+                      totalUsers:
+                        type: integer
+                        description: Total number of registered users.
+                        example: 2842
+              example:
+                data:
+                  totalUsers: 2842
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+              example:
+                message: Unauthorized or insufficient permissions
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+              example:
+                message: You do not have permission to access this resource
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+              example:
+                message: Internal server error
  
   #LAWYER
  
   /api/v1/lawyers:
     get:
       tags: [lawyer]
-      summary: Lấy danh sách luật sư
+      summary: Get list of lawyers
       operationId: listLawyers
       parameters:
         - $ref: "#/components/parameters/PageParam"
@@ -606,12 +1508,12 @@ paths:
           in: query
           schema:
             type: string
-          description: Lọc theo chuyên ngành
+          description: Filter by specialization
         - name: city
           in: query
           schema:
             type: string
-          description: Lọc theo thành phố
+          description: Filter by city
         - name: minRating
           in: query
           schema:
@@ -619,149 +1521,414 @@ paths:
             format: float
             minimum: 0
             maximum: 5
-          description: Lọc theo rating tối thiểu
+          description: Filter by minimum rating
         - name: search
           in: query
           schema:
             type: string
-          description: Tìm theo tên hoặc chuyên ngành
+          description: Search by name or specialization
       responses:
         "200":
-          description: Danh sách luật sư
+          description: List of lawyers
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  code: { type: integer, example: 200 }
-                  message: { type: string, example: OK }
                   data:
                     type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: "#/components/schemas/LawyerSummary"
+                          description: Lawyer profile summary
+                          type: object
+                          properties:
+                            fullName:
+                              type: string
+                              example: "Trần Hoàng Long"
+                            avatar:
+                              type: string
+                              example: "https://cdn.example.com/avatars/lw_abc123.jpg"
+                            careerHistory:
+                              type: string
+                              example: "Luật sư Trần Văn B có hơn 12 năm kinh nghiệm trong lĩnh vực tư vấn doanh nghiệp..."
+                            bio:
+                              type: string
+                              example: "Luật sư với hơn 10 năm kinh nghiệm..."
+                            averageRating:
+                              type: number
+                              format: float
+                              example: 4.9
+                            sucessfulCases:
+                              type: integer
+                              example: 120
+                            specializations:
+                              type: array
+                              items:
+                                type: string
+                              example: ["Luật Doanh nghiệp", "M&A", "Bất động sản"]
+                            city:
+                              type: string
+                              example: "Hà Nội"
                       pagination:
                         $ref: "#/components/schemas/Pagination"
         "400":
-          description: Yêu cầu không hợp lệ
+          description: Invalid request
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               example:
-                error_code: 103
+                 
                 message: Invalid query parameters
                 details: ["Invalid role value", "Invalid status value"]
 
         "401":
-          $ref: "#/components/responses/Unauthorized"
+          description: Unauthorized (invalid token or insufficient permissions)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                 
+                message: Unauthorized or insufficient permissions
         "404":
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
  
   /api/v1/lawyers/{id}:
-    get:
-      tags: [lawyer]
-      summary: Lấy chi tiết hồ sơ luật sư
-      operationId: getLawyerById
+    get:  
+      tags:
+        - lawyer
+      operationId: getLawyerReviews
+      summary: Get paginated reviews of a lawyer
+      description: >
+        Returns a paginated list of reviews for a specific lawyer.
+        Used when the user clicks "Xem tất cả đánh giá".
       parameters:
-        - $ref: "#/components/parameters/IdParam"
+        - name: lawyerId
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "lw_abc123"
+          description: The unique identifier of the lawyer.
       responses:
         "200":
-          description: Chi tiết luật sư
+          description: Reviews retrieved successfully.
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  code: { type: integer, example: 200 }
-                  message: { type: string, example: OK }
                   data:
-                    $ref: "#/components/schemas/LawyerDetail"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
- 
-  /api/v1/lawyers/profile:
-    put:
-      tags: [lawyer]
-      summary: Cập nhật hồ sơ luật sư (chính mình)
-      operationId: updateLawyerProfile
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                fullName:
-                  type: string
-                  example: Nguyễn Văn A
-                phone:
-                  type: string
-                  example: "0901234567"
-                address:
-                  type: string
-                  example: 123 Lê Lợi, Quận 1, TP.HCM
-                city:
-                  type: string
-                  example: TP. Hồ Chí Minh
-                specializations:
-                  type: array
+                    type: object
+                    properties:
+                      summary:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                            example: "Trần Hoàng Long"
+                          role:
+                            type: string
+                            example: "lawyer"
+                          experienceYears:
+                            type: integer
+                            example: 10
+                          averageRating:
+                            type: number
+                            format: float
+                            example: 4.9
+                          licenseInfo:
+                            type: object
+                            description: Only present when role is "lawyer". Null for other roles.
+                            properties:
+                              licenseNumber:
+                                type: string
+                                example: "LS-19283-HN"
+                              licenseIssuer:
+                                type: string
+                                example: "Sở Tư Pháp Hà Nội"
+                              licenseFileUrl:
+                                type: string
+                                format: uri
+                                description: URL to preview the license file in the modal.
+                                example: "https://cdn.example.com/licenses/usr_9023_license.pdf"
+                              isVerified:
+                                type: boolean
+                                example: false
+                          specializations:
+                            type: array
+                            items:
+                              type: string
+                            example: ["Luật Doanh nghiệp", "M&A", "Bất động sản"]
+                          careerHistory:
+                            type: string
+                            example: "Luật sư Trần Văn B có hơn 12 năm kinh nghiệm trong lĩnh vực tư vấn doanh nghiệp..."
+                          careerMilestones:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                startDate:
+                                  type: string
+                                  example: "03/2012"
+                                endDate:
+                                  type: string
+                                  example: "06/2015"
+                                title:
+                                  type: string
+                                  example: "Được cấp thẻ luật sư"
+                                description:
+                                  type: string
+                                  example: "Được Đoàn luật sư Hà Nội cấp thẻ hành nghề chính thức."
+                                consultingFee:
+                                  type: integer
+                                  example: 2500000
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            reviewId:
+                              type: string
+                              example: "rev_001"
+                            reviewerName:
+                              type: string
+                              example: "Trần Hoàng Long"
+                            experienceYears:
+                              type: integer
+                              example: 10
+                            reviewerAvatar:
+                              type: string
+                              example: "https://cdn.example.com/avatars/usr_001.jpg"
+                            rating:
+                              type: number
+                              format: float
+                              example: 5.0
+                            comment:
+                              type: string
+                              example: "Luật sư Trí rất nhiệt tình và giải quyết vấn đề rất kỹ, nhanh gọn."
+                            createdAt:
+                              type: string
+                              format: date-time
+                              example: "2024-07-20T08:00:00Z"
+              example:
+                data:
+                  summary:
+                    name: "Trần Hoàng Long"
+                    role: "lawyer"
+                    experienceYears: 10
+                    averageRating: 4.9
+                    licenseInfo:
+                      licenseNumber: "LS-19283-HN"
+                      licenseIssuer: "Sở Tư Pháp Hà Nội"
+                      licenseFileUrl: "https://cdn.example.com/licenses/usr_9023_license.pdf"
+                      isVerified: false
+                    specializations: ["Luật Doanh nghiệp", "M&A", "Bất động sản"]
+                    careerHistory: "Luật sư Trần Văn B có hơn 12 năm kinh nghiệm trong lĩnh vực tư vấn doanh nghiệp..."
+                    consultingFee: 2500000
+                    careerMilestones:
+                      - startDate: "03/2012"
+                        endDate: "06/2015"
+                        title: "Được cấp thẻ luật sư"
+                        description: "Được Đoàn luật sư Hà Nội cấp thẻ hành nghề chính thức."
                   items:
-                    type: string
-                  example: [Hình sự, Dân sự]
-                bio:
-                  type: string
-                  example: Luật sư với hơn 10 năm kinh nghiệm...
-                licenseNumber:
-                  type: string
-                  example: LS-2015-001234
-                experience:
-                  type: integer
-                  description: Số năm kinh nghiệm
-                  example: 10
-      responses:
-        "200":
-          description: Cập nhật hồ sơ thành công
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  code: { type: integer, example: 200 }
-                  message: { type: string, example: Profile updated successfully }
-                  data:
-                    $ref: "#/components/schemas/LawyerDetail"
-        "400":
-          description: Yêu cầu không hợp lệ
+                    - reviewId: "rev_001"
+                      reviewerName: "Trần Hoàng Long"
+                      reviewerAvatar: "https://cdn.example.com/avatars/usr_001.jpg"
+                      rating: 5.0
+                      comment: "Luật sư Trí rất nhiệt tình và giải quyết vấn đề rất kỹ, nhanh gọn."
+                      createdAt: "2024-07-20T08:00:00Z"
+                    - reviewId: "rev_002"
+                      reviewerName: "Lê Thu Thảo"
+                      reviewerAvatar: "https://cdn.example.com/avatars/usr_002.jpg"
+                      rating: 5.0
+                      comment: "Phong cách làm việc chuyên nghiệp, đáng cấp."
+                      createdAt: "2024-07-18T14:30:00Z"
+        "404":
+          description: Lawyer not found 
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               example:
-                error_code: 103
-                message: Invalid profile data
-                details: ["Full name is required", "Phone number is invalid"]
+                 
+                message: "Lawyer not found"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  
+
+  /api/v1/lawyers/profile:
+    patch:
+      tags:
+        - lawyer
+      operationId: updateMyProfile
+      summary: Update lawyer's own profile
+      description: >
+        Allows a logged-in lawyer to update their public profile content
+        including avatar, biography, consulting fee, specializations, and career history.
+        Legal info (fullName, licenseNumber, barAssociation) cannot be changed here.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                avatar:
+                  type: string
+                  format: binary
+                  description: Profile picture file (jpg, png). Max size 5MB.
+                layerlienseNumber:
+                  type: string
+                  description: The lawyer's license number.
+                barAssociation:
+                  type: string
+                  description: The bar association the lawyer belongs to.
+                bio:
+                  type: string
+                  description: A short biography of the lawyer 
+                sucessfulCases:
+                  type: integer
+                  example: 120
+                  description: Total number of successful cases handled by the lawyer.
+                careerHistory:
+                  type: string
+                  description: A text summary of the lawyer's career history.
+                consultingFee:
+                  type: integer
+                  example: 2500000
+                  description: Consulting fee per hour in VND.
+                careerMilestones:
+                  type: array
+                  description: >
+                    List of career milestones (e.g. certifications, notable cases, appointments).
+                    Maximum 50 items. Send as JSON string in multipart/form-data.
+                  items:
+                    type: object
+                    properties:
+                      startDate:
+                        type: string
+                        description: "Start date of the milestone (Tháng/Năm, e.g. 03/2012)."
+                        example: "03/2012"
+                      endDate:
+                        type: string
+                        description: End date of the milestone. Leave empty if ongoing.
+                        example: "06/2015"
+                      title:
+                        type: string
+                        description: Name of the milestone.
+                        example: "Được cấp thẻ luật sư"
+                      description:
+                        type: string
+                        description: Detailed description of the achievement or event.
+                        example: "Được Đoàn luật sư Hà Nội cấp thẻ hành nghề chính thức."
+                    required:
+                      - startDate
+                      - title
+                specializations:
+                  type: array
+                  items:
+                    type: string
+                  example:
+                    - "Luật Doanh nghiệp"
+                    - "M&A"
+                    - "Bất động sản"
+                  description: Maximum 10 items.
+      responses:
+        "200":
+          description: Profile updated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      avatar:
+                        type: string
+                        example: "https://cdn.example.com/avatars/lw_abc123.jpg"
+                      layerlienseNumber:
+                        type: string
+                        example: "LS123456"
+                      barAssociation:
+                        type: string
+                        example: "Đoàn luật sư Hà Nội"
+                      bio:
+                        type: string
+                        example: "Luật sư với hơn 10 năm kinh nghiệm trong lĩnh vực tư vấn doanh nghiệp..."
+                      sucessfulCases:
+                        type: integer
+                        example: 120
+                      careerHistory:
+                        type: string
+                        example: "Luật sư Trần Văn B có hơn 12 năm kinh nghiệm trong lĩnh vực tư vấn doanh nghiệp..."
+                      consultingFee:
+                        type: integer
+                        example: 2500000
+                      careerMilestones:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            startDate:
+                              type: string
+                              example: "03/2012"
+                            endDate:
+                              type: string
+                              example: "06/2015"
+                            title:
+                              type: string
+                              example: "Được cấp thẻ luật sư"
+                            description:
+                              type: string
+                              example: "Được Đoàn luật sư Hà Nội cấp thẻ hành nghề chính thức."
+                      specializations:
+                        type: array
+                        items:
+                          type: string
+                        example:
+                          - "Luật Doanh nghiệp"
+                          - "M&A"
+                          - "Bất động sản"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                 
+                message: "Invalid request data"
+                details:
+                  - "Consulting fee must be a positive integer"
+                  - "Maximum 10 specializations allowed"
         "401":
-          $ref: "#/components/responses/Unauthorized"
+          description: Unauthorized (invalid token or insufficient permissions)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                 
+                message: "Unauthorized or insufficient permissions"
         "403":
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
- 
   #RATING 
  
   /api/v1/lawyers/{id}/rating:
     post:
       tags: [rating]
-      summary: Đánh giá luật sư
+      summary: Rate a lawyer
       operationId: rateLawyer
       security:
         - BearerAuth: []
@@ -777,77 +1944,84 @@ paths:
               properties:
                 score:
                   type: number
-                  format: float
+                  format: int
                   minimum: 1
                   maximum: 5
-                  example: 4.5
+                  example: 4
                 comment:
                   type: string
                   example: Luật sư tư vấn rất nhiệt tình và chuyên nghiệp.
       responses:
         "201":
-          description: Đánh giá thành công
+          description: Rating submitted successfully
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  code: { type: integer, example: 201 }
                   message: { type: string, example: Rating submitted successfully }
                   data:
                     $ref: "#/components/schemas/Rating"
         "400":
-          description: Yêu cầu không hợp lệ
+          description: Invalid request
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               example:
-                error_code: 104
+                 
                 message: Invalid rating data
                 details: ["Score is required", "Score must be between 1 and 5"]
         "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "409":
-          description: Người dùng đã đánh giá luật sư này rồi
+          description: Unauthorized (invalid token or insufficient permissions)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               example:
-                error_code: 109
+                 
+                message: Unauthorized or insufficient permissions
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Conflict (user has already rated this lawyer)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                 
                 message: You have already rated this lawyer
-                details: []
         "500":
           $ref: "#/components/responses/InternalError"
  
     get:
       tags: [rating]
-      summary: Lấy danh sách đánh giá của luật sư
+      summary: Get a list of ratings for a lawyer
       operationId: getLawyerRatings
       parameters:
-        - $ref: "#/components/parameters/IdParam"
-        - $ref: "#/components/parameters/PageParam"
-        - $ref: "#/components/parameters/LimitParam"
+        - name: lawyerId
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "lw_abc123"
+          description: The unique identifier of the lawyer.
       responses:
         "200":
-          description: Danh sách đánh giá
+          description: List of ratings
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  code: { type: integer, example: 200 }
-                  message: { type: string, example: OK }
                   data:
                     type: object
                     properties:
                       averageScore:
                         type: number
-                        format: float
-                        example: 4.3
+                        format: integer
+                        example: 4
                       totalRatings:
                         type: integer
                         example: 27
@@ -855,125 +2029,446 @@ paths:
                         type: array
                         items:
                           $ref: "#/components/schemas/Rating"
-                      pagination:
-                        $ref: "#/components/schemas/Pagination"
         "404":
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
  
   # REPORT / MODERATION 
- 
+# ── REPORT LIST ────────────────────────────
+
   /api/v1/reports:
-    post:
-      tags: [report]
-      summary: Tạo báo cáo vi phạm
-      operationId: createReport
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [targetId, targetType, reason]
-              properties:
-                targetId:
-                  type: string
-                  format: uuid
-                  example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
-                targetType:
-                  type: string
-                  enum: [user, lawyer, review, post]
-                  example: lawyer
-                reason:
-                  type: string
-                  enum: [spam, fake_info, harassment, inappropriate_content, other]
-                  example: fake_info
-                description:
-                  type: string
-                  example: Luật sư cung cấp thông tin bằng cấp giả mạo.
-      responses:
-        "201":
-          description: Báo cáo được gửi thành công
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  code: { type: integer, example: 201 }
-                  message: { type: string, example: Report submitted successfully }
-                  data:
-                    $ref: "#/components/schemas/Report"
-        "400":
-          description: Yêu cầu không hợp lệ
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              example:
-                error_code: 105
-                message: Invalid report data
-                details: ["Target ID is required", "Target type is invalid"]
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
- 
     get:
       tags: [report]
-      summary: Lấy danh sách báo cáo (admin/moderator)
+      summary: Get list of reports (admin/moderator)
       operationId: listReports
       security:
         - BearerAuth: []
       parameters:
-        - $ref: "#/components/parameters/PageParam"
-        - $ref: "#/components/parameters/LimitParam"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number (starts from 1)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Number of items per page (max 100)
         - name: status
           in: query
           schema:
             type: string
-            enum: [pending, resolved, dismissed]
-          description: Lọc theo trạng thái xử lý
-        - name: targetType
+            enum: [pending, processing, resolved]
+          description: Filter by processing status
+        - name: startDate
           in: query
           schema:
             type: string
-            enum: [user, lawyer, review, post]
-          description: Lọc theo loại đối tượng bị báo cáo
+            format: date
+            example: "2023-01-01"
+          description: Filter by start date (YYYY-MM-DD)
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+            example: "2023-10-31"
+          description: Filter by end date (YYYY-MM-DD)
       responses:
         "200":
-          description: Danh sách báo cáo
+          description: List of reports retrieved successfully
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  code: { type: integer, example: 200 }
-                  message: { type: string, example: OK }
                   data:
                     type: object
                     properties:
                       items:
                         type: array
                         items:
-                          $ref: "#/components/schemas/Report"
+                          type: object
+                          properties:
+                            reportId:
+                              type: string
+                              example: "REP-001"
+                            reporter:
+                              type: object
+                              properties:
+                                displayName:
+                                  type: string
+                                  example: "LS. Nguyễn Văn A"
+                                role:
+                                  type: string
+                                  enum: [user, lawyer]
+                                  example: "lawyer"
+                            target:
+                              type: object
+                              properties:
+                                displayName:
+                                  type: string
+                                  example: "User_921"
+                                role:
+                                  type: string
+                                  enum: [user, lawyer]
+                                  example: "user"
+                            reason:
+                              type: string
+                              example: "Phát ngôn thù ghét"
+                            status:
+                              type: string
+                              enum: [pending, processing, resolved]
+                              description: >
+                                pending = "Chưa xử lý" (badge đỏ),
+                                processing = "Chờ xử lý" (badge cam),
+                                resolved = "Đã xử lý" (badge xám).
+                              example: "pending"
+                            severity:
+                              type: string
+                              enum: [normal, danger]
+                              description: >
+                                danger = badge "NGUY HIỂM" (đỏ),
+                                normal = badge "BÌNH THƯỜNG" (xám).
+                              example: "danger"
                       pagination:
-                        $ref: "#/components/schemas/Pagination"
+                        type: object
+                        properties:
+                          page:
+                            type: integer
+                            example: 1
+                          limit:
+                            type: integer
+                            example: 20
+                          total:
+                            type: integer
+                            example: 150
+                          totalPages:
+                            type: integer
+                            example: 8
+              example:
+                data:
+                  items:
+                    - reportId: "REP-001"
+                      reporter:
+                        displayName: "LS. Nguyễn Văn A"
+                        role: "lawyer"
+                      target:
+                        displayName: "User_921"
+                        role: "user"
+                      reason: "Phát ngôn thù ghét"
+                      status: "pending"
+                      severity: "danger"
+                    - reportId: "REP-002"
+                      reporter:
+                        displayName: "Anonymous_Legal"
+                        role: "user"
+                      target:
+                        displayName: "LS. Trần Thị B"
+                        role: "lawyer"
+                      reason: "Spam hồ sơ giả"
+                      status: "processing"
+                      severity: "normal"
+                    - reportId: "REP-003"
+                      reporter:
+                        displayName: "LS. Lê Hoàng C"
+                        role: "lawyer"
+                      target:
+                        displayName: "TechAdvocate_88"
+                        role: "user"
+                      reason: "Vi phạm bản quyền"
+                      status: "resolved"
+                      severity: "normal"
+                    - reportId: "REP-004"
+                      reporter:
+                        displayName: "JusticeSeeker"
+                        role: "user"
+                      target:
+                        displayName: "LS. Phạm Thu D"
+                        role: "lawyer"
+                      reason: "Nghi ngờ sử dụng bằng giả"
+                      status: "pending"
+                      severity: "danger"
+                  pagination:
+                    page: 1
+                    limit: 20
+                    total: 4
+                    totalPages: 1
+        "400":
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error_code: { type: integer }
+                  message: { type: string }
+                  details:
+                    type: array
+                    items:
+                      type: string
+              example:
+                message: Invalid query parameters
+                details: ["Invalid status value", 
+                  "startDate must be before endDate",
+                  "Invalid date format for startDate",
+                  "Invalid date format for endDate"]
         "401":
-          $ref: "#/components/responses/Unauthorized"
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error_code: { type: integer }
+                  message: { type: string }
+              example:
+                 
+                message: Unauthorized or insufficient permissions
         "403":
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
- 
+
+  /api/v1/reports/stats:
+    get:
+      tags: [report]
+      summary: Get report statistics summary by month (admin/moderator)
+      operationId: getReportStats
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: month
+          in: query
+          required: false
+          schema:
+            type: string
+            example: "2023-10"
+          description: Month to get statistics for (YYYY-MM). Defaults to current month if not provided.
+      responses:
+        "200":
+          description: Report statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      month:
+                        type: string
+                        description: The month these stats apply to (YYYY-MM).
+                        example: "2023-10"
+                      newReports:
+                        type: integer
+                        description: Total new reports received this month.
+                        example: 124
+                      resolved:
+                        type: integer
+                        description: Total reports resolved this month.
+                        example: 98
+                      flaggedDangerous:
+                        type: integer
+                        description: Total reports flagged as dangerous this month.
+                        example: 14
+              example:
+                data:
+                  month: "2023-10"
+                  newReports: 124
+                  resolved: 98
+                  flaggedDangerous: 14
+        "400":
+          description: Invalid month format
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  details:
+                    type: array
+                    items:
+                      type: string
+              example:
+                message: Invalid request data
+                details:
+                  - "month must be in YYYY-MM format"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+              example:
+                message: Unauthorized or insufficient permissions
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+              example:
+                message: You do not have permission to access this resource
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+              example:
+                message: Internal server error
+
+  /api/v1/reports/history:
+    get:
+      tags: [report]
+      summary: Get report activity history (admin/moderator)
+      operationId: getReportHistory
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number (starts from 1)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Number of items per page (max 100)
+      responses:
+        "200":
+          description: Report activity history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            activityId:
+                              type: string
+                              example: "ACT-001"
+                            timestamp:
+                              type: string
+                              format: date-time
+                              example: "2023-10-25T09:12:00Z"
+                            actor:
+                              type: string
+                              description: Name of the admin or "Hệ thống" if system-generated.
+                              example: "Admin A"
+                            actorType:
+                              type: string
+                              enum: [admin, system]
+                              example: "admin"
+                            action:
+                              type: string
+                              enum: [resolved, dismissed, role_changed, auto_flagged, login]
+                              description: Type of action performed.
+                              example: "resolved"
+                            reportId:
+                              type: string
+                              description: Related report ID. Null if action is not report-specific.
+                              example: "REP-08"
+                            description:
+                              type: string
+                              description: Human-readable description of the action.
+                              example: "Căn cứ: Cấm các hệ thống"
+                      pagination:
+                        type: object
+                        properties:
+                          page:
+                            type: integer
+                            example: 1
+                          limit:
+                            type: integer
+                            example: 20
+                          total:
+                            type: integer
+                            example: 4
+                          totalPages:
+                            type: integer
+                            example: 1
+              example:
+                data:
+                  items:
+                    - activityId: "ACT-001"
+                      timestamp: "2023-10-25T09:12:00Z"
+                      actor: "Admin A"
+                      actorType: "admin"
+                      action: "resolved"
+                      reportId: "REP-08"
+                      description: "Căn cứ: Cấm các hệ thống"
+                    - activityId: "ACT-002"
+                      timestamp: "2023-10-25T08:45:00Z"
+                      actor: "Admin B"
+                      actorType: "admin"
+                      action: "role_changed"
+                      reportId: null
+                      description: "Nâng cấp User_442 lên Premium"
+                    - activityId: "ACT-003"
+                      timestamp: "2023-10-24T17:30:00Z"
+                      actor: "Hệ thống"
+                      actorType: "system"
+                      action: "auto_flagged"
+                      reportId: "REP-006"
+                      description: "Tự động gắn cờ vi phạm"
+                    - activityId: "ACT-004"
+                      timestamp: "2023-10-24T15:20:00Z"
+                      actor: "Admin A"
+                      actorType: "admin"
+                      action: "login"
+                      reportId: null
+                      description: "Đã đăng nhập vào hệ thống"
+                  pagination:
+                    page: 1
+                    limit: 20
+                    total: 4
+                    totalPages: 1
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error_code: { type: integer }
+                  message: { type: string }
+              example:
+                 
+                message: Unauthorized or insufficient permissions
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /api/v1/reports/{id}:
     get:
       tags: [report]
-      summary: Lấy chi tiết báo cáo (admin/moderator)
+      summary: Get report details (admin/moderator)
       operationId: getReportById
       security:
         - BearerAuth: []
@@ -981,79 +2476,161 @@ paths:
         - $ref: "#/components/parameters/IdParam"
       responses:
         "200":
-          description: Chi tiết báo cáo
+          description: Report details
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  code: { type: integer, example: 200 }
-                  message: { type: string, example: OK }
                   data:
-                    $ref: "#/components/schemas/Report"
+                    type: object
+                    properties:
+                      reportId:
+                        type: string
+                        example: "REP-001"
+                      createdAt:
+                        type: string
+                        format: date-time
+                        example: "2023-10-24T14:30:00Z"
+                      severity:
+                        type: string
+                        enum: [normal, danger]
+                        example: "danger"
+                        description: Mức độ báo cáo — "danger" hiển thị badge "KHẨN CẤP".
+                      status:
+                        type: string
+                        enum: [pending, processing, resolved]
+                        example: "pending"
+
+                      # ── Reporter ────────────────────────────────
+                      reporter:
+                        type: object
+                        properties:
+                          userId:
+                            type: string
+                            example: "LAW-1029-X"
+                          displayName:
+                            type: string
+                            example: "LS. Nguyễn Văn A"
+                          avatar:
+                            type: string
+                            example: "https://cdn.example.com/avatars/LAW-1029-X.jpg"
+                          role:
+                            type: string
+                            enum: [user, lawyer]
+                            example: "lawyer"
+                          metadata:
+                            type: object
+                            description: Extra info depending on role.
+                            properties:
+                              licenseNumber:
+                                type: string
+                                example: "Hà Nội #8821"
+                                description: Shown if reporter is a lawyer.
+                            example:
+                              licenseNumber: "Hà Nội #8821"
+
+                      # ── Target (người bị báo cáo) ────────────────
+                      target:
+                        type: object
+                        properties:
+                          userId:
+                            type: string
+                            example: "USR-8231-K"
+                          displayName:
+                            type: string
+                            example: "User_9921"
+                          avatar:
+                            type: string
+                            example: "https://cdn.example.com/avatars/USR-8231-K.jpg"
+                          role:
+                            type: string
+                            enum: [user, lawyer]
+                            example: "user"
+                          metadata:
+                            type: object
+                            description: Extra info depending on role.
+                            properties:
+                              totalPreviousReports:
+                                type: integer
+                                example: 1
+                                description: Số lần bị cảnh cáo trước đó.
+                            example:
+                              totalPreviousReports: 1
+
+                      # ── Report Content ───────────────────────────
+                      reason:
+                        type: string
+                        example: "Phát ngôn thù ghét"
+                      content:
+                        type: string
+                        example: "Đối tượng liên tục gửi các yêu cầu tư vấn pháp luật có nội dung thù ghét nhắm vào một nhóm tôn giáo cụ thể..."
+
+                      # ── Evidence Files ───────────────────────────
+                      evidenceFiles:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            fileId:
+                              type: string
+                              example: "file_001"
+                            fileName:
+                              type: string
+                              example: "Chat_Log_01.png"
+                            fileType:
+                              type: string
+                              enum: [image, pdf, video, other]
+                              example: "image"
+                            fileUrl:
+                              type: string
+                              example: "https://cdn.example.com/evidence/Chat_Log_01.png"
+                        example:
+                          - fileId: "file_001"
+                            fileName: "Chat_Log_01.png"
+                            fileType: "image"
+                            fileUrl: "https://cdn.example.com/evidence/Chat_Log_01.png"
+                          - fileId: "file_002"
+                            fileName: "Transcript.pdf"
+                            fileType: "pdf"
+                            fileUrl: "https://cdn.example.com/evidence/Transcript.pdf"
+
+                      # ── Admin Decision (nếu đã xử lý) ───────────
+                      adminDecision:
+                        type: object
+                        description: null if report has not been resolved yet.
+                        properties:
+                          action:
+                            type: string
+                            enum: [warn_user, ban_user, dismiss]
+                            example: "warn_user"
+                          note:
+                            type: string
+                            example: "Người dùng đã vi phạm lần đầu, cảnh cáo trước."
+                          decidedAt:
+                            type: string
+                            format: date-time
+                            example: "2023-10-25T09:00:00Z"
+                          decidedBy:
+                            type: string
+                            example: "admin_001"
         "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
- 
-  /api/v1/reports/{id}/resolve:
-    put:
-      tags: [report]
-      summary: Xử lý báo cáo (admin/moderator)
-      operationId: resolveReport
-      security:
-        - BearerAuth: []
-      parameters:
-        - $ref: "#/components/parameters/IdParam"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [status]
-              properties:
-                status:
-                  type: string
-                  enum: [resolved, dismissed]
-                  example: resolved
-                note:
-                  type: string
-                  example: Đã xác minh và xoá tài khoản vi phạm.
-                action:
-                  type: string
-                  enum: [none, warn, ban, delete_content]
-                  example: ban
-      responses:
-        "200":
-          description: Xử lý báo cáo thành công
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  code: { type: integer, example: 200 }
-                  message: { type: string, example: Report resolved successfully }
-                  data:
-                    $ref: "#/components/schemas/Report"
-        "400":
-          description: Yêu cầu không hợp lệ
+          description: Unauthorized (invalid token or insufficient permissions)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               example:
-                error_code: 106
-                message: Invalid resolution data
-                details: ["Status is required", "Invalid status value"]
-        "401":
-          $ref: "#/components/responses/Unauthorized"
+                 
+                message: Unauthorized or insufficient permissions
         "403":
-          $ref: "#/components/responses/Forbidden"
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: You do not have permission to access this resource
         "404":
           $ref: "#/components/responses/NotFound"
         "500":
@@ -1078,7 +2655,7 @@ components:
       schema:
         type: string
         format: uuid
-      description: UUID của đối tượng
+      description: uuid of the resource
  
     PageParam:
       name: page
@@ -1087,7 +2664,7 @@ components:
         type: integer
         minimum: 1
         default: 1
-      description: Số trang
+      description: page number (starts from 1)
  
     LimitParam:
       name: limit
@@ -1097,20 +2674,53 @@ components:
         minimum: 1
         maximum: 100
         default: 20
-      description: Số bản ghi mỗi trang
+      description: number of items per page (max 100)
  
   # SCHEMAS
   schemas:
- 
-    SuccessMessage:
+    UserProfile:
       type: object
       properties:
-        code:
-          type: integer
-          example: 200
-        message:
+        id:
           type: string
-          example: OK
+          format: uuid
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        userCode:
+          type: string
+          description: User identifier displayed on UI (e.g. LX-99283-AN).
+          example: "LX-99283-AN"
+        avatar:
+          type: string
+          format: uri
+          example: "https://cdn.example.com/avatars/usr_001.jpg"
+        displayName:
+          type: string
+          example: "Nguyễn Văn An"
+        email:
+          type: string
+          format: email
+          description: Read-only. Cannot be changed via this endpoint.
+          example: "an.nguyen@lexjurist.ai"
+        phoneNumber:
+          type: string
+          example: "090 123 4567"
+        birthDate:
+          type: string
+          format: date
+          example: "1990-01-01"
+        address:
+          type: string
+          example: "Số 123 Đường Lê Lợi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh"
+        membershipType:
+          type: string
+          enum: [free, premium]
+          description: Membership tier of the user.
+          example: "premium"
+        joinedAt:
+          type: string
+          format: date
+          description: Date the user joined the platform.
+          example: "2025-12-01"  
  
     ErrorResponse:
       type: object
@@ -1147,6 +2757,10 @@ components:
           type: string
           format: uuid
           example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        avatar:
+          type: string
+          format: uri
+          example: https://cdn.example.com/avatars/user123.jpg
         email:
           type: string
           format: email
@@ -1162,27 +2776,28 @@ components:
           type: string
           enum: [active, inactive, banned]
           example: active
-        createdAt:
-          type: string
-          format: date-time
-          example: "2024-01-15T08:30:00Z"
- 
     UserDetail:
       allOf:
-        - $ref: "#/components/schemas/UserBasic"
         - type: object
           properties:
-            phone:
+            fullName:
               type: string
-              example: "0901234567"
+              example: Nguyễn Văn A
+            birthDate:
+              type: string
+              format: date
+              example: "1990-05-20"
+            email:
+              type: string
+              format: email
+              example: nguyenvana@example.com
+            address:
+              type: string
+              example: 123 Lê Lợi, Quận 1, TP.HCM
             avatar:
               type: string
               format: uri
-              example: https://cdn.example.com/avatars/user123.jpg
-            updatedAt:
-              type: string
-              format: date-time
-              example: "2024-06-01T10:00:00Z"
+              example: https://cdn.example.com/avatars/user123.jpg\
  
     AuthTokens:
       type: object
@@ -1193,19 +2808,9 @@ components:
         refreshToken:
           type: string
           example: "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4..."
-        expiresIn:
-          type: integer
-          description: Thời gian hết hạn access token (giây)
-          example: 3600
-        role:
-          type: string
-          enum: [user, lawyer, admin]
-          example: user
       required:
         - accessToken
         - refreshToken
-        - expiresIn
-        - role
         
  
     LawyerBasic:
@@ -1315,25 +2920,17 @@ components:
           example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
         score:
           type: number
-          format: float
+          format: integer
           minimum: 1
           maximum: 5
-          example: 4.5
+          example: 4
         comment:
           type: string
           example: Luật sư tư vấn rất nhiệt tình và chuyên nghiệp.
-        createdAt:
-          type: string
-          format: date-time
-          example: "2024-04-10T11:00:00Z"
  
     Report:
       type: object
       properties:
-        id:
-          type: string
-          format: uuid
-          example: d4e5f6a7-b8c9-0123-defa-234567890123
         reporterId:
           type: string
           format: uuid
@@ -1348,77 +2945,43 @@ components:
           example: lawyer
         reason:
           type: string
-          enum: [spam, fake_info, harassment, inappropriate_content, other]
-          example: fake_info
-        description:
-          type: string
-          example: Luật sư cung cấp thông tin bằng cấp giả mạo.
+          example: fake_info 
         status:
           type: string
           enum: [pending, resolved, dismissed]
           example: pending
-        note:
-          type: [string, "null"]
-          example: null
-        action:
-          type: [string, "null"]
-          enum: [none, warn, ban, delete_content]
-          example: null
-        resolvedBy:
-          type: [string, "null"]
-          format: uuid
-          example: null
-        createdAt:
+        evaluationNote:
           type: string
-          format: date-time
-          example: "2024-06-05T08:00:00Z"
-        updatedAt:
-          type: string
-          format: date-time
-          example: "2024-06-05T08:00:00Z"
+          enum: [Nguy hiểm,bình thường]
+          example: Nguy hiểm
  
   # RESPONSE
   responses:
-    Unauthorized:
-      description: Chưa xác thực hoặc token không hợp lệ (error_code 102)
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-          example:
-            error_code: 102
-            message: Unauthorized
-            details: []
- 
     Forbidden:
-      description: Không có quyền truy cập (error_code 106)
+      description: Forbidden
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
           example:
-            error_code: 106
-            message: Forbidden
-            details: []
- 
+             
+            message: You do not have permission to access this resource
     NotFound:
-      description: Không tìm thấy tài nguyên (error_code 107)
+      description: Resource not found 
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
           example:
-            error_code: 107
-            message: Resource not found
-            details: []
+             
+            message: The requested resource was not found
  
     InternalError:
-      description: Lỗi máy chủ nội bộ (error_code 103)
+      description: Internal server error 
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
           example:
-            error_code: 103
+             
             message: Internal server error
-            details: []
