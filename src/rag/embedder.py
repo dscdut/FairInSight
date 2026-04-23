@@ -1,58 +1,78 @@
-"""Embedding service for text vectorization."""
+"""Embedding service for FairInsight RAG pipeline (1024 dimensions)."""
+
+from __future__ import annotations
 
 import os
 from typing import Optional
 
-import httpx
+from openai import AsyncOpenAI
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 
 class Embedder:
-    """Generate embeddings for text using OpenAI or self-hosted model."""
-    
+    """Generate embeddings via OpenAI-compatible APIs (OpenRouter by default)."""
+
     def __init__(
         self,
-        model: str = "text-embedding-3-small",
+        model: Optional[str] = None,
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
-        dimensions: int = 1024,
-    ):
-        self.model = model
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
-        self.base_url = base_url or "https://api.openai.com/v1"
-        self.dimensions = dimensions
-    
+        dimensions: Optional[int] = None,
+    ) -> None:
+        self.model = model or os.getenv("RAG_EMBEDDING_MODEL", "text-embedding-3-small")
+        self.api_key = api_key or os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY", "")
+        self.base_url = base_url or os.getenv("LLM_BASE_URL") or "https://api.openai.com/v1"
+        self.dimensions = dimensions or int(os.getenv("RAG_EMBEDDING_DIMENSIONS", "1024"))
+
+        if not self.api_key:
+            raise ValueError("LLM_API_KEY or OPENAI_API_KEY must be configured for embeddings")
+
+        headers: dict[str, str] = {}
+        site_url = os.getenv("LLM_SITE_URL", "")
+        app_name = os.getenv("LLM_APP_NAME", "FairInsight")
+        if site_url:
+            headers["HTTP-Referer"] = site_url
+        if app_name:
+            headers["X-Title"] = app_name
+        org_id = os.getenv("LLM_ORGANIZATION_ID", "")
+        org_name = os.getenv("LLM_ORGANIZATION_NAME", "")
+        if org_id:
+            headers["X-Organization-Id"] = org_id
+        if org_name:
+            headers["X-Organization-Name"] = org_name
+
+        self.client = AsyncOpenAI(
+            api_key=self.api_key,
+            base_url=self.base_url,
+            default_headers=headers or None,
+        )
+
     async def embed(self, text: str) -> list[float]:
         """Embed a single text string."""
         results = await self.embed_batch([text])
         return results[0]
-    
+
+    @retry(wait=wait_exponential(min=1, max=8), stop=stop_after_attempt(3), reraise=True)
+    async def _embed_request(self, batch: list[str]) -> list[list[float]]:
+        response = await self.client.embeddings.create(
+            model=self.model,
+            input=batch,
+            dimensions=self.dimensions,
+        )
+        return [item.embedding for item in response.data]
+
     async def embed_batch(self, texts: list[str], batch_size: int = 100) -> list[list[float]]:
         """Embed multiple texts in batches."""
+        if not texts:
+            return []
+
         all_embeddings = []
-        
+
         for i in range(0, len(texts), batch_size):
             batch = texts[i:i + batch_size]
-            
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    f"{self.base_url}/embeddings",
-                    headers={
-                        "Authorization": f"Bearer {self.api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "model": self.model,
-                        "input": batch,
-                        "dimensions": self.dimensions,
-                    },
-                    timeout=60.0,
-                )
-                response.raise_for_status()
-                data = response.json()
-                
-                embeddings = [item["embedding"] for item in data["data"]]
-                all_embeddings.extend(embeddings)
-        
+            embeddings = await self._embed_request(batch)
+            all_embeddings.extend(embeddings)
+
         return all_embeddings
 
 
