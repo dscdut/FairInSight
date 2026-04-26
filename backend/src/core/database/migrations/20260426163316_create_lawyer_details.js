@@ -12,12 +12,12 @@ exports.up = async (knex) => {
     table.text('bio');
     table.integer('experience_years');
 
-    table.boolean('is_verified').defaultTo(false);
+    table.boolean('is_verified').notNullable().defaultTo(false);
     table.float('rating_avg').defaultTo(0);
 
     table.decimal('price_per_hour', 10, 2);
 
-    table.specificType('status', 'lawyer_status').defaultTo('OFFLINE');
+    table.specificType('status', 'lawyer_status').notNullable().defaultTo('OFFLINE');
 
     table.string('bar_association');
     table.string('license_number');

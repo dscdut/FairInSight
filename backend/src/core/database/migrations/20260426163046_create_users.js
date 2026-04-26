@@ -8,7 +8,7 @@ exports.up = async (knex) => {
 
     table.string('email').notNullable();
     table.text('password_hash').notNullable();
-    table.string('full_name');
+    table.string('full_name').notNullable();
 
     table.uuid('role_id').references('id').inTable('roles');
 
@@ -20,6 +20,15 @@ exports.up = async (knex) => {
     table.string('phone', 20);
     table.date('date_of_birth');
     table.string('location');
+
+    table.text('email_confirmation_token');
+
+    table.text('password_reset_token');
+    table.timestamp('password_reset_expiry');
+
+    table.boolean('is_email_confirmed').notNullable().defaultTo(false);
+
+    table.timestamp('last_login_at');
 
     table.timestamp('created_at').defaultTo(knex.fn.now());
     table.timestamp('updated_at').defaultTo(knex.fn.now());
