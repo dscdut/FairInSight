@@ -14,6 +14,7 @@ export interface RegisterRequest {
   email: string
   password: string
   confirm_password: string
+  role: 'client' | 'lawyer'
 }
 
 export interface AuthState {

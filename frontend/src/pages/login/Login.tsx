@@ -100,26 +100,30 @@ export default function Login() {
   }, [form])
 
   return (
-    <div className='flex justify-center w-full min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50'>
-      <div className='flex justify-between items-center px-4 mx-auto my-8 w-full max-w-7xl'>
+    <div
+      className='relative flex justify-center w-full min-h-screen bg-cover bg-center'
+      style={{ backgroundImage: "url('/bg.jpg')" }}
+    >
+      <div className='absolute inset-0 bg-slate-950/70' />
+      <div className='relative flex justify-center items-center px-4 mx-auto my-8 w-full max-w-7xl'>
         <motion.div
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
-          className='flex flex-col p-8 space-y-6 w-full max-w-md bg-white rounded-2xl shadow-lg'
+          className='relative z-10 flex flex-col p-8 space-y-6 w-full max-w-md bg-white/95 rounded-2xl shadow-lg'
         >
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <Logo />
+            {/* <Logo /> */}
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className='space-y-2'
+            className='space-y-2 text-center'
           >
-            <h1 className='text-4xl font-bold text-gray-900'>Chào mừng trở lại!</h1>
-            <p className='text-gray-600'>Đăng nhập để tiếp tục trải nghiệm</p>
+            <h1 className='text-3xl font-bold  text-red-900 w-[400px] h-[32px]'>Đăng nhập</h1>
+            <p className='text-gray-600 w-[400px] h-[24px]'>Chào mừng trở lại</p>
           </motion.div>
 
           <Form {...form}>
@@ -136,8 +140,8 @@ export default function Login() {
                   name='email'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
+                      <FormLabel className='font-bold'>Email</FormLabel>
+                      <FormControl className='w-[400px] h-[52px]'>
                         <Input placeholder='Nhập email của bạn' type='email' {...field} />
                       </FormControl>
                       <FormMessage />
@@ -152,8 +156,8 @@ export default function Login() {
                   name='password'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Mật khẩu</FormLabel>
-                      <FormControl>
+                      <FormLabel className='font-bold'>Mật khẩu</FormLabel>
+                      <FormControl className='w-[400px] h-[52px]'>
                         <Input
                           placeholder='Nhập mật khẩu của bạn'
                           className='w-full'
@@ -194,10 +198,26 @@ export default function Login() {
                   loading={isLoading}
                   variant='default'
                   size='lg'
-                  className='w-full'
+                  className='w-full bg-red-800 hover:bg-red-900 text-white'
                   type='submit'
                 >
                   Đăng nhập
+                </Button>
+              </motion.div>
+
+              <motion.div variants={itemVariants}>
+                <Button
+                  type='button'
+                  variant='secondary'
+                  size='lg'
+                  className='w-full bg-slate-900 text-white hover:bg-slate-800'
+                  iconStart={
+                    <span className='inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-slate-900 font-bold'>
+                      G
+                    </span>
+                  }
+                >
+                  Đăng nhập với Google
                 </Button>
               </motion.div>
 
@@ -209,44 +229,6 @@ export default function Login() {
               </motion.p>
             </motion.form>
           </Form>
-        </motion.div>
-
-        {/* Right side - Tech Stack */}
-        <motion.div
-          initial={{ opacity: 0, x: 50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className='hidden flex-col justify-center items-center space-y-8 w-full max-w-md lg:flex'
-        >
-          <div className='space-y-4 text-center'>
-            <h2 className='text-3xl font-bold text-gray-900'>Công nghệ hiện đại</h2>
-            <p className='text-gray-600'>Được xây dựng với những công nghệ mới nhất</p>
-          </div>
-
-          <div className='grid grid-cols-2 gap-6 w-full'>
-            {techStack.map((tech, index) => (
-              <motion.div
-                key={tech.name}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
-                className='flex items-center p-4 space-x-3 bg-white rounded-xl shadow-md transition-shadow duration-300 hover:shadow-lg'
-              >
-                <span className='text-2xl'>{tech.icon}</span>
-                <span className='font-medium text-gray-800'>{tech.name}</span>
-              </motion.div>
-            ))}
-          </div>
-
-          <div className='mt-8 space-y-4 text-center'>
-            <h3 className='text-xl font-semibold text-gray-900'>Tính năng nổi bật</h3>
-            <ul className='space-y-2 text-gray-600'>
-              <li>✨ Giao diện hiện đại, thân thiện</li>
-              <li>🚀 Hiệu suất tối ưu</li>
-              <li>🔒 Bảo mật cao cấp</li>
-              <li>📱 Responsive trên mọi thiết bị</li>
-            </ul>
-          </div>
         </motion.div>
       </div>
     </div>

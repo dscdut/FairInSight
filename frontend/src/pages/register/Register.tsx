@@ -2,12 +2,11 @@ import { useState } from 'react'
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion } from 'framer-motion'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { Link } from 'react-router-dom'
 import { type z } from 'zod'
 
 import { IconEye, IconNonEye } from '@/assets/icons'
-import Logo from '@/components/logo/logo'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
@@ -20,12 +19,34 @@ import { RegisterSchema } from '@/core/zod'
 import { useAuthRedirect } from '@/hooks/auth/use-auth-redirect'
 import { useRegisterAuth } from '@/hooks/tanstack-query/auth/use-query-auth'
 
-const features = [
-  { title: 'Tài khoản cá nhân', description: 'Quản lý thông tin và cài đặt của bạn' },
-  { title: 'Bảo mật cao cấp', description: 'Bảo vệ dữ liệu của bạn với mã hóa tiên tiến' },
-  { title: 'Hỗ trợ 24/7', description: 'Đội ngũ hỗ trợ luôn sẵn sàng giúp đỡ bạn' },
-  { title: 'Cập nhật thường xuyên', description: 'Luôn được cập nhật những tính năng mới nhất' }
-]
+const getPasswordStrength = (password: string) => {
+  let score = 0
+
+  if (!password) return 0
+
+  // độ dài
+  if (password.length >= 6) score += 2
+  if (password.length >= 10) score += 2
+
+  // ký tự
+  if (/[A-Z]/.test(password)) score += 2
+  if (/[0-9]/.test(password)) score += 2
+  if (/[^A-Za-z0-9]/.test(password)) score += 2
+
+  return score // max = 10
+}
+
+const getPasswordStrengthLabel = (score: number, password: string) => {
+  if (!password) return 'Chưa nhập'
+  if (score < 5) return 'Yếu'
+  if (score < 8) return 'Trung bình'
+  return 'Mạnh'
+}
+
+const getPasswordStrengthColor = (score: number, password: string) => {
+  if (!password) return ''
+  return 'bg-red-500'
+}
 
 export default function Register() {
   const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false)
@@ -40,11 +61,23 @@ export default function Register() {
       password: '',
       confirmPassword: '',
       name: '',
-      phone: ''
+      phone: '',
+      role: 'client',
+      licenseNumber: '',
+      issuedDate: '',
+      issuedPlace: '',
+      certificate: null,
+      referralCode: ''
     }
   })
 
   const { mutate: mutationRegister, isPending } = useRegisterAuth()
+
+  const role = useWatch({ control: form.control, name: 'role' })
+  const password = useWatch({ control: form.control, name: 'password' })
+  const passwordStrength = getPasswordStrength(password ?? '')
+  const passwordStrengthLabel = getPasswordStrengthLabel(passwordStrength, password ?? '')
+  const passwordStrengthColor = getPasswordStrengthColor(passwordStrength, password ?? '')
 
   const handleRegister = () => {
     mutationRegister(form.getValues())
@@ -54,78 +87,26 @@ export default function Register() {
   const toggleConfirmPasswordVisibility = () => setIsConfirmPasswordVisible((prev) => !prev)
 
   return (
-    <div className='flex justify-center w-full min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50'>
-      <div className='flex justify-between items-center px-4 mx-auto my-8 w-full max-w-7xl'>
-        {/* Left side - Features */}
-        <motion.div
-          initial={{ opacity: 0, x: -50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-          className='hidden flex-col justify-center items-center space-y-8 w-full max-w-md lg:flex'
-        >
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className='space-y-4 text-center'
-          >
-            <h2 className='text-3xl font-bold text-gray-900'>Tại sao chọn chúng tôi?</h2>
-            <p className='text-gray-600'>Khám phá những lợi ích khi tham gia cùng chúng tôi</p>
-          </motion.div>
-
-          <motion.div
-            variants={containerVariants}
-            initial='hidden'
-            animate='visible'
-            className='grid grid-cols-1 gap-6 w-full'
-          >
-            {features.map((feature) => (
-              <motion.div
-                key={feature.title}
-                variants={itemVariants}
-                className='flex flex-col p-6 bg-white rounded-xl shadow-md transition-shadow duration-300 hover:shadow-lg'
-              >
-                <h3 className='mb-2 text-lg font-semibold text-gray-900'>{feature.title}</h3>
-                <p className='text-gray-600'>{feature.description}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className='mt-8 space-y-4 text-center'
-          >
-            <h3 className='text-xl font-semibold text-gray-900'>Cam kết của chúng tôi</h3>
-            <ul className='space-y-2 text-gray-600'>
-              <li>✨ Trải nghiệm người dùng tốt nhất</li>
-              <li>🚀 Hiệu suất vượt trội</li>
-              <li>🔒 Bảo mật tuyệt đối</li>
-              <li>💡 Đổi mới liên tục</li>
-            </ul>
-          </motion.div>
-        </motion.div>
-
-        {/* Right side - Register Form */}
+    <div
+      className='relative flex justify-center w-full min-h-screen bg-cover bg-center'
+      style={{ backgroundImage: "url('/bg.jpg')" }}
+    >
+      <div className='absolute inset-0 bg-slate-950/70' />
+      <div className='relative flex justify-center items-center px-4 mx-auto my-8 w-full max-w-7xl'>
         <motion.div
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className='flex flex-col p-8 space-y-6 w-full max-w-md bg-white rounded-2xl shadow-lg'
+          className='relative z-10 flex flex-col p-8 space-y-6 w-full max-w-md bg-white rounded-2xl shadow-lg'
         >
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <Logo />
-          </motion.div>
-
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className='space-y-2'
+            className='space-y-2 text-center w-[400px] h-16'
           >
-            <h1 className='text-4xl font-bold text-gray-900'>Tạo tài khoản</h1>
-            <p className='text-gray-600'>Tham gia cùng chúng tôi ngay hôm nay</p>
+            <h1 className='text-3xl font-bold text-red-900 w-[400px] h-[32px] '>Tạo tài khoản</h1>
+            <p className='text-gray-600'>Tham gia mạng lưới AI pháp lí thông minh nhất</p>
           </motion.div>
 
           <Form {...form}>
@@ -139,12 +120,31 @@ export default function Register() {
               <motion.div variants={itemVariants}>
                 <FormField
                   control={form.control}
-                  name='email'
+                  name='role'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input placeholder='Nhập email của bạn' type='email' {...field} />
+                        <div className='flex justify-center w-[400px] h-[44px] '>
+                          <div className='inline-flex items-center justify-between w-full  gap-1 rounded-full bg-slate-100 p-1 shadow-sm'>
+                            {[
+                              { value: 'client', label: 'Khách hàng' },
+                              { value: 'lawyer', label: 'Luật sư' }
+                            ].map((option) => (
+                              <button
+                                key={option.value}
+                                type='button'
+                                onClick={() => field.onChange(option.value)}
+                                className={`flex-1 rounded-full px-4 py-2.5 text-sm font-semibold transition duration-200  ${
+                                  field.value === option.value
+                                    ? 'bg-white text-red-900 shadow-sm'
+                                    : 'text-slate-500 hover:text-slate-900'
+                                }`}
+                              >
+                                {option.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -152,28 +152,31 @@ export default function Register() {
                 />
               </motion.div>
 
-              <motion.div variants={itemVariants} className='flex gap-6 w-full'>
+              <motion.div variants={itemVariants}>
                 <FormField
                   control={form.control}
                   name='name'
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Họ và tên</FormLabel>
-                      <FormControl>
+                    <FormItem className='w-[400px] h-[74.5px]'>
+                      <FormLabel className='font-bold'>Họ và tên</FormLabel>
+                      <FormControl className='w-[400px] h-[52px]'>
                         <Input placeholder='Nhập họ và tên' {...field} className='w-full' />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+              </motion.div>
+
+              <motion.div variants={itemVariants}>
                 <FormField
                   control={form.control}
-                  name='phone'
+                  name='email'
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Số điện thoại</FormLabel>
-                      <FormControl>
-                        <Input placeholder='Nhập số điện thoại' {...field} className='w-full' maxLength={10} />
+                    <FormItem className='w-[400px] h-[74.5px]'>
+                      <FormLabel className='font-bold'>Email</FormLabel>
+                      <FormControl className='w-[400px] h-[52px]'>
+                        <Input placeholder='Nhập email của bạn' type='email' {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -186,9 +189,9 @@ export default function Register() {
                   control={form.control}
                   name={PASSWORD_TYPE}
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Mật khẩu</FormLabel>
-                      <FormControl>
+                    <FormItem className='w-[400px] h-[74.5px]'>
+                      <FormLabel className='font-bold'>Mật khẩu</FormLabel>
+                      <FormControl className='w-[400px] h-[52px]'>
                         <Input
                           placeholder='Nhập mật khẩu của bạn'
                           className='w-full'
@@ -198,6 +201,20 @@ export default function Register() {
                           iconOnClick={togglePasswordVisibility}
                         />
                       </FormControl>
+                      <div className='mt-2'>
+                        <div className='flex gap-1'>
+                          {[0, 1, 2].map((i) => (
+                            <div
+                              key={i}
+                              className={`h-[2px] flex-1 rounded ${i < passwordStrength ? 'bg-red-700' : 'bg-slate-300'}`}
+                            />
+                          ))}
+                        </div>
+
+                        <div className='text-[10px] font-semibold text-red-700 text-right mt-1'>
+                          {passwordStrength < 2 ? 'YẾU' : passwordStrength < 3 ? 'TRUNG BÌNH' : 'MẠNH'}
+                        </div>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -209,9 +226,9 @@ export default function Register() {
                   control={form.control}
                   name='confirmPassword'
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Xác nhận mật khẩu</FormLabel>
-                      <FormControl>
+                    <FormItem className='mt-10 -[400px] h-[69.5px]'>
+                      <FormLabel className='font-bold'>Xác nhận mật khẩu</FormLabel>
+                      <FormControl className='w-[400px] h-[52px]'>
                         <Input
                           placeholder='Nhập lại mật khẩu của bạn'
                           className='w-full'
@@ -227,6 +244,26 @@ export default function Register() {
                 />
               </motion.div>
 
+              {role === 'lawyer' && (
+                <>
+                  <motion.div variants={itemVariants}>
+                    <FormField
+                      control={form.control}
+                      name='referralCode'
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Mã giới thiệu (không bắt buộc)</FormLabel>
+                          <FormControl>
+                            <Input placeholder='REF-12345' {...field} className='w-full' />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </motion.div>
+                </>
+              )}
+
               <motion.div variants={itemVariants} className='flex items-center space-x-2'>
                 <Checkbox id='terms' className='w-4 h-4' />
                 <Label htmlFor='terms' className='text-sm text-gray-600 cursor-pointer'>
@@ -240,10 +277,26 @@ export default function Register() {
                   loading={isPending}
                   variant='default'
                   size='lg'
-                  className='w-full'
+                  className='w-full bg-red-800 hover:bg-red-900 text-white'
                   type='submit'
                 >
-                  Tạo tài khoản
+                  Đăng ký
+                </Button>
+              </motion.div>
+
+              <motion.div variants={itemVariants}>
+                <Button
+                  type='button'
+                  variant='secondary'
+                  size='lg'
+                  className='w-full bg-slate-900 text-white hover:bg-slate-800'
+                  iconStart={
+                    <span className='inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-slate-900 font-bold'>
+                      G
+                    </span>
+                  }
+                >
+                  Đăng nhập với Google
                 </Button>
               </motion.div>
 

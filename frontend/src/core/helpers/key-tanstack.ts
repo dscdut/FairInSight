@@ -3,5 +3,6 @@ export const MUTATION_KEYS = {
   login: 'login',
   updateProfile: 'updateProfile',
   verifyEmail: 'verifyEmail',
-  resendCode: 'resendCode'
+  resendCode: 'resendCode',
+  resetPassword: 'resetPassword'
 }
