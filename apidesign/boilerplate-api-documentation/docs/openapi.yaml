@@ -2818,6 +2818,184 @@ paths:
                   message: { type: string }
               example:
                 message: Internal server error
+  /api/v1/documents/{documentID}:
+    get:
+      tags: [document]
+      summary: Get document by document ID
+      operationId: getDocumentByID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: documentID
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "12345"
+          description: Unique document identifier.
+      responses:
+        "200":
+          description: Document retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      title:
+                        type: string
+                        example: "Luật Đất đai 2024"
+                      documentCode:
+                        type: string
+                        example: "31/2024/QH15"
+                      isActive:
+                        type: boolean
+                        example: true
+                      issuedDate:
+                        type: string
+                        format: date
+                        example: "2024-01-18"
+                      effectiveDate:
+                        type: string
+                        format: date
+                        example: "2024-07-01"
+                      sourceUrl:
+                        type: string
+                        format: uri
+                        example: "https://thuvienphapluat.vn/van-ban/..."
+                      content:
+                        type: string
+                        example: "Nội dung văn bản..."
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: Unauthorized or insufficient permissions
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    put:
+      tags: [document]
+      summary: Update document by document ID
+      operationId: updateDocumentByID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: documentID
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "12345"
+          description: Unique document identifier.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                documentID:
+                  type: string
+                  example: "12345"
+                title:
+                  type: string
+                  maxLength: 255
+                  example: "Luật Đất đai 2024"
+                isActive:
+                  type: boolean
+                  example: true
+                issuedDate:
+                  type: string
+                  format: date
+                  example: "2024-01-18"
+                effectiveDate:
+                  type: string
+                  format: date
+                  example: "2024-07-01"
+                sourceUrl:
+                  type: string
+                  format: uri
+                  example: "https://thuvienphapluat.vn/van-ban/..."
+                content:
+                  type: string
+                  example: "Nội dung văn bản..."
+      responses:
+        "200":
+          description: Document updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      documentID:
+                        type: string
+                        example: "12345"
+                      title:
+                        type: string
+                        example: "Luật Đất đai 2024"
+                      documentCode:
+                        type: string
+                        example: "31/2024/QH15"
+                      isActive:
+                        type: boolean
+                        example: true
+                      issuedDate:
+                        type: string
+                        format: date
+                        example: "2024-01-18"
+                      effectiveDate:
+                        type: string
+                        format: date
+                        example: "2024-07-01"
+                      sourceUrl:
+                        type: string
+                        format: uri
+                        example: "https://thuvienphapluat.vn/van-ban/..."
+                      content:
+                        type: string
+                        example: "Nội dung văn bản..."
+        "400":
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                invalid_date:
+                  summary: Invalid date format
+                  value:
+                    message: Invalid request data
+                    details:
+                      - "issuedDate must be a valid date (YYYY-MM-DD)"
+                      - "effectiveDate must be a valid date (YYYY-MM-DD)"
+                      - "must be a valid URL"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: Unauthorized or insufficient permissions
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
 # ─────────────────────────────────────────────
 # COMPONENTS
