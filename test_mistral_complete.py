@@ -5,7 +5,7 @@ from app.services.cost_tracker import CostTracker
 
 async def test():
     # Make sure to replace this with your actual environment loading in prod
-    os.environ["LLM_OPENROUTER_API_KEY"] = "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"
+    os.environ["LLM_OPENROUTER_API_KEY"] = os.getenv("LLM_API_KEY", "sk-or-v1-...")
     
     client = OpenRouterClient()
     

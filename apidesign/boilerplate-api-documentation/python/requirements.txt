@@ -1,3 +1,0 @@
-swagger-ui-py==23.9.23
-flask
-gunicorn==20.1.0

@@ -31,3 +31,10 @@ unidecode==1.4.0
 
 # Optional crawler integration (kept non-blocking in app startup)
 crawlkit==0.3.0
+
+# ETL and ML Pipeline
+datasets==3.2.0
+sentence-transformers==3.3.1
+structlog==25.1.0
+tqdm==4.67.1
+torch  # Required for sentence-transformers

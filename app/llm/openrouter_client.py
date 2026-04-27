@@ -1,25 +1,28 @@
 import os
-import logging
+import structlog
 from openai import AsyncOpenAI
+from typing import List, Dict, Any, Optional
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 class OpenRouterClient:
     """
     Mistral via OpenRouter - Production Ready
-    
-    Two-tier strategy:
-    - ministral-8b for fast intent routing
-    - mistral-large-2411 for deep legal reasoning
+    Optimized for Python 3.13 and AsyncOpenAI.
     """
     
     def __init__(self):
-        api_key = os.getenv("LLM_OPENROUTER_API_KEY")
-        if not api_key:
+        # Prefer LLM_OPENROUTER_API_KEY from .env
+        self.api_key = os.getenv("LLM_OPENROUTER_API_KEY")
+        if not self.api_key:
+            # Fallback to general LLM_API_KEY
+            self.api_key = os.getenv("LLM_API_KEY")
+            
+        if not self.api_key:
             raise ValueError("LLM_OPENROUTER_API_KEY environment variable not set")
         
         self.client = AsyncOpenAI(
-            api_key=api_key,
+            api_key=self.api_key,
             base_url="https://openrouter.ai/api/v1",
             default_headers={
                 "HTTP-Referer": "https://fairinsight.ai",
@@ -27,66 +30,36 @@ class OpenRouterClient:
             }
         )
         
-        self.router_model = "mistralai/ministral-8b"
-        self.analyst_model = "mistralai/mistral-large-2411"
+        # Models from AUGMENT_CONTEXT.md
+        self.router_model = os.getenv("LLM_ROUTER_MODEL", "mistralai/ministral-8b")
+        self.analyst_model = os.getenv("LLM_ANALYST_MODEL", "mistralai/mistral-large-2411")
     
-    async def call_router(self, messages: list[dict], temperature: float = 0.3, max_tokens: int = 500) -> str:
-        """Call Mistral 8B for fast intent routing."""
+    async def call_router(self, messages: List[Dict[str, str]], temperature: float = 0.0) -> str:
+        """Call Mistral 8B for fast intent routing and classification."""
         try:
-            response = await self.client.messages.create(
+            response = await self.client.chat.completions.create(
                 model=self.router_model,
                 messages=messages,
                 temperature=temperature,
-                max_tokens=max_tokens,
+                max_tokens=500,
             )
-            logger.info(f"Router call: {response.usage.prompt_tokens} input, {response.usage.completion_tokens} output tokens")
-            return response.content[0].text
+            logger.info("llm_call_success", model=self.router_model, usage=response.usage.model_dump())
+            return response.choices[0].message.content
         except Exception as e:
-            logger.error(f"Router call failed: {e}")
+            logger.error("llm_call_failed", model=self.router_model, error=str(e))
             raise
     
-    async def call_analyst(self, messages: list[dict], temperature: float = 0.5, max_tokens: int = 2000) -> str:
+    async def call_analyst(self, messages: List[Dict[str, str]], temperature: float = 0.1) -> str:
         """Call Mistral-Large for deep legal reasoning."""
         try:
-            response = await self.client.messages.create(
+            response = await self.client.chat.completions.create(
                 model=self.analyst_model,
                 messages=messages,
                 temperature=temperature,
-                max_tokens=max_tokens,
+                max_tokens=2000,
             )
-            logger.info(f"Analyst call: {response.usage.prompt_tokens} input, {response.usage.completion_tokens} output tokens")
-            return response.content[0].text
+            logger.info("llm_call_success", model=self.analyst_model, usage=response.usage.model_dump())
+            return response.choices[0].message.content
         except Exception as e:
-            logger.error(f"Analyst call failed: {e}")
+            logger.error("llm_call_failed", model=self.analyst_model, error=str(e))
             raise
-    
-    async def stream_analyst(self, messages: list[dict], temperature: float = 0.5, max_tokens: int = 2000):
-        """Stream response from Mistral-Large for WebSockets."""
-        try:
-            stream = await self.client.messages.stream(
-                model=self.analyst_model,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
-            )
-            async with stream as s:
-                async for text in s.text_stream:
-                    yield text
-        except Exception as e:
-            logger.error(f"Stream failed: {e}")
-            raise
-    
-    def get_pricing(self):
-        """Get current pricing for budget tracking in USD."""
-        return {
-            "router": {
-                "model": self.router_model,
-                "input_cost_per_1k": 0.00007,
-                "output_cost_per_1k": 0.0002,
-            },
-            "analyst": {
-                "model": self.analyst_model,
-                "input_cost_per_1k": 0.0007,
-                "output_cost_per_1k": 0.006,
-            }
-        }
