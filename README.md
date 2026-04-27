@@ -1,126 +1,93 @@
-**bbBbb**b# FairInsight V2: Unified AI Architecture & System Design
-## *The Next-Generation Vietnamese Legal AI Platform*
+# FairInsight V2: The Definitive Technical Specification
+## *Enterprise-Grade Vietnamese Legal AI with Zero-Hallucination Enforcement*
 
 ---
 
-## 🏛 1. Executive Summary & Core Metrics
+## 1. Executive Summary
+**FairInsight V2** is a mission-critical legal intelligence platform. It solves the "trust gap" in AI legal services by replacing monolithic chatbots with a **7-Node Agentic LangGraph Orchestrator**. The system is built on three core pillars:
+1.  **Grounded Retrieval**: Article-level semantic chunking for Vietnamese Law.
+2.  **Mathematical Safety**: Real-time Hallucination Detection via Perplexity Scoring ($PP$).
+3.  **Human-in-the-Loop (HITL)**: Graceful escalation for high-stakes legal cases.
 
-**FairInsight V2** represents a paradigm shift in LegalTech, transitioning from traditional, hallucination-prone "black-box" chatbots to a **Zero-Hallucination, Multi-Agent Agentic RAG** system. Built on **LangGraph** and powered by the latest **Mistral Large** models via **OpenRouter**, the system enforces a strict legal compliance framework through rigorous state-machine orchestration and adversarial verification.
-
-This architecture is engineered to solve the two most critical pain points in AI-driven legal services: **Hallucinations** (fabricating legal articles) and **Adversarial Manipulation** (prompt injections or "lách luật" queries).
-
-### 📊 Target System Metrics
-
-| Metric | Target Specification | Enforcement Mechanism |
+### Core Performance Targets
+| Metric | Target | Enforcement Strategy |
 | :--- | :--- | :--- |
-| **Legal Accuracy** | 85% - 95% | Multi-agent reasoning & gold-standard RAG |
-| **Hallucination Rate** | < 1.0% | Reviewer Node Audit + Temporal SQL Filtering |
-| **Recall @ 3 (RAG)** | > 95% | Hybrid Search (Vector + BM25) + Cross-Encoder |
-| **Fast-Route Latency** | < 2.0 Seconds | Utility-tier models (`ministral-8b`) |
-| **Complex-Route Latency** | 4.0 - 7.0 Seconds | Reasoning-tier models + Self-Correction Loops |
+| **Legal Accuracy** | 85% - 95% | Multi-Agent Reasoning + PhoRanker Re-ranking |
+| **Hallucination Rate** | < 1.0% | Reviewer Node + Perplexity ($PP \le 15.0$) |
+| **Recall @ 3 (RAG)** | > 95% | Hybrid Search (Vector + BM25) |
+| **Latency (Router)** | < 1.5s | `ministral-8b` |
+| **Latency (Analyst)** | 4s - 7s | `mistral-large-2411` |
 
 ---
 
-## 📐 2. The 7-Node LangGraph State Machine
-### *Multi-Agent Orchestration & Self-Correction*
+## 2. Agentic Orchestration (LangGraph 7-Node State Machine)
+The system treats legal analysis as a structured, audited workflow rather than a single text completion.
 
-FairInsight V2 abandons linear processing for a state-aware, cyclic orchestration. We treat legal reasoning as a multi-step verification process where agents audit each other in real-time.
+### Node-by-Node Analysis:
+1.  **🛡️ Security_Gate**: Intercepts adversarial queries, "law-bending" prompts, and injections. Returns a hard refusal if risk exceeds 0.75.
+2.  **📝 Intake_Agent**: Standardizes Vietnamese syntax, identifies jurisdictions, and extracts key legal entities (e.g., specific law names, people, locations).
+3.  **🔬 Research_Agent**: Executes Hybrid Search on **pgvector**. Combines HNSW semantic matches with BM25 keyword matches.
+4.  **⚖️ Analyst_Agent**: Drafts the legal advice. **Strict Constraint**: Can *only* use provided legal context. Prohibited from using internal pre-training knowledge if it contradicts retrieved laws.
+5.  **🕵️ Reviewer_Agent**: Performs a two-tier audit:
+    -   **Qualitative**: Checks for citation accuracy and grounding.
+    -   **Mathematical**: Calculates **Perplexity ($PP$)**. If $PP > 15.0$, the draft is blocked as a "High-Perplexity Hallucination Risk."
+6.  **🚨 Escalation_Node**: Summarizes cases that fall below confidence thresholds for human review. Ensures no false advice is given for complex criminal/civil matters.
+7.  **✨ Cleanup_Node**: Finalizes the professional tone, adds appropriate legal disclaimers, and formats output in Markdown.
 
-```mermaid
-graph TD
-    %% Entry Point
-    Start([User Query]) --> SG[1. Security_Gate]
-    
-    %% Security & Sanitization
-    SG -- "Pass (Clean)" --> IA[2. Intake_Agent]
-    SG -- "Fail (Injection/Malicious)" --> CN[7. Cleanup_Node]
-    
-    %% Research & Context Building
-    IA --> RA[3. Research_Agent]
-    RA --> DR{Dynamic Routing}
-    
-    %% Intelligent Logic Branching
-    DR -- "Confidence > 0.85" --> AA[4. Analyst_Agent]
-    DR -- "Confidence < 0.85" --> AA
-    
-    %% Generation & Audit Loop
-    AA --> RVA[5. Reviewer_Agent]
-    
-    %% Self-Correction Logic
-    RVA -- "Hallucination/Gap Detected" --> AA
-    RVA -- "Low-Confidence / High Complexity" --> EN[6. Escalation_Node]
-    RVA -- "Verified & Grounded" --> CN
-    
-    %% Exit Paths
-    EN --> HITL[Human-in-the-Loop Lawyer]
-    HITL --> CN
-    CN --> End([Professional Legal Response])
-    
-    %% Styling
-    style SG fill:#f96,stroke:#333,stroke-width:2px
-    style RVA fill:#bbf,stroke:#333,stroke-width:2px
-    style EN fill:#f66,stroke:#333,stroke-width:2px
-    style DR fill:#dfd,stroke:#333,stroke-width:2px
+---
+
+## 3. The Zero-Hallucination Framework
+### A. Mathematical Verification (Generation Perplexity)
+We derive a confidence score directly from the LLM's token-level probability distribution:
+$$PP = \exp\left(-\frac{1}{N}\sum_{i=1}^{N} \log P(w_i|w_{<i})\right)$$
+- **Logic**: Low probability tokens (guessing) cause $PP$ to spike.
+- **Action**: Threshold $PP > 15.0$ triggers an automatic retry loop.
+
+### B. Article-Level Semantic Chunking (Băm dữ liệu theo "Điều")
+Unlike standard RAG, we do not split text by character count. Our ETL pipeline respects legal boundaries:
+- **Article 1** = **Chunk 1**.
+- **Article 2** = **Chunk 2**.
+- This preserves the integrity of legal clauses and prevents context fragmentation.
+
+---
+
+## 4. Retrieval Infrastructure (Advanced RAG)
+1.  **Hybrid Retrieval**:
+    -   **Vector Search**: Uses `multilingual-e5-large` for semantic intent.
+    -   **BM25**: For exact matches of Article numbers (e.g., "Điều 20").
+2.  **PhoRanker Re-ranking**:
+    -   A Vietnamese-optimized Cross-Encoder that re-scores the top 15 results to find the **Top 3 "Gold" Chunks**.
+3.  **Temporal Consistency**:
+    -   Metadata filters: `WHERE law_status = 'Còn hiệu lực' AND effective_date <= CURRENT_DATE`.
+
+---
+
+## 5. LLM Tiering & Deployment
+We utilize **OpenRouter** to decouple logic from infrastructure:
+- **Tier 1 (Reasoning)**: `mistral-large-2411` (Legal Drafting).
+- **Tier 2 (Efficiency)**: `mistral-small` (Review & Audit).
+- **Tier 3 (Utility)**: `ministral-8b` (Routing & Security).
+
+---
+
+## 6. API Surface & Schema
+### `POST /api/v1/chat/invoke`
+**Request:**
+```json
+{
+  "query": "Thủ tục đăng ký doanh nghiệp tại Việt Nam?",
+  "session_id": "uuid-123"
+}
 ```
-
-### Key Workflow Components:
-*   **1. Security_Gate**: A pre-computation layer using specialized NLP middleware. It intercepts prompt injections and adversarial "law-bending" patterns before they reach the reasoning engine.
-*   **2. Intake_Agent**: Standardizes the query, extracts legal entities, jurisdictions, and specific "Điều" (Articles) mentioned to set the context for retrieval.
-*   **3. Research_Agent**: The retrieval powerhouse. It executes hybrid searches across our indexed Vietnamese law database and calculates a **Confidence Score**.
-*   **4. Analyst_Agent**: Drafts the initial legal response. It is constrained to use *only* the context provided by the Research Agent, prohibiting the use of contradictory internal model knowledge.
-*   **5. Reviewer_Agent (Self-Correction Loop)**: Performs an adversarial audit. It compares every sentence against the "Gold Standard" chunks. If a citation is missing or an Article is misquoted, it triggers a rewrite loop (up to 3 iterations).
-*   **6. Escalation_Node**: If the system cannot find a high-confidence answer or detects high-stakes complexity, it elegantly summarizes the case for a human lawyer instead of risking error.
-*   **7. Cleanup_Node**: Finalizes tone, ensures professional formatting, and prepares the output for the end-user.
-
----
-
-## 🔍 3. Advanced RAG & Data Infrastructure
-### *Data Integrity & Precision Retrieval*
-
-Our RAG (Retrieval-Augmented Generation) pipeline is optimized specifically for the nuances of Vietnamese legal syntax.
-
-#### A. ETL Pipeline: Logical Article Chunking
-Traditional RAG splits text at arbitrary character limits. FairInsight V2 uses **Article-Level Semantic Chunking (Băm dữ liệu theo "Điều")**. Every chunk corresponds to exactly one atomic legal article, preserving context and structural integrity.
-
-#### B. High-Performance Retrieval (pgvector + HNSW)
-We utilize **pgvector** with **HNSW (Hierarchical Navigable Small World)** indexing for sub-millisecond similarity searches.
-*   **Semantic Search**: Captures legal intent (e.g., "nghỉ thai sản" matches "chế độ thai sản").
-*   **Keyword Search (BM25)**: Ensures exact matches for specific article numbers or legal jargon.
-
-#### C. Strict Metadata Filtering (Anti-Time-Travel)
-To prevent citing repealed or future laws, our system implements strict SQL metadata pre-filtering at the physical database layer:
-```sql
-WHERE law_status = 'Còn hiệu lực' 
-AND effective_date <= CURRENT_DATE
+**Response:**
+```json
+{
+  "response": "...",
+  "perplexity": 4.52,
+  "accuracy_flag": "HIGH_CONFIDENCE",
+  "citations": [
+    { "article": "Điều 10", "law": "Luật Doanh nghiệp 2020", "score": 0.98 }
+  ],
+  "escalated": false
+}
 ```
-
-#### D. Cross-Encoder Re-ranking (PhoRanker)
-We retrieve the top 15 candidates via Hybrid Search, then run them through **PhoRanker** (a Vietnamese-optimized Cross-Encoder). This distills the noise down to the **Top 3 "Gold Standard" Chunks**, significantly improving the LLM's signal-to-noise ratio.
-
----
-
-## ⚡ 4. Tiered LLM Routing Strategy
-### *Cost & Latency Optimization via OpenRouter*
-
-We balance enterprise-grade reasoning with consumer-grade speed by decoupling our logic from specific providers.
-
-| Task Tier | Responsible Model | Rationale |
-| :--- | :--- | :--- |
-| **Utility & Routing** | `mistralai/ministral-8b` | Extremely fast and low-cost. Used for Security Gating, Intake, and Final Formatting. |
-| **Reviewer & Audit** | `mistralai/mistral-small` | Highly efficient at spotting contradictions and logical inconsistencies. |
-| **Legal Reasoning** | `mistralai/mistral-large-2411` | Our "Heavy Lifter". Used for complex legal drafting and final synthesis. Comparable to GPT-4o in reasoning. |
-
----
-
-## 🛡️ 5. Security & Human-in-the-Loop (HITL)
-
-### NLP Middleware & Adversarial Hardening
-FairInsight V2 is hardened against "incremental pressure" and "loophole hunting" tactics. The **Security Gate** identifies and refuses requests that seek to evade the law or bypass system instructions.
-
-### Graceful Escalation
-Instead of a generic "I don't know," the system provides a **Structured Handover**. It acknowledges the complexity, summarizes the identified facts, and provides a direct path to human legal consultation. This ensures the user is never left without a resolution path while maintaining 100% legal safety.
-
----
-
-## 📈 Impact & Future Outlook
-The FairInsight V2 architecture achieves a **94% citation accuracy rate** in internal benchmarks. By combining agentic verification, Vietnamese-specific RAG, and strict security gating, we provide a platform that is not just a chatbot, but a **Trusted Legal Intelligence System** ready for enterprise deployment.
