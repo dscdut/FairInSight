@@ -1,0 +1,98 @@
+:root {
+  /* =========================================
+    1. PRIMITIVE PALETTE
+    ========================================= */
+
+  --white: #FFFFFF;
+  --black: #000000;
+
+  /* Primary (Red) */
+  --primary-400: #C64A50;
+  --primary-500: #B81D24;
+  --primary-600: #93171D;
+
+  /* Greys */
+  --grey-100: #F3F4F6;
+  --grey-200: #E5E7EA;
+  --grey-300: #D2D5DB;
+  --grey-400: #9EA2AE;
+  --grey-500: #6D717F;
+  --grey-600: #4D5461;
+  --grey-700: #394050;
+  --grey-800: #1F2937; 
+  --grey-900: #111827; 
+
+  /* Status Colors */
+  --green-500: #43B75D;
+  --green-600: #3DA755;
+  --yellow-400: #FFBB33;
+  --yellow-500: #FFAA00;
+  --error-400: #EF4444;
+  --error-500: #DC2626;
+
+  /* =========================================
+    2. SEMANTIC TOKENS (Light Mode)
+    ========================================= */
+  --background-primary: var(--white);
+  --background-secondary: var(--grey-100);
+  --background-tertiary: var(--grey-200);
+
+  --text-primary: var(--grey-900);
+  --text-secondary: var(--grey-600);
+  --text-tertiary: var(--grey-400);
+
+  --border-primary: var(--grey-200);
+  --border-secondary: var(--grey-300);
+  --border-focus: var(--grey-500);
+
+  /* Status colors */
+  --error-primary: var(--error-400);
+  --error-secondary: var(--error-500);
+  --success-primary: var(--green-500);
+  --success-secondary: var(--green-600);
+  --warning-primary: var(--yellow-400);
+  --warning-secondary: var(--yellow-500);
+
+  /* Shadcn Core Variables */
+  --background: var(--background-primary);
+  --foreground: var(--text-primary);
+  --border: var(--border-primary);
+  --input: var(--border-secondary);
+  --ring: var(--border-focus);
+  --primary: var(--primary-500);
+  --primary-foreground: var(--white);
+}
+
+/* =========================================
+  3. SEMANTIC TOKENS (Dark Mode)
+  ========================================= */
+[data-theme='dark'] {
+  --background-primary: var(--grey-900);
+  --background-secondary: var(--grey-800);
+  --background-tertiary: var(--grey-700);
+
+  --text-primary: var(--grey-100);
+  --text-secondary: var(--grey-200);
+  --text-tertiary: var(--grey-300);
+
+  --border-primary: var(--grey-700);
+  --border-secondary: var(--grey-600);
+  --border-focus: var(--grey-400);
+
+  /* Status colors */
+  --error-primary: var(--error-500);
+  --error-secondary: var(--error-400);
+  --success-primary: var(--green-600);
+  --success-secondary: var(--green-500);
+  --warning-primary: var(--yellow-500);
+  --warning-secondary: var(--yellow-400);
+
+  /* Shadcn Core Variables */
+  --background: var(--background-primary);
+  --foreground: var(--text-primary);
+  --border: var(--border-primary);
+  --input: var(--border-secondary);
+  --ring: var(--border-focus);
+  --primary: var(--primary-400);
+  --primary-foreground: var(--grey-900);
+}
