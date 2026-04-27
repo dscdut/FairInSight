@@ -2635,6 +2635,190 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+
+# Document
+  /api/v1/documents:
+    post:
+      tags: [document]
+      summary: Create a new legal document
+      operationId: createDocument
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, documentCode, issuedDate, effectiveDate, sourceUrl, content]
+              properties:
+                title:
+                  type: string
+                  maxLength: 255
+                  example: "Luật Đất đai 2024"
+                  description: Name of the legal document.
+                documentCode:
+                  type: string
+                  example: "31/2024/QH15"
+                  description: Unique document reference code. Must not already exist in the system.
+                isActive:
+                  type: boolean
+                  default: true
+                  example: true
+                  description: Whether the document is currently in effect.
+                issuedDate:
+                  type: string
+                  format: date
+                  example: "2024-01-18"
+                  description: Date the document was issued (YYYY-MM-DD).
+                effectiveDate:
+                  type: string
+                  format: date
+                  example: "2024-07-01"
+                  description: Date the document takes effect (YYYY-MM-DD).
+                sourceUrl:
+                  type: string
+                  format: uri
+                  example: "https://thuvienphapluat.vn/van-ban/..."
+                  description: URL to the original source of the document. Required, must not be empty.
+                content:
+                  type: string
+                  example: "..."
+                  description: Full content of the document. Supports Markdown format.
+            examples:
+              create_document:
+                summary: Create a new legal document
+                value:
+                  title: "Luật Đất đai 2024"
+                  documentCode: "31/2024/QH15"
+                  isActive: true
+                  issuedDate: "2024-01-18"
+                  effectiveDate: "2024-07-01"
+                  sourceUrl: "https://thuvienphapluat.vn/van-ban/..."
+                  content: "..."
+      responses:
+        "201":
+          description: Document created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      title:
+                        type: string
+                        example: "Luật Đất đai 2024"
+                      documentCode:
+                        type: string
+                        example: "31/2024/QH15"
+                      isActive:
+                        type: boolean
+                        example: true
+                      issuedDate:
+                        type: string
+                        format: date
+                        example: "2024-01-18"
+                      effectiveDate:
+                        type: string
+                        format: date
+                        example: "2024-07-01"
+                      sourceUrl:
+                        type: string
+                        format: uri
+                        example: "https://thuvienphapluat.vn/van-ban/..."
+                      content:
+                        type: string
+                        example: "Dán nội dung văn bản tại đây..."
+              example:
+                data:
+                  title: "Luật Đất đai 2024"
+                  documentCode: "31/2024/QH15"
+                  isActive: true
+                  issuedDate: "2024-01-18"
+                  effectiveDate: "2024-07-01"
+                  sourceUrl: "https://thuvienphapluat.vn/van-ban/..."
+                  content: "Dán nội dung văn bản tại đây..."
+        "400":
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  details:
+                    type: array
+                    items:
+                      type: string
+              examples:
+                missing_fields:
+                  summary: Required fields are missing
+                  value:
+                    message: Invalid request data
+                    details:
+                      - "title is required"
+                      - "documentCode is required"
+                      - "issuedDate is required"
+                      - "effectiveDate is required"
+                      - "sourceUrl is required"
+                      - "content is required"
+                invalid_url:
+                  summary: Source URL is empty or invalid
+                  value:
+                    message: Invalid request data
+                    details:
+                      - "sourceUrl must not be empty"
+                      - "sourceUrl must be a valid URL"
+                invalid_date:
+                  summary: Invalid date format
+                  value:
+                    message: Invalid request data
+                    details:
+                      - "issuedDate must be a valid date (YYYY-MM-DD)"
+                      - "effectiveDate must be a valid date (YYYY-MM-DD)"
+        "409":
+          description: Conflict 
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+              example:
+                message: Document code already exists
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+              example:
+                message: Unauthorized or insufficient permissions
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+              example:
+                message: You do not have permission to access this resource
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+              example:
+                message: Internal server error
+
 # ─────────────────────────────────────────────
 # COMPONENTS
 # ─────────────────────────────────────────────
