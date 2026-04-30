@@ -71,7 +71,7 @@ export default function ForgotPassword() {
                     name='email'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email</FormLabel>
+                        <FormLabel>EMAIL</FormLabel>
                         <FormControl>
                           <Input
                             placeholder='Nhập địa chỉ email'

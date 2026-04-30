@@ -6,24 +6,15 @@ import { useForm } from 'react-hook-form'
 import { Link, useLocation } from 'react-router-dom'
 import { type z } from 'zod'
 
+import PasswordStrengthBar from '@/components/PasswordStrengthBar/PasswordStrengthBar'
 import { Button } from '@/components/ui/button'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { ROUTE } from '@/core/constants/path'
 import { ResetPasswordSchema } from '@/core/zod/reset-password.zod'
 import { useResetPasswordAuth } from '@/hooks/tanstack-query/auth/use-query-auth'
-import { itemVariants } from '@/styles/variant/style-variant'
 
 type ResetPasswordForm = z.infer<typeof ResetPasswordSchema>
-
-// 🔥 Password strength
-const getPasswordStrength = (password: string) => {
-  let score = 0
-  if (password.length >= 6) score++
-  if (/[A-Z]/.test(password)) score++
-  if (/[0-9]/.test(password)) score++
-  return score
-}
 
 export default function ResetPassword() {
   const location = useLocation()
@@ -53,10 +44,6 @@ export default function ResetPassword() {
     [resetPassword]
   )
 
-  // 🔥 watch password
-  const password = form.watch('password')
-  const passwordStrength = getPasswordStrength(password || '')
-
   return (
     <div
       className='relative flex justify-center w-full min-h-screen bg-cover bg-center'
@@ -71,7 +58,6 @@ export default function ResetPassword() {
           transition={{ duration: 0.6 }}
           className='w-full max-w-md rounded-2xl bg-white p-8 shadow-xl'
         >
-          {/* 🔥 TITLE */}
           <div className='space-y-3 text-left'>
             <h1 className='text-3xl font-bold text-red-900'>Tạo mật khẩu mới</h1>
             <p className='text-sm text-slate-500'>
@@ -88,7 +74,7 @@ export default function ResetPassword() {
                 name='email'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel className='font-bold'>EMAIL</FormLabel>
                     <FormControl>
                       <Input type='email' {...field} disabled className='bg-slate-100' />
                     </FormControl>
@@ -102,7 +88,7 @@ export default function ResetPassword() {
                 name='password'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className='text-sm font-semibold'>MẬT KHẨU MỚI</FormLabel>
+                    <FormLabel className='text-sm font-semibold font-bold'>MẬT KHẨU MỚI</FormLabel>
 
                     <FormControl>
                       <Input
@@ -113,21 +99,7 @@ export default function ResetPassword() {
                       />
                     </FormControl>
 
-                    {/* 🔥 strength bar */}
-                    <div className='mt-2'>
-                      <div className='flex gap-1'>
-                        {[0, 1, 2].map((i) => (
-                          <div
-                            key={i}
-                            className={`h-[2px] flex-1 rounded ${i < passwordStrength ? 'bg-red-700' : 'bg-slate-300'}`}
-                          />
-                        ))}
-                      </div>
-
-                      <div className='text-[10px] font-semibold text-red-700 text-right mt-1'>
-                        {passwordStrength < 2 ? 'YẾU' : passwordStrength < 3 ? 'TRUNG BÌNH' : 'MẠNH'}
-                      </div>
-                    </div>
+                    <PasswordStrengthBar password={form.watch('password') || ''} />
 
                     <FormMessage />
                   </FormItem>
