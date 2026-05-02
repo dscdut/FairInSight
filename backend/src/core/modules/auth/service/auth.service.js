@@ -12,24 +12,36 @@ class Service {
         this.userRepository = UserRepository;
         this.jwtService = JwtService;
         this.bcryptService = BcryptService;
-        this.userDataService = UserDataService;
     }
 
     async login(loginDto) {
         const user = await this.userRepository.findByEmail(loginDto.email);
 
-        const foundUser = joinUserRoles(user);
-        if (user && this.bcryptService.compare(loginDto.password, foundUser.password)) {
-            return {
-                user: foundUser,
-                accessToken: this.jwtService.sign(JwtPayload(foundUser)),
-            };
+        if (!user) {
+            throw new UnAuthorizedException('Email or password is incorrect');
         }
 
-        throw new UnAuthorizedException('Email or password is incorrect');
-    }
+        const isMatch = await this.bcryptService.compare(
+            loginDto.password,
+            user.password_hash
+        );
 
-    #getUserInfo = user => pick(user, ['_id', 'email', 'username', 'roles']);
+        if (!isMatch) {
+            throw new UnAuthorizedException('Email or password is incorrect');
+        }
+
+        const userData = {
+            id: user.id,
+            email: user.email,
+            fullName: user.full_name,
+            role: user.roles?.name, // 👈 lấy role đúng cách
+        };
+
+        return {
+            user: userData,
+            accessToken: this.jwtService.sign(JwtPayload(userData)),
+        };
+    }
 }
 
 export const AuthService = new Service();
