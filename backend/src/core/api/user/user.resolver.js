@@ -34,7 +34,7 @@ export const UserResolver = Module.builder()
             method: 'get',
             params: [RecordId],
             interceptors: [RecordIdInterceptor],
-            guards: [hasAdminOrSuperAdminRole],
+            guards: [hasAdminRole],
             controller: UserController.findById,
             preAuthorization: true,
         },

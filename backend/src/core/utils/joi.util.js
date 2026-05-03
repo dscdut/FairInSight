@@ -52,4 +52,8 @@ export class JoiUtils {
             this.objectId()
         );
     }
+
+    static uuid() {
+        return Joi.string().uuid().required();
+    }
 }

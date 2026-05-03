@@ -5,13 +5,15 @@ export class DefaultValidatorInterceptor extends AbstractInputValidatorIntercept
       * @type {import('joi').ObjectSchema<TSchema>} schema
       */
     schema;
+    source;
 
     /**
       * @param {import('joi').ObjectSchema<TSchema>} schema
       */
-    constructor(schema) {
+    constructor(schema, source = 'body') {
         super();
         this.schema = schema;
+        this.source = source;
     }
 
     /**
@@ -24,15 +26,14 @@ export class DefaultValidatorInterceptor extends AbstractInputValidatorIntercept
     }
 
     getValueToValidate(req) {
-        switch (req.method) {
-            case 'POST':
-            case 'PUT':
-            case 'PATCH':
-            case 'DELETE':
-                return req.body;
-            case 'GET':
-            default:
+        switch (this.source) {
+            case 'params':
+                return req.params;
+            case 'query':
                 return req.query;
+            case 'body':
+            default:
+                return req.body;
         }
     }
 }

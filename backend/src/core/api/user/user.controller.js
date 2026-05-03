@@ -18,6 +18,7 @@ class Controller {
     };
 
     findById = async req => {
+        console.log("PARAMS:", req.params);
         const data = await this.service.findById(req.params.id);
         return ValidHttpResponse.toOkResponse(data);
     };

@@ -9,8 +9,6 @@ export class UnionRoleGuard {
 
     canActive(req) {
         const user = getUserContext(req);
-        return user.roles
-            .some(userRole => this.#unionRoles
-                .some(roleMayRequired => roleMayRequired === userRole));
+        return this.#unionRoles.includes(user.payload.role);
     }
 }
