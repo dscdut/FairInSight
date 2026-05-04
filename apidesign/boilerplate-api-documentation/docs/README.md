@@ -1,1 +1,0 @@
-### Write your swagger documentation here in the `openapi.yaml` file ⬇️

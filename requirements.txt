@@ -1,0 +1,40 @@
+# Core API runtime
+fastapi==0.116.1
+uvicorn[standard]==0.35.0
+httpx==0.28.1
+orjson==3.11.0
+
+# Validation and configuration
+pydantic[email]==2.11.7
+pydantic-settings==2.10.1
+python-dotenv==1.1.1
+
+# Auth and security
+bcrypt==4.3.0
+PyJWT==2.10.1
+
+# Async data and state layer (FairInsight target stack)
+asyncpg==0.30.0
+redis[hiredis]==6.2.0
+
+# Multi-agent orchestration + OpenRouter client
+langgraph==0.6.5
+openai==1.99.9
+tenacity==9.1.2
+
+# Upload and document processing
+python-multipart==0.0.20
+aiofiles==24.1.0
+pypdf==5.9.0
+python-docx==1.2.0
+unidecode==1.4.0
+
+# Optional crawler integration (kept non-blocking in app startup)
+crawlkit==0.3.0
+
+# ETL and ML Pipeline
+datasets==3.2.0
+sentence-transformers==3.3.1
+structlog==25.1.0
+tqdm==4.67.1
+torch  # Required for sentence-transformers

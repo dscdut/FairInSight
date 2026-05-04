@@ -1,0 +1,90 @@
+# ══════════════════════════════════════════════════════════════
+# FAIRINSIGHT DOCKER STACK (POSTGRES + REDIS)
+# ══════════════════════════════════════════════════════════════
+version: '3.8'
+
+services:
+  # Main Application (FastAPI + LangGraph)
+  api:
+    build: .
+    container_name: fairinsight-api
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      - APP_ENV=development
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=fairinsight
+      - DB_USER=postgres
+      - DB_PASSWORD=${DB_PASSWORD:-fairinsight_dev}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./app:/app/app
+      - model-cache:/root/.cache
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Database: PostgreSQL 16 + pgvector (HNSW optimized)
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: fairinsight-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: fairinsight
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-fairinsight_dev}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d fairinsight"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    command: >
+      postgres
+        -c shared_buffers=256MB
+        -c effective_cache_size=768MB
+        -c work_mem=16MB
+        -c maintenance_work_mem=128MB
+        -c max_connections=100
+        -c random_page_cost=1.1
+
+  # Redis: Session Store & Semantic Cache
+  redis:
+    image: redis:7-alpine
+    container_name: fairinsight-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    command: >
+      redis-server
+        --maxmemory 256mb
+        --maxmemory-policy allkeys-lru
+        --appendonly yes
+
+volumes:
+  pgdata:
+  redisdata:
+  model-cache:

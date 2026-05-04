@@ -1,0 +1,1 @@
+"""FairInsight API package."""
