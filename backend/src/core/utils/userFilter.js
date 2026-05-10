@@ -1,11 +1,10 @@
-export const joinUserRoles = users => {
-    const { role, ...rest } = users[0];
-    const user = { ...rest, roles: [role] };
-
-    for (let i = 1; i < users.length; i += 1) {
-        user.roles.push(users[i].role);
-    }
-    return user;
+export const joinUserRoles = user => {
+    return {
+        id: user.id,
+        email: user.email,
+        fullName: user.full_name,
+        roles: user.roles?.name || null,
+    };
 };
 
 export const joinUsersRoles = users => {

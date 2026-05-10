@@ -9,14 +9,14 @@ export const Rules = {
 export const Role = {
     ADMIN: {
         name: 'ADMIN',
-        permissions: ['TEST_AUTHORIZATION']
+        //permissions: ['TEST_AUTHORIZATION']
     },
-    SUPER_ADMIN: {
-        name: 'SUPER_ADMIN',
-        permissions: ['TEST_AUTHORIZATION']
+    LAWYER: {
+        name: 'LAWYER',
+        //permissions: ['TEST_AUTHORIZATION']
     },
-    MEMBER: {
+    USER: {
         name: 'USER',
-        permissions: ['TEST_AUTHORIZATION']
+        //permissions: ['TEST_AUTHORIZATION']
     }
 };

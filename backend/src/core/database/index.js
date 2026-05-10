@@ -1,19 +1,31 @@
-import knex from 'knex';
-import config from '../config/knexfile.config';
+import 'dotenv/config';
+import { PrismaClient } from '@prisma/client';
+import { Pool } from 'pg';
+import { PrismaPg } from '@prisma/adapter-pg';
 import { logger } from '../utils';
-import { NODE_ENV } from '../env';
 
-const connection = knex(config[NODE_ENV]);
+// Tạo connection pool
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
 
-export default connection;
+// Adapter cho Prisma 7
+const adapter = new PrismaPg(pool);
 
-export const getTransaction = () => connection.transaction();
+// Prisma client
+const prisma = new PrismaClient({
+  adapter,
+});
 
+export default prisma;
+
+// Connect DB
 export const connectDatabase = async () => {
-    try {
-        await connection.raw('SELECT 1');
-        logger.info('Database connection successful');
-    } catch (error) {
-        logger.error('Database connection error, please check your connection');
-    }
+  try {
+    await prisma.$connect();
+    logger.info('Prisma connected successfully');
+  } catch (error) {
+    logger.error('Prisma connection error');
+    console.error(error);
+  }
 };

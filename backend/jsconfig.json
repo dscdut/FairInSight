@@ -4,11 +4,12 @@
         "module": "commonjs",
         "target": "es6",
         "baseUrl": "./src",
+        "types": ["node"]
     },
     "exclude": [
         "node_modules"
     ],
     "include": [
         "src/**/*"
-    ]
+, "prisma.config.ts"    ]
 }
