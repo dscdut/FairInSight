@@ -2638,6 +2638,198 @@ paths:
 
 # Document
   /api/v1/documents:
+    get:
+      tags: [document]
+      summary: Get list of legal documents
+      operationId: getDocuments
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: keyword
+          in: query
+          required: false
+          schema:
+            type: string
+            example: "Luật Đất đai"
+          description: Search by document title or document code.
+        - name: isActive
+          in: query
+          required: false
+          schema:
+            type: boolean
+            example: true
+          description: Filter by active status. Omit to return all.
+        - name: issuedDateFrom
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2024-01-01"
+          description: Filter documents issued from this date (inclusive, YYYY-MM-DD).
+        - name: issuedDateTo
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2024-12-31"
+          description: Filter documents issued up to this date (inclusive, YYYY-MM-DD).
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            example: 1
+          description: Page number (1-based).
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            example: 20
+          description: Number of items per page.
+      responses:
+        "200":
+          description: Documents retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        documentID:
+                          type: string
+                          example: "12345"
+                        title:
+                          type: string
+                          example: "Luật Đất đai 2024"
+                        documentCode:
+                          type: string
+                          example: "31/2024/QH15"
+                        isActive:
+                          type: boolean
+                          example: true
+                        issuedDate:
+                          type: string
+                          format: date
+                          example: "2024-01-18"
+                        effectiveDate:
+                          type: string
+                          format: date
+                          example: "2024-07-01"
+                        sourceUrl:
+                          type: string
+                          format: uri
+                          example: "https://thuvienphapluat.vn/van-ban/..."
+                        version:
+                          type: string
+                          example: "v1"
+                  meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                        example: 42
+                        description: Total number of matching documents.
+                      page:
+                        type: integer
+                        example: 1
+                      limit:
+                        type: integer
+                        example: 20
+                      totalPages:
+                        type: integer
+                        example: 3
+              example:
+                data:
+                  - documentID: "12345"
+                    title: "Luật Đất đai 2024"
+                    documentCode: "31/2024/QH15"
+                    isActive: true
+                    issuedDate: "2024-01-18"
+                    effectiveDate: "2024-07-01"
+                    sourceUrl: "https://thuvienphapluat.vn/van-ban/..."
+                    version: "v1"
+                  - documentID: "12346"
+                    title: "Hợp đồng lao động mẫu"
+                    documentCode: "HL-2023-01"
+                    isActive: true
+                    issuedDate: "2023-10-15"
+                    effectiveDate: "2023-10-15"
+                    sourceUrl: "https://thuvienphapluat.vn/van-ban/..."
+                    version: "v3"
+                pagination:
+                    total: 42
+                    page: 1
+                    limit: 20
+                    totalPages: 3
+        "400":
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  details:
+                    type: array
+                    items:
+                      type: string
+              examples:
+                invalid_date:
+                  summary: Invalid date format
+                  value:
+                    message: Invalid request data
+                    details:
+                      - "issuedDateFrom must be a valid date (YYYY-MM-DD)"
+                      - "issuedDateTo must be a valid date (YYYY-MM-DD)"
+                invalid_page:
+                  summary: Invalid pagination values
+                  value:
+                    message: Invalid request data
+                    details:
+                      - "page must be a positive integer"
+                      - "limit must be between 1 and 100"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+              example:
+                message: Unauthorized or insufficient permissions
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+              example:
+                message: You do not have permission to access this resource
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+              example:
+                message: Internal server error
     post:
       tags: [document]
       summary: Create a new legal document
