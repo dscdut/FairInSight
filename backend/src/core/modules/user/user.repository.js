@@ -8,7 +8,7 @@ class Repository {
         deleted_at: null,
       },
       include: {
-        roles: true, // lấy role
+        roles: true,
       },
     });
   }

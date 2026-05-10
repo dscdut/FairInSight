@@ -34,7 +34,7 @@ class Service {
             id: user.id,
             email: user.email,
             fullName: user.full_name,
-            role: user.roles?.name, // 👈 lấy role đúng cách
+            role: user.roles?.name,
         };
 
         return {
