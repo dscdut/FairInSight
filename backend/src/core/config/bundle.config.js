@@ -1,16 +1,20 @@
 // @ts-check
 import * as express from 'express';
 import methodOverride from 'method-override';
+import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import { connectDatabase } from 'core/database';
 import { InvalidResolver, InvalidFilter } from '../common/exceptions/system';
 import { logger } from '../../packages/logger';
+
 import { NODE_ENV } from '../env';
 
 /**
  * @typedef Filter
  * @property {(req, res, next) => {}} filter
  */
+
+
 
 export class AppBundle {
     static logger = logger;
@@ -77,6 +81,7 @@ export class AppBundle {
      */
     init() {
         AppBundle.logger.info(`Application is in mode ${NODE_ENV}`);
+        this.app.use(cors());
         /**
          * Setup basic express
          */
