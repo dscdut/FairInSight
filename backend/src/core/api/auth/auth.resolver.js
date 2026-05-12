@@ -10,7 +10,7 @@ export const AuthResolver = Module.builder()
     })
     .register([
         {
-            route: '/',
+            route: '/login',
             method: 'post',
             interceptors: [LoginInterceptor],
             body: 'LoginDto',

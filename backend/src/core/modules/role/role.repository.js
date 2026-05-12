@@ -1,15 +1,14 @@
-import { BaseRepository } from '../../../infrastructure/repository/base.repository';
+import { BaseRepository } from '../../common/base.repository';
 
 class Repository extends BaseRepository {
-    createUserRole(id_user, id_role, trx = null) {
-        const queryBuilder = this.query()
-            .insert({
-                id_user,
-                id_role,
-            });
-        if (trx) queryBuilder.transacting(trx);
-        return queryBuilder;
-    }
+  constructor() {
+    super('roles');
+  }
+
+  async findByName(name) {
+    return this.findOne({ name });
+  }
 }
 
-export const RoleRepository = new Repository('roles');
+export const RoleRepository = new Repository();
+

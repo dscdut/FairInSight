@@ -1,49 +1,53 @@
 import { BcryptService } from 'core/modules/auth';
-import { getTransaction } from 'core/database';
-import { UserRoleRepository } from 'core/modules/role/userRole.repository';
-import { joinUserRoles } from 'core/utils/userFilter';
-import { Optional } from '../../../utils';
-import { NotFoundException, DuplicateException, BadRequestException } from '../../../../packages/httpException';
+import prisma from 'core/database';
+import { Optional } from 'core/utils';
+import { NotFoundException, DuplicateException, BadRequestException } from 'packages/httpException';
 import { UserRepository } from '../user.repository';
+import { RoleRepository } from '../../role/role.repository';
 
 class Service {
-    constructor() {
-        this.repository = UserRepository;
-        this.userRoleRepository = UserRoleRepository;
-        this.bcryptService = BcryptService;
+  constructor() {
+    this.repository = UserRepository;
+    this.roleRepository = RoleRepository;
+    this.bcryptService = BcryptService;
+  }
+
+  async createOne(createUserDto) {
+    const existingUser = await this.repository.findByEmail(createUserDto.email);
+    if (existingUser) {
+      throw new DuplicateException('Email is being used');
     }
 
-    async createOne(createUserDto) {
-        const trx = await getTransaction();
-        Optional.of(await this.repository.findByEmail(createUserDto.email)).throwIfPresent(new DuplicateException('Email is being used'));
-
-        if (createUserDto.password !== createUserDto.confirm_password) {
-            throw new BadRequestException('Password does not match');
-        }
-        createUserDto.password = this.bcryptService.hash(createUserDto.password);
-
-        let createdUser;
-        try {
-            delete createUserDto.confirm_password;
-            createdUser = await this.repository.insert(createUserDto, trx);
-            const ROLE_USER_ID = 3;
-            await this.userRoleRepository.createUserRole(createdUser[0].id, ROLE_USER_ID, trx);
-        } catch (error) {
-            await trx.rollback();
-            this.logger.error(error.message);
-            return null;
-        }
-        trx.commit();
-        return createdUser[0];
+    if (createUserDto.password !== createUserDto.confirm_password) {
+      throw new BadRequestException('Password does not match');
     }
 
-    async findById(id) {
-        const data = Optional.of(await this.repository.findById(id))
-            .throwIfNotPresent(new NotFoundException())
-            .get();
+    const passwordHash = this.bcryptService.hash(createUserDto.password);
+    const userRole = await this.roleRepository.findByName('USER');
 
-        return joinUserRoles(data);
+    try {
+      const { confirm_password, password, ...userData } = createUserDto;
+      const createdUser = await this.repository.create({
+        ...userData,
+        password_hash: passwordHash,
+        role_id: userRole ? userRole.id : null,
+      });
+
+      return createdUser;
+    } catch (error) {
+      console.error('UserService.createOne error:', error);
+      throw error;
     }
+  }
+
+  async findById(id) {
+    const user = await this.repository.findById(id);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
+  }
 }
 
 export const UserService = new Service();
+

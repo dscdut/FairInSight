@@ -1,9 +1,9 @@
 {
-    "name": "express-mongoose-boilerplate",
+    "name": "fair-insight-backend",
     "version": "1.0.0",
     "main": "index.js",
-    "repository": "git@github.com:ichhoa129/express-mongoose-boilerplate.git",
-    "author": "ichhoa <ichhoa129@gmail.com>",
+    "repository": "git@github.com:dscdut/FairInSight.git",
+    "author": "dscdut",
     "license": "MIT",
     "prisma": {
         "seed": "node prisma/seed.js"
@@ -17,8 +17,10 @@
         "clean": "rm -rf dist && mkdir dist",
         "build:babel": "babel ./src --out-dir dist --copy-files",
         "build": "npm run clean && npm run build:babel",
-        "knex": "babel-node node_modules/knex/bin/cli.js --knexfile src/core/config/knexfile.config.js",
-        "db:reset": "yarn knex migrate:rollback && yarn knex migrate:latest && yarn knex seed:run"
+        "db:migrate": "npx prisma migrate dev",
+        "db:studio": "npx prisma studio",
+        "db:seed": "npx prisma db seed",
+        "postinstall": "prisma generate"
     },
     "dependencies": {
         "@prisma/adapter-pg": "^7.8.0",
@@ -37,7 +39,6 @@
         "http-status": "^1.5.0",
         "joi": "^17.4.2",
         "jsonwebtoken": "^8.5.1",
-        "knex": "^1.0.1",
         "lodash": "^4.17.21",
         "method-override": "^3.0.0",
         "multer": "^1.4.3",

@@ -1,14 +1,10 @@
-import { DataRepository } from 'packages/restBuilder/core/dataHandler';
+import { BaseRepository } from '../../common/base.repository';
 
-class Repository extends DataRepository {
-    createUserRole(user_id, role_id = 3, trx = null) {
-        const queryBuilder = this.query().insert({
-            user_id,
-            role_id,
-        });
-        if (trx) queryBuilder.transacting(trx);
-        return queryBuilder;
-    }
+class Repository extends BaseRepository {
+  constructor() {
+    super('roles');
+  }
 }
 
-export const UserRoleRepository = new Repository('users_roles');
+export const UserRoleRepository = new Repository();
+

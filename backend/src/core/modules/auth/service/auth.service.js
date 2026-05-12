@@ -37,9 +37,15 @@ class Service {
             role: user.roles?.name,
         };
 
-        return {
+        const result = {
             user: userData,
-            accessToken: this.jwtService.sign(JwtPayload(userData)),
+            access_token: this.jwtService.sign(JwtPayload(userData)),
+            refresh_token: this.jwtService.sign(JwtPayload(userData)), // Dummy refresh token for now
+        };
+
+        return {
+            data: result,
+            message: 'Đăng nhập thành công',
         };
     }
 }
