@@ -1,28 +1,16 @@
-import prisma from '../../database';
+import { BaseRepository } from '../../common/base.repository';
 
-class Repository {
+class Repository extends BaseRepository {
+  constructor() {
+    super('users');
+  }
+
   async findByEmail(email) {
-    return prisma.users.findFirst({
-      where: {
-        email,
-        deleted_at: null,
-      },
-      include: {
-        roles: true,
-      },
-    });
+    return this.findOne({ email }, { roles: true });
   }
 
   async findById(id) {
-    return prisma.users.findFirst({
-      where: {
-        id,
-        deleted_at: null,
-      },
-      include: {
-        roles: true,
-      },
-    });
+    return super.findById(id, { roles: true });
   }
 }
 
