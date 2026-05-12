@@ -11,7 +11,7 @@ import app from '../index';
 import { PORT } from '../env';
 import { logger } from '../../packages/logger';
 
-const dubugHelper = debug('mongoose:server');
+const dubugHelper = debug('prisma:server');
 
 /**
  * Normalize a port into a number, string, or false.
