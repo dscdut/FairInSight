@@ -1,0 +1,17 @@
+import { ApiDocument } from 'core/config/swagger.config';
+import { SwaggerDocument } from 'packages/swagger';
+
+ApiDocument.addModel('RegisterUserDto', {
+    role: SwaggerDocument.ApiProperty({ type: 'string' }),
+    email: SwaggerDocument.ApiProperty({ type: 'string' }),
+    password: SwaggerDocument.ApiProperty({ type: 'string' }),
+    confirmPassword: SwaggerDocument.ApiProperty({ type: 'string' }),
+});
+
+export const RegisterUserDto = body => ({
+    role: body.role,
+    email: body.email,
+    password: body.password,
+    confirmPassword: body.confirmPassword,
+    referralCode: null
+});

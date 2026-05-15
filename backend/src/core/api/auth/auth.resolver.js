@@ -1,6 +1,7 @@
-import { LoginInterceptor } from 'core/modules/auth';
+import { LoginInterceptor, RegisterUserDto, RegisterLawyerDto } from 'core/modules/auth';
 import { Module } from 'packages/handler/Module';
 import { AuthController } from './auth.controller';
+import { RegisterLawyerInterceptor, RegisterUserInterceptor } from 'core/modules/auth/';
 
 export const AuthResolver = Module.builder()
     .addPrefix({
@@ -10,10 +11,17 @@ export const AuthResolver = Module.builder()
     })
     .register([
         {
-            route: '/login',
+            route: '/register_user',
             method: 'post',
-            interceptors: [LoginInterceptor],
-            body: 'LoginDto',
-            controller: AuthController.login,
+            interceptors: [RegisterUserInterceptor],
+            body: 'RegisterUserDto',
+            controller: AuthController.registerUser,
         },
+        {
+            route: '/register_lawyer',
+            method: 'post',
+            interceptors: [RegisterLawyerInterceptor],
+            body: 'RegisterLawyerDto',
+            controller: AuthController.registerLawyer,
+        }
     ]);

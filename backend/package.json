@@ -12,7 +12,7 @@
         "prepare": "test -d node_modules/husky && husky install || echo \"husky is not installed\"",
         "lint": "eslint --fix --ext .js .",
         "lint:staged": "lint-staged",
-        "dev": "nodemon --exec npx babel-node src/core/bin/www.js",
+        "dev": "npx nodemon --exec npx babel-node src/core/bin/www.js",
         "start": "npm run build && node ./dist/core/bin/www.js",
         "clean": "rm -rf dist && mkdir dist",
         "build:babel": "babel ./src --out-dir dist --copy-files",
@@ -71,7 +71,7 @@
         "faker": "^5.5.3",
         "husky": "^8.0.3",
         "lint-staged": "^15.0.2",
-        "nodemon": "^2.0.7",
+        "nodemon": "^2.0.22",
         "prisma": "^7.8.0"
     }
 }
