@@ -20,6 +20,7 @@ class Service {
         this.userRepository = UserRepository;
         this.jwtService = JwtService;
         this.bcryptService = BcryptService;
+        this.refreshTokenRepository = RefreshTokenRepository;
     }
 
     async register(registerDto) {
@@ -281,6 +282,17 @@ class Service {
                 password_reset_expiry: expiresAt,
             },
         });
+        return {
+            id: record.user_id || record,
+            token: record.token || token
+        };
+    }
+
+    async #createRefreshToken(userId) {
+        // Tao chuoi ngau nhien 32 bytes (64 ky tu hex) cho Refresh Token
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY);
+        const record = await this.refreshTokenRepository.createToken(userId, token, expiresAt);
         return {
             id: record.user_id || record,
             token: record.token || token
