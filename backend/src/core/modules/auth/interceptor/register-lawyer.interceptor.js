@@ -5,6 +5,7 @@ import Joi from 'joi';
 export const RegisterLawyerInterceptor = new DefaultValidatorInterceptor(
     Joi.object({
         role: JoiUtils.requiredString(),
+        fullName: JoiUtils.requiredString(),
         email: JoiUtils.email().required(),
         password: JoiUtils.password().required(),
         confirmPassword: JoiUtils.password().required(),

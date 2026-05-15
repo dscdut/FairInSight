@@ -3,6 +3,7 @@ import { SwaggerDocument } from 'packages/swagger';
 
 ApiDocument.addModel('RegisterUserDto', {
     role: SwaggerDocument.ApiProperty({ type: 'string' }),
+    fullName: SwaggerDocument.ApiProperty({type: 'string'}),
     email: SwaggerDocument.ApiProperty({ type: 'string' }),
     password: SwaggerDocument.ApiProperty({ type: 'string' }),
     confirmPassword: SwaggerDocument.ApiProperty({ type: 'string' }),
@@ -10,6 +11,7 @@ ApiDocument.addModel('RegisterUserDto', {
 
 export const RegisterUserDto = body => ({
     role: body.role,
+    fullName: body.fullName,
     email: body.email,
     password: body.password,
     confirmPassword: body.confirmPassword,
