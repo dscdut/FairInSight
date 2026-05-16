@@ -6,7 +6,7 @@ ApiDocument.addModel('LoginDto', {
     password: SwaggerDocument.ApiProperty({ type: 'string' }),
 });
 
-export const LoginDto = body => ({
+export const LoginUserDto = body => ({
     email: body.email,
     password: body.password,
 });

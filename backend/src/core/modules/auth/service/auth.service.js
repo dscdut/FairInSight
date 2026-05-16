@@ -75,6 +75,16 @@ class Service {
             throw new UnAuthorizedException('Email or password is incorrect');
         }
 
+        if (loginDto.role === "LAWYER") {
+            let existingLicenseNumber = await connection.lawyer_details.findFirst({
+                where: {user_id: user.id}
+            });
+
+            if (existingLicenseNumber.license_number !== loginDto.license_number) {
+                throw new UnAuthorizedException('Invalid credentials')
+            }
+        }
+
         const userData = {
             user_id: user.id,
             email: user.email,
@@ -289,7 +299,6 @@ class Service {
     }
 
     async #createRefreshToken(userId) {
-        // Tao chuoi ngau nhien 32 bytes (64 ky tu hex) cho Refresh Token
         const token = crypto.randomBytes(32).toString('hex');
         const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY);
         const record = await this.refreshTokenRepository.createToken(userId, token, expiresAt);
