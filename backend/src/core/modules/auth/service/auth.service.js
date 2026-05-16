@@ -34,7 +34,7 @@ class Service {
             where: {name: registerDto.role}
         });
         if (!existingRole) {
-            throw new BadRequestException("Role does not exist");
+            throw new BadRequestException("Role must be one of: USER, LAWYER, ADMIN");
         }
 
         registerDto.password = await this.bcryptService.hash(registerDto.password);
@@ -56,8 +56,8 @@ class Service {
             return insertedUser;
         });
 
-        const { id: ref, token: refreshToken } = await this.#createRefreshToken(result.id);
-        const accessToken = this.jwtService.sign(JwtPayload({ id: result.id, role: [registerDto.role] }, ref));
+        const { token: refreshToken } = await this.#createRefreshToken(result.id);
+        const accessToken = this.jwtService.sign(JwtPayload({ id: result.id, role: [registerDto.role] }));
         
         return {
             id: result.id,
@@ -81,6 +81,16 @@ class Service {
             throw new UnAuthorizedException('Email or password is incorrect');
         }
 
+        if (loginDto.role === "LAWYER") {
+            let existingLicenseNumber = await connection.lawyer_details.findFirst({
+                where: {user_id: user.id}
+            });
+
+            if (existingLicenseNumber.license_number !== loginDto.license_number) {
+                throw new UnAuthorizedException('Invalid credentials')
+            }
+        }
+
         const userData = {
             id: user.id,
             email: user.email,
@@ -88,13 +98,13 @@ class Service {
             role: loginDto.role,
         };
 
-        const { id: ref, token: accessTokenString } = await this.#createRefreshToken(user.id);
-        const accessToken = this.jwtService.sign(JwtPayload({ id: user.id, role: [loginDto.role] }, ref));
+        const { token: refreshToken } = await this.#createRefreshToken(user.id);
+        const accessToken = this.jwtService.sign(JwtPayload({ id: user.id, role: [loginDto.role] }));
 
         const result = {
             user: userData,
             access_token: accessToken,
-            refresh_token: accessTokenString,
+            refresh_token: refreshToken,
         };
 
         return {
@@ -104,7 +114,6 @@ class Service {
     }
 
     async #createRefreshToken(userId) {
-        // Tao chuoi ngau nhien 32 bytes (64 ky tu hex) cho Refresh Token
         const token = crypto.randomBytes(32).toString('hex');
         const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY);
         const record = await this.refreshTokenRepository.createToken(userId, token, expiresAt);

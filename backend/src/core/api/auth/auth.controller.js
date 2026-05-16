@@ -1,6 +1,6 @@
 import { AuthService } from '../../modules/auth/service/auth.service';
 import { RegisterUserDto, RegisterLawyerDto } from '../../modules/auth';
-import { LoginDto } from '../../modules/auth';
+import { LoginUserDto, LoginLawyerDto } from '../../modules/auth';
 import { ValidHttpResponse } from '../../../packages/handler/response/validHttp.response';
 
 class Controller {
@@ -18,8 +18,12 @@ class Controller {
         return ValidHttpResponse.toOkResponse(data);
     }
 
-    login = async req => {
-        const data = await this.service.login(LoginDto(req.body));
+    loginUser = async req => {
+        const data = await this.service.login(LoginUserDto(req.body));
+        return ValidHttpResponse.toOkResponse(data);
+    }
+    loginLawyer = async req => {
+        const data = await this.service.login(LoginLawyerDto(req.body));
         return ValidHttpResponse.toOkResponse(data);
     }
 }
