@@ -4,3 +4,4 @@ export * from '../../packages/logger';
 export * from './optional';
 export * from './joi.util';
 export * from './sentryUtils';
+export * from './dtoFilter';
