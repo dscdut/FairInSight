@@ -8,9 +8,11 @@ import { BcryptService } from './bcrypt.service';
 import { JwtService } from './jwt.service';
 import { UserRepository } from '../../user/user.repository';
 import { UnAuthorizedException, DuplicateException, BadRequestException } from '../../../../packages/httpException';
-import { RefreshTokenRepository } from '../repository/refresh-token.repository';
+import { RefreshTokenRepository, PasswordResetRepository, ForgotPasswordRepository } from '../repository';
 
-const REFRESH_TOKEN_EXPIRY = 30 * 24 * 60 * 60 * 1000;
+const REFRESH_TOKEN_EXPIRY = 24 * 60 * 60 * 1000; // 1 day
+const FORGOT_PASSWORD_TOKEN_EXPIRY = 15 * 60 * 1000; // 15 minute
+const PASSWORD_RESET_TOKEN_EXPIRY = 15 * 60 * 1000; // 15 minute
 
 class Service {
     constructor() {
@@ -18,6 +20,8 @@ class Service {
         this.jwtService = JwtService;
         this.bcryptService = BcryptService;
         this.refreshTokenRepository = RefreshTokenRepository;
+        this.passwordResetRepository = PasswordResetRepository;
+        this.forgotPasswordRepository = ForgotPasswordRepository;
     }
 
     async register(registerDto) {
@@ -41,19 +45,15 @@ class Service {
 
         let role_id = existingRole.id;
 
-        const result = await connection.$transaction(async (trx) => {
-            const insertedUser = await trx.users.create({
-                data: {
-                    role_id: role_id,
-                    email: registerDto.email,
-                    password_hash: registerDto.password,
-                    referral_code: registerDto.referralCode,
-                    full_name: registerDto.fullName,
-                },
-                select: { id: true }
-            });
-
-            return insertedUser;
+        const result = await connection.users.create({
+            data: {
+                role_id: role_id,
+                email: registerDto.email,
+                password_hash: registerDto.password,
+                referral_code: registerDto.referralCode,
+                full_name: registerDto.fullName,
+            },
+            select: { id: true }
         });
 
         const { token: refreshToken } = await this.#createRefreshToken(result.id);
@@ -109,7 +109,54 @@ class Service {
 
         return {
             data: result,
-            message: 'Đăng nhập thành công',
+            message: "Login successful.",
+        };
+    }
+
+    async forgotPassword(forgotPasswordDto) {
+        const existingEmail = await this.userRepository.findByEmail(forgotPasswordDto.email);
+        
+        if (!existingEmail) {
+            throw new BadRequestException("Email does not exist");
+        }
+
+        const otp = crypto.randomInt(100000, 999999).toString();
+        const expiresAt = new Date(Date.now() + 15*60*1000);
+
+        console.log(new Date(Date.now() + 15*60*1000));
+
+        await this.forgotPasswordRepository.forgotPassword(existingEmail.id, otp, expiresAt);
+
+        return {
+            message: "OTP has been sent to your email.",
+        };
+    }
+
+    async verifyOtp(verifyOtpDto) {
+        const existingEmail = await this.userRepository.findByEmail(verifyOtpDto.email);
+        if (!existingEmail) {
+            throw new BadRequestException("Email does not exist");
+        }
+        
+        const existingOtp = await connection.users.findFirst({
+            where: { id: existingEmail.id },
+            select: { password_reset_token: true, password_reset_expiry: true }
+        });
+
+        if (existingOtp.password_reset_expiry < new Date(Date.now())) {
+            throw new UnAuthorizedException("OTP has expired " + (Date.now()).toString());
+        }
+
+        if (existingOtp.password_reset_token != verifyOtpDto.otp) {
+            throw new UnAuthorizedException("Invalid OTP");
+        }
+
+        const { token: passwordResetToken } = await this.#createPasswordResetToken(existingEmail.id);
+
+        return {
+            data: {
+                password_reset_token: passwordResetToken,
+            }
         };
     }
 
@@ -117,6 +164,16 @@ class Service {
         const token = crypto.randomBytes(32).toString('hex');
         const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY);
         const record = await this.refreshTokenRepository.createToken(userId, token, expiresAt);
+        return {
+            id: record.user_id || record,
+            token: record.token || token
+        };
+    }
+
+    async #createPasswordResetToken(userId) {
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + PASSWORD_RESET_TOKEN_EXPIRY);
+        const record = await this.passwordResetRepository.passwordReset(userId, token, expiresAt);
         return {
             id: record.user_id || record,
             token: record.token || token

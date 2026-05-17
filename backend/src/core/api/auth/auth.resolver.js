@@ -1,7 +1,13 @@
-import { LoginUserInterceptor, LoginLawyerInterceptor, RegisterUserDto, RegisterLawyerDto } from 'core/modules/auth';
+import {
+    LoginUserInterceptor,
+    LoginLawyerInterceptor,
+    RegisterUserInterceptor,
+    RegisterLawyerInterceptor,
+    ForgotPasswordInterceptor,
+    VerifyOtpInterceptor,
+} from 'core/modules/auth';
 import { Module } from 'packages/handler/Module';
 import { AuthController } from './auth.controller';
-import { RegisterLawyerInterceptor, RegisterUserInterceptor } from 'core/modules/auth/';
 
 export const AuthResolver = Module.builder()
     .addPrefix({
@@ -11,14 +17,14 @@ export const AuthResolver = Module.builder()
     })
     .register([
         {
-            route: '/login',
+            route: '/login_user',
             method: 'post',
             interceptors: [LoginUserInterceptor],
             body: 'LoginUserDto',
             controller: AuthController.loginUser,
         },
         {
-            route: '/login',
+            route: '/login_lawyer',
             method: 'post',
             interceptors: [LoginLawyerInterceptor],
             body: 'LoginLawyerDto',
@@ -37,5 +43,19 @@ export const AuthResolver = Module.builder()
             interceptors: [RegisterLawyerInterceptor],
             body: 'RegisterLawyerDto',
             controller: AuthController.registerLawyer,
-        }
+        },
+        {
+            route: '/forgot_password',
+            method: 'post',
+            interceptors: [ForgotPasswordInterceptor],
+            body: 'ForgotPasswordDto',
+            controller: AuthController.forgotPassword,
+        },
+        {
+            route: '/verify_otp',
+            method: 'post',
+            interceptors: [VerifyOtpInterceptor],
+            body: 'VerifyOtpDto',
+            controller: AuthController.verifyOtp,
+        },
     ]);
