@@ -23,14 +23,14 @@ export const AuthResolver = Module.builder()
     })
     .register([
         {
-            route: '/login',
+            route: '/login_user',
             method: 'post',
             interceptors: [LoginUserInterceptor],
             body: 'LoginUserDto',
             controller: AuthController.loginUser,
         },
         {
-            route: '/login',
+            route: '/login_lawyer',
             method: 'post',
             interceptors: [LoginLawyerInterceptor],
             body: 'LoginLawyerDto',

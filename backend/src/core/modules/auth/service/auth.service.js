@@ -21,6 +21,8 @@ class Service {
         this.jwtService = JwtService;
         this.bcryptService = BcryptService;
         this.refreshTokenRepository = RefreshTokenRepository;
+        this.passwordResetRepository = PasswordResetRepository;
+        this.forgotPasswordRepository = ForgotPasswordRepository;
     }
 
     async register(registerDto) {
@@ -302,6 +304,16 @@ class Service {
         const token = crypto.randomBytes(32).toString('hex');
         const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY);
         const record = await this.refreshTokenRepository.createToken(userId, token, expiresAt);
+        return {
+            id: record.user_id || record,
+            token: record.token || token
+        };
+    }
+
+    async #createPasswordResetToken(userId) {
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + PASSWORD_RESET_TOKEN_EXPIRY);
+        const record = await this.passwordResetRepository.passwordReset(userId, token, expiresAt);
         return {
             id: record.user_id || record,
             token: record.token || token
