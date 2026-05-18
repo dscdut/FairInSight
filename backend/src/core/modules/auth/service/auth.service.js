@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import connection from 'core/database';
-import { pick } from 'lodash';
+import { pick, update } from 'lodash';
 import { JwtPayload } from 'core/modules/auth/dto/jwt-sign.dto';
 import { UserDataService } from 'core/modules/user/services/userData.service';
 import { joinUserRoles } from 'core/utils/userFilter';
@@ -91,11 +91,13 @@ class Service {
         }
 
         const userData = {
-            id: user.id,
+            user_id: user.id,
             email: user.email,
             fullName: user.full_name,
             role: loginDto.role,
         };
+
+        console.log(user.id);
 
         const { token: refreshToken } = await this.#createRefreshToken(user.id);
         const accessToken = this.jwtService.sign(JwtPayload({ id: user.id, role: [loginDto.role] }));
@@ -118,7 +120,7 @@ class Service {
         }
 
         const otp = crypto.randomInt(100000, 999999).toString();
-        const expiresAt = new Date(Date.now() + 15*60*1000);
+        const expiresAt = new Date(Date.now() + FORGOT_PASSWORD_TOKEN_EXPIRY);
 
         await this.forgotPasswordRepository.forgotPassword(existingEmail.id, otp, expiresAt);
 
@@ -138,8 +140,8 @@ class Service {
             select: { password_reset_token: true, password_reset_expiry: true }
         });
 
-        if (existingOtp.password_reset_expiry < new Date(Date.now())) {
-            throw new UnAuthorizedException("OTP has expired " + (Date.now()).toString());
+        if (existingOtp.password_reset_expiry < Date.now()) {
+            throw new UnAuthorizedException("OTP has expired " + existingOtp.password_reset_expiry);
         }
 
         if (existingOtp.password_reset_token != verifyOtpDto.otp) {
@@ -167,12 +169,51 @@ class Service {
         resetPasswordDto.newPassword = await this.bcryptService.hash(resetPasswordDto.newPassword);
 
         await connection.users.update({
-            where: {id: user.id},
-            data: {password_hash: resetPasswordDto.newPassword},
+            where: { id: user.id },
+            data: { password_hash: resetPasswordDto.newPassword },
+            select: { id: true },
         });
 
         return {
             message: "Password has been reset successfully",
+        }
+    }
+
+    async getMyProfile(userId) {
+        return await connection.users.findFirst({
+            where: { id: userId },
+            select: { id: true, avatar_url: true, full_name: true, email: true, phone: true, date_of_birth: true, location: true }
+        });
+    }
+
+    async updateMyProfile(updateMyProfileDto, userId) {
+        const result = await connection.users.update({
+            where: {
+                id: userId,
+            },
+            data: {
+                avatar_url: updateMyProfileDto.avatar_url,
+                full_name: updateMyProfileDto.full_name,
+                phone: updateMyProfileDto.phone,
+                date_of_birth: new Date(updateMyProfileDto.date_of_birth).toISOString(),
+                location: updateMyProfileDto.location,
+            },
+            select: {
+                id: true,
+                avatar_url: true,
+                full_name: true,
+                email: true,
+                phone: true,
+                date_of_birth: true,
+                location: true,
+                subscriptions: {
+                    select: { plan_name: true }
+                },
+                created_at: true,
+            }
+        });
+        return {
+            data: result,
         }
     }
 

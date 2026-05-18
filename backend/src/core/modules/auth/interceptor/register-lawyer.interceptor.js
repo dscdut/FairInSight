@@ -6,7 +6,9 @@ export const RegisterLawyerInterceptor = new DefaultValidatorInterceptor(
     Joi.object({
         role: JoiUtils.requiredString(),
         fullName: JoiUtils.requiredString(),
-        email: JoiUtils.email().required(),
+        email: JoiUtils.email().required().pattern(/^.*@.*\.(com|net|org)$/).message({
+            'string.pattern.base': 'Email must be a valid email address.'
+        }),
         password: JoiUtils.password().min(8).pattern(/^(?=.*[a-zA-Z])(?=.*\d).{8,}$/).required().messages({
             'string.min': 'Password must be at least 8 characters',
             'string.pattern.base': 'Password must contain at least one letter and one number',
@@ -16,7 +18,7 @@ export const RegisterLawyerInterceptor = new DefaultValidatorInterceptor(
         }),
         licenseNumber: JoiUtils.requiredString(),
         licenseIssuer: JoiUtils.requiredString(),
-        licenseIssueDate: JoiUtils.requiredString().isoDate(), // e khong ro cai format date
+        licenseIssueDate: JoiUtils.requiredString().pattern(/^\d{4}-\d{2}-\d{2}$/),
         licenseFile: JoiUtils.requiredString(),
         referralCode: JoiUtils.optionalString().allow(''),
     })

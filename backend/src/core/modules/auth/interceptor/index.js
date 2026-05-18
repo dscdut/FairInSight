@@ -2,6 +2,8 @@ export * from './login-user.interceptor';
 export * from './login-lawyer.interceptor';
 export * from './register-lawyer.interceptor';
 export * from './register-user.interceptor';
+export * from './get-my-profile.interceptor';
+export * from './update-my-profile.interceptor';
 export * from './forgot-password.interceptor';
 export * from './verify-otp.interceptor';
 export * from './reset-password.interceptor';

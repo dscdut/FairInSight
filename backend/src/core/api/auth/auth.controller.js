@@ -1,5 +1,5 @@
 import { AuthService } from '../../modules/auth/service/auth.service';
-import { RegisterUserDto, RegisterLawyerDto, LoginUserDto, LoginLawyerDto, ForgotPasswordDto, VerifyOtpDto, ResetPasswordDto } from '../../modules/auth';
+import { RegisterUserDto, RegisterLawyerDto, LoginUserDto, LoginLawyerDto, ForgotPasswordDto, VerifyOtpDto, ResetPasswordDto, UpdateMyProfileDto } from '../../modules/auth';
 import { ValidHttpResponse } from '../../../packages/handler/response/validHttp.response';
 
 class Controller {
@@ -11,9 +11,17 @@ class Controller {
         const data = await this.service.register(RegisterUserDto(req.body));
         return ValidHttpResponse.toOkResponse(data);
     }
-
     registerLawyer = async req => {
         const data = await this.service.register(RegisterLawyerDto(req.body));
+        return ValidHttpResponse.toOkResponse(data);
+    }
+
+    getMyProfile = async req => {
+        const data = await this.service.getMyProfile(req.user.payload.id); // nếu sử dụng req.user.payload.id thì không cần dùng tới phần nhập như kiểu swagger (nhập id như thế nào cũng sẽ chỉ hiện mỗi hồ sơ của họ). Như này được không ạ? (@c quynh)
+        return ValidHttpResponse.toOkResponse(data);
+    }
+    updateMyProfile = async req => {
+        const data = await this.service.updateMyProfile(UpdateMyProfileDto(req.body), req.user.payload.id);
         return ValidHttpResponse.toOkResponse(data);
     }
 

@@ -4,7 +4,9 @@ import Joi from 'joi';
 
 export const VerifyOtpInterceptor = new DefaultValidatorInterceptor(
     Joi.object({
-        email: JoiUtils.email().required(),
+        email: JoiUtils.email().required().pattern(/^.*@.*\.(com|net|org)$/).message({
+            'string.pattern.base': 'Email must be a valid email address.'
+        }),
         otp: JoiUtils.requiredString(),
     })
 );

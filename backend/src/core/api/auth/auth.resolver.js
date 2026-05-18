@@ -3,12 +3,15 @@ import {
     LoginLawyerInterceptor,
     RegisterUserInterceptor,
     RegisterLawyerInterceptor,
+    GetMyProfileInterceptor,
+    UpdateMyProfileInterceptor,
     ForgotPasswordInterceptor,
     VerifyOtpInterceptor,
     ResetPasswordInterceptor,
 } from 'core/modules/auth';
 import { Module } from 'packages/handler/Module';
 import { AuthController } from './auth.controller';
+import { GetMyProfileParams } from '../params';
 
 export const AuthResolver = Module.builder()
     .addPrefix({
@@ -44,6 +47,22 @@ export const AuthResolver = Module.builder()
             interceptors: [RegisterLawyerInterceptor],
             body: 'RegisterLawyerDto',
             controller: AuthController.registerLawyer,
+        },
+        {
+            route: '/me/:id',
+            method: 'get',
+            params: [GetMyProfileParams],
+            interceptors: [GetMyProfileInterceptor],
+            controller: AuthController.getMyProfile,
+            preAuthorization: true,
+        },
+        {
+            route: '/update_my_profile',
+            method: 'post',
+            interceptors: [UpdateMyProfileInterceptor],
+            body: 'UpdateMyProfileDto',
+            controller: AuthController.updateMyProfile,
+            preAuthorization: true,
         },
         {
             route: '/forgot_password',
