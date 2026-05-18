@@ -7,3 +7,4 @@ export * from './update-my-profile.interceptor';
 export * from './forgot-password.interceptor';
 export * from './verify-otp.interceptor';
 export * from './reset-password.interceptor';
+export * from './refresh-token.interceptor';

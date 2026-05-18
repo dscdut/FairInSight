@@ -8,7 +8,8 @@ import { BcryptService } from './bcrypt.service';
 import { JwtService } from './jwt.service';
 import { UserRepository } from '../../user/user.repository';
 import { UnAuthorizedException, DuplicateException, BadRequestException } from '../../../../packages/httpException';
-import { RefreshTokenRepository, PasswordResetRepository, ForgotPasswordRepository } from '../repository';
+import { CreateRefreshTokenRepository, PasswordResetRepository, ForgotPasswordRepository } from '../repository';
+import { re } from 'prettier';
 
 const REFRESH_TOKEN_EXPIRY = 24 * 60 * 60 * 1000; // 1 day
 const FORGOT_PASSWORD_TOKEN_EXPIRY = 15 * 60 * 1000; // 15 minute
@@ -19,7 +20,7 @@ class Service {
         this.userRepository = UserRepository;
         this.jwtService = JwtService;
         this.bcryptService = BcryptService;
-        this.refreshTokenRepository = RefreshTokenRepository;
+        this.createRefreshTokenRepository = CreateRefreshTokenRepository;
         this.passwordResetRepository = PasswordResetRepository;
         this.forgotPasswordRepository = ForgotPasswordRepository;
     }
@@ -96,8 +97,6 @@ class Service {
             fullName: user.full_name,
             role: loginDto.role,
         };
-
-        console.log(user.id);
 
         const { token: refreshToken } = await this.#createRefreshToken(user.id);
         const accessToken = this.jwtService.sign(JwtPayload({ id: user.id, role: [loginDto.role] }));
@@ -217,10 +216,52 @@ class Service {
         }
     }
 
+    async refreshToken(refreshTokenDto, userId) {
+        const result = await connection.refresh_tokens.findFirst({
+            where: { token: refreshTokenDto.refresh_token },
+            select: { expires_at: true }
+        });
+        if (!result) {
+            throw new UnAuthorizedException("Invalid or expired refresh token");
+        }
+        if (result.expires_at < Date.now()) {
+            throw new UnAuthorizedException("Invalid or expired refresh token");
+        }
+
+        const { token: refreshToken } = await this.#createRefreshToken(userId);
+
+        await connection.refresh_tokens.update({
+            where: {user_id: userId},
+            data: {
+                token: refreshTokenDto.refresh_token,
+                expires_at: new Date(Date.now() + REFRESH_TOKEN_EXPIRY)
+            },
+            select: { token: true }
+        });
+
+        const {userRole} = await connection.users.findFirst({
+            where: {id: userId},
+            select: {
+                roles: {
+                    select: { name: true }
+                },
+            }
+        })
+
+        const accessToken = this.jwtService.sign(JwtPayload({ id: userId, role: [userRole] }));
+
+        return {
+            data: {
+                accessToken: accessToken,
+                refreshToken: refreshToken,
+            },
+        }
+    }
+
     async #createRefreshToken(userId) {
         const token = crypto.randomBytes(32).toString('hex');
         const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY);
-        const record = await this.refreshTokenRepository.createToken(userId, token, expiresAt);
+        const record = await this.createRefreshTokenRepository.createToken(userId, token, expiresAt);
         return {
             id: record.user_id || record,
             token: record.token || token

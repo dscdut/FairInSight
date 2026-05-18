@@ -8,6 +8,7 @@ import {
     ForgotPasswordInterceptor,
     VerifyOtpInterceptor,
     ResetPasswordInterceptor,
+    RefreshTokenInterceptor,
 } from 'core/modules/auth';
 import { Module } from 'packages/handler/Module';
 import { AuthController } from './auth.controller';
@@ -84,5 +85,13 @@ export const AuthResolver = Module.builder()
             interceptors: [ResetPasswordInterceptor],
             body: 'ResetPasswordDto',
             controller: AuthController.resetPassword,
+        },
+        {
+            route: '/refresh-token',
+            method: 'post',
+            interceptors: [RefreshTokenInterceptor],
+            body: 'RefreshTokenDto',
+            controller: AuthController.refreshToken,
+            preAuthorization: true,
         },
     ]);

@@ -21,4 +21,4 @@ class Repository extends DataRepository {
     }
 }
 
-export const RefreshTokenRepository = new Repository('refresh_tokens');
+export const CreateRefreshTokenRepository = new Repository('refresh_tokens');
