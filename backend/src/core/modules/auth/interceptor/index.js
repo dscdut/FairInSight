@@ -4,3 +4,4 @@ export * from './register-lawyer.interceptor';
 export * from './register-user.interceptor';
 export * from './forgot-password.interceptor';
 export * from './verify-otp.interceptor';
+export * from './reset-password.interceptor';

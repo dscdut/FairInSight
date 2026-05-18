@@ -30,10 +30,6 @@ class Service {
             throw new DuplicateException("Email already in use");
         }
 
-        if (registerDto.password !== registerDto.confirmPassword) {
-            throw new BadRequestException("Passwords do not match " + registerDto.password + ' ' + registerDto.confirmPassword);
-        }
-
         let existingRole = await connection.roles.findFirst({
             where: {name: registerDto.role}
         });
@@ -60,12 +56,15 @@ class Service {
         const accessToken = this.jwtService.sign(JwtPayload({ id: result.id, role: [registerDto.role] }));
         
         return {
-            id: result.id,
-            full_name: registerDto.fullName,
-            email: registerDto.email,
-            role_id: role_id,
-            access_token: accessToken,
-            refresh_token: refreshToken,
+            data: {
+                id: result.id,
+                full_name: registerDto.fullName,
+                email: registerDto.email,
+                role_id: role_id,
+                access_token: accessToken,
+                refresh_token: refreshToken,
+            },
+            message: "User registered successfully",
         };
     }
 
@@ -101,14 +100,12 @@ class Service {
         const { token: refreshToken } = await this.#createRefreshToken(user.id);
         const accessToken = this.jwtService.sign(JwtPayload({ id: user.id, role: [loginDto.role] }));
 
-        const result = {
-            user: userData,
-            access_token: accessToken,
-            refresh_token: refreshToken,
-        };
-
         return {
-            data: result,
+            data: {
+                user: userData,
+                access_token: accessToken,
+                refresh_token: refreshToken,
+            },
             message: "Login successful.",
         };
     }
@@ -122,8 +119,6 @@ class Service {
 
         const otp = crypto.randomInt(100000, 999999).toString();
         const expiresAt = new Date(Date.now() + 15*60*1000);
-
-        console.log(new Date(Date.now() + 15*60*1000));
 
         await this.forgotPasswordRepository.forgotPassword(existingEmail.id, otp, expiresAt);
 
@@ -160,6 +155,27 @@ class Service {
         };
     }
 
+    async resetPassword(resetPasswordDto) {
+        const user = await connection.users.findFirst({
+            where: { password_reset_token: resetPasswordDto.token },
+            select: { id: true },
+        })
+        if (!user) {
+            throw new UnAuthorizedException("Invalid or expired token");
+        }
+
+        resetPasswordDto.newPassword = await this.bcryptService.hash(resetPasswordDto.newPassword);
+
+        await connection.users.update({
+            where: {id: user.id},
+            data: {password_hash: resetPasswordDto.newPassword},
+        });
+
+        return {
+            message: "Password has been reset successfully",
+        }
+    }
+
     async #createRefreshToken(userId) {
         const token = crypto.randomBytes(32).toString('hex');
         const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY);
@@ -173,7 +189,7 @@ class Service {
     async #createPasswordResetToken(userId) {
         const token = crypto.randomBytes(32).toString('hex');
         const expiresAt = new Date(Date.now() + PASSWORD_RESET_TOKEN_EXPIRY);
-        const record = await this.passwordResetRepository.passwordReset(userId, token, expiresAt);
+        const record = await this.passwordResetRepository.passwordResetCreateToken(userId, token, expiresAt);
         return {
             id: record.user_id || record,
             token: record.token || token

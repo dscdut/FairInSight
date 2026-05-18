@@ -5,3 +5,4 @@ export * from './register-lawyer.dto';
 export * from './jwt-sign.dto';
 export * from './forgot-password.dto';
 export * from './verify-otp.dto';
+export * from './reset-password.dto';

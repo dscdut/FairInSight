@@ -1,5 +1,5 @@
 import { AuthService } from '../../modules/auth/service/auth.service';
-import { RegisterUserDto, RegisterLawyerDto, LoginUserDto, LoginLawyerDto, ForgotPasswordDto, VerifyOtpDto } from '../../modules/auth';
+import { RegisterUserDto, RegisterLawyerDto, LoginUserDto, LoginLawyerDto, ForgotPasswordDto, VerifyOtpDto, ResetPasswordDto } from '../../modules/auth';
 import { ValidHttpResponse } from '../../../packages/handler/response/validHttp.response';
 
 class Controller {
@@ -34,10 +34,10 @@ class Controller {
         const data = await this.service.verifyOtp(VerifyOtpDto(req.body));
         return ValidHttpResponse.toOkResponse(data);
     }
-    // passwordReset = async req => {
-    //     const data = await this.service.passwordReset(passwordResetDto(req.body));
-    //     return ValidHttpResponse.toOkResponse(data);
-    // }
+    resetPassword = async req => {
+        const data = await this.service.resetPassword(ResetPasswordDto(req.body));
+        return ValidHttpResponse.toOkResponse(data);
+    }
 }
 
 export const AuthController = new Controller();

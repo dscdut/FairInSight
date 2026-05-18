@@ -2,16 +2,14 @@ import { DefaultValidatorInterceptor } from 'core/infrastructure/interceptor';
 import { JoiUtils } from 'core/utils';
 import Joi from 'joi';
 
-export const RegisterUserInterceptor = new DefaultValidatorInterceptor(
+export const ResetPasswordInterceptor = new DefaultValidatorInterceptor(
     Joi.object({
-        role: JoiUtils.requiredString(),
-        fullName: JoiUtils.requiredString(),
-        email: JoiUtils.email().required(),
-        password: JoiUtils.password().min(8).pattern(/^(?=.*[a-zA-Z])(?=.*\d).{8,}$/).required().messages({
+        token: JoiUtils.requiredString(),
+        newPassword: JoiUtils.password().min(8).pattern(/^(?=.*[a-zA-Z])(?=.*\d).{8,}$/).required().messages({
             'string.min': 'Password must be at least 8 characters',
             'string.pattern.base': 'Password must contain at least one letter and one number',
         }),
-        confirmPassword: JoiUtils.password().valid(Joi.ref('password')).required().messages({
+        confirmNewPassword: JoiUtils.password().valid(Joi.ref('newPassword')).required().messages({
             'any.only': 'Passwords do not match.',
         }),
     })

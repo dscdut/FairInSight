@@ -5,6 +5,7 @@ import {
     RegisterLawyerInterceptor,
     ForgotPasswordInterceptor,
     VerifyOtpInterceptor,
+    ResetPasswordInterceptor,
 } from 'core/modules/auth';
 import { Module } from 'packages/handler/Module';
 import { AuthController } from './auth.controller';
@@ -57,5 +58,12 @@ export const AuthResolver = Module.builder()
             interceptors: [VerifyOtpInterceptor],
             body: 'VerifyOtpDto',
             controller: AuthController.verifyOtp,
+        },
+        {
+            route: '/reset-password',
+            method: 'post',
+            interceptors: [ResetPasswordInterceptor],
+            body: 'ResetPasswordDto',
+            controller: AuthController.resetPassword,
         },
     ]);
