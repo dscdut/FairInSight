@@ -313,7 +313,7 @@ class Service {
     async #createPasswordResetToken(userId) {
         const token = crypto.randomBytes(32).toString('hex');
         const expiresAt = new Date(Date.now() + PASSWORD_RESET_TOKEN_EXPIRY);
-        const record = await this.passwordResetRepository.passwordReset(userId, token, expiresAt);
+        const record = await this.passwordResetRepository.passwordResetCreateToken(userId, token, expiresAt);
         return {
             id: record.user_id || record,
             token: record.token || token

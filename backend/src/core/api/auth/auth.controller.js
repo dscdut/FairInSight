@@ -13,15 +13,10 @@ class Controller {
         return ValidHttpResponse.toOkResponse(data);
     }
 
-    loginUser = async req => {
-        const data = await this.service.login(LoginUserDto(req.body));
+    login = async req => {
+        const data = await this.service.login(LoginDto(req.body));
         return ValidHttpResponse.toOkResponse(data);
     }
-    loginLawyer = async req => {
-        const data = await this.service.login(LoginLawyerDto(req.body));
-        return ValidHttpResponse.toOkResponse(data);
-    }
-
 
     getMyProfile = async req => {
         const data = await this.service.getMyProfile(req.user.payload.id);

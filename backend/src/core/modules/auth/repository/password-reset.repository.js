@@ -3,7 +3,7 @@ import connection from 'core/database';
 import { DataRepository } from 'packages/restBuilder/core/dataHandler';
 
 class Repository extends DataRepository {
-    async passwordReset(userId, token, expiresAt, trx = null) {
+    async passwordResetCreateToken(userId, token, expiresAt, trx = null) {
         return await connection.users.update({
             where: {
                 id: userId,
