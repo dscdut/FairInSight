@@ -6,38 +6,27 @@ on:
       - dev
     paths:
       - "backend/**"
+
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: self-hosted
 
-    defaults:
-      run:
-        working-directory: backend
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Deploy backend
+        run: |
+          cd /home/runner/apps/FairInSight
 
-      - name: Use Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: backend/package-lock.json
+          git pull origin dev
 
-      - name: Install dependencies
-        run: npm ci
+          cd backend
 
-      - name: Build
-        run: npm run build --if-present
+          npm ci
 
-      - name: Copy .env file
-        run: cp ~/env/.env ./.env
+          npm run build --if-present
 
-      - name: Restart api server
-        run: pm2 restart api --update-env
+          pm2 restart api --update-env
 
       - name: Notify success deployment
         run: echo "Deployment complete"
