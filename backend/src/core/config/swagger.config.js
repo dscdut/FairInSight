@@ -21,7 +21,7 @@ const servers = [
     },
 ];
 
-if (NODsE_ENV !== 'production') {
+if (NODE_ENV !== 'production') {
     servers.push({
         url: `http://localhost:${PORT}/api`,
         description: 'Dev Env',
