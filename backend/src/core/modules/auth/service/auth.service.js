@@ -8,8 +8,8 @@ import { BcryptService } from './bcrypt.service';
 import { JwtService } from './jwt.service';
 import { UserRepository } from '../../user/user.repository';
 import { UnAuthorizedException, DuplicateException, BadRequestException } from '../../../../packages/httpException';
-import { CreateRefreshTokenRepository, PasswordResetRepository, ForgotPasswordRepository } from '../repository';
-import { re } from 'prettier';
+import { authMiddleware, rbac } from '../middleware'
+import { MediaService } from 'core/modules/document';
 
 const REFRESH_TOKEN_EXPIRY = 24 * 60 * 60 * 1000; // 1 day
 const FORGOT_PASSWORD_TOKEN_EXPIRY = 15 * 60 * 1000; // 15 minute
@@ -20,9 +20,6 @@ class Service {
         this.userRepository = UserRepository;
         this.jwtService = JwtService;
         this.bcryptService = BcryptService;
-        this.createRefreshTokenRepository = CreateRefreshTokenRepository;
-        this.passwordResetRepository = PasswordResetRepository;
-        this.forgotPasswordRepository = ForgotPasswordRepository;
     }
 
     async register(registerDto) {
@@ -32,7 +29,8 @@ class Service {
         }
 
         let existingRole = await connection.roles.findFirst({
-            where: {name: registerDto.role}
+            where: {name: registerDto.role},
+            select: {id: true},
         });
         if (!existingRole) {
             throw new BadRequestException("Role must be one of: USER, LAWYER, ADMIN");
@@ -50,8 +48,26 @@ class Service {
                 referral_code: registerDto.referralCode,
                 full_name: registerDto.fullName,
             },
-            select: { id: true }
+            select: { id: true },
         });
+
+        if (registerDto.role == 'LAWYER') {
+            await connection.lawyer_details.create({
+                data: {
+                    user_id: result.id,
+                    license_number: registerDto.licenseNumber,
+                },
+            });
+            await connection.lawyer_certificates.create({
+                data: {
+                    lawyer_id: result.id,
+                    issued_by: registerDto.licenseIssuer,
+                    issue_date: new Date(registerDto.licenseIssueDate).toISOString(),
+                    certificate_name: "placeholder", // thieu cai nay trong luc nhap.
+                    file_url: registerDto.licenseFile, // cai nay chua duoc su dung, can phai chuyen qua url.
+                },
+            });
+        }
 
         const { token: refreshToken } = await this.#createRefreshToken(result.id);
         const accessToken = this.jwtService.sign(JwtPayload({ id: result.id, role: [registerDto.role] }));
@@ -81,12 +97,17 @@ class Service {
             throw new UnAuthorizedException('Email or password is incorrect');
         }
 
+        if (loginDto.role !== user.roles.name) {
+            throw new UnAuthorizedException("Unauthorized or insufficient permissions. Please login according to your role.")
+        }
+
         if (loginDto.role === "LAWYER") {
             let existingLicenseNumber = await connection.lawyer_details.findFirst({
-                where: {user_id: user.id}
+                where: {user_id: user.id},
+                select: {license_number: true},
             });
 
-            if (existingLicenseNumber.license_number !== loginDto.license_number) {
+            if (existingLicenseNumber.license_number !== loginDto.licenseNumber) {
                 throw new UnAuthorizedException('Invalid credentials')
             }
         }
@@ -121,7 +142,14 @@ class Service {
         const otp = crypto.randomInt(100000, 999999).toString();
         const expiresAt = new Date(Date.now() + FORGOT_PASSWORD_TOKEN_EXPIRY);
 
-        await this.forgotPasswordRepository.forgotPassword(existingEmail.id, otp, expiresAt);
+        await connection.users.update({
+            where: { id: existingEmail.id },
+            data: {
+                password_reset_token: otp, // chỗ này em bỏ vào password_reset_token vì không có cái column riêng cho otp thường
+                password_reset_expiry: expiresAt, // tương tự
+                // cái này chắc ảnh hưởng bảo mật nhiều, nhưng mà em không rõ có cách nào khác. (@c quynh)
+            },
+        });
 
         return {
             message: "OTP has been sent to your email.",
@@ -140,7 +168,7 @@ class Service {
         });
 
         if (existingOtp.password_reset_expiry < Date.now()) {
-            throw new UnAuthorizedException("OTP has expired " + existingOtp.password_reset_expiry);
+            throw new UnAuthorizedException("OTP has expired");
         }
 
         if (existingOtp.password_reset_token != verifyOtpDto.otp) {
@@ -261,7 +289,12 @@ class Service {
     async #createRefreshToken(userId) {
         const token = crypto.randomBytes(32).toString('hex');
         const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY);
-        const record = await this.createRefreshTokenRepository.createToken(userId, token, expiresAt);
+        const record = await connection.refresh_tokens.upsert({
+            where: { user_id: userId },
+            update: { token, expires_at: expiresAt },
+            create: { user_id: userId, token, expires_at: expiresAt },
+            select: { user_id: true, token: true },
+        });
         return {
             id: record.user_id || record,
             token: record.token || token
@@ -271,11 +304,22 @@ class Service {
     async #createPasswordResetToken(userId) {
         const token = crypto.randomBytes(32).toString('hex');
         const expiresAt = new Date(Date.now() + PASSWORD_RESET_TOKEN_EXPIRY);
-        const record = await this.passwordResetRepository.passwordResetCreateToken(userId, token, expiresAt);
+        const record = await connection.users.update({
+            where: { id: userId },
+            data: {
+                password_reset_token: token,
+                password_reset_expiry: expiresAt,
+            },
+        });
         return {
             id: record.user_id || record,
             token: record.token || token
         };
+    }
+
+    async uploadAvatar(files, folderName = '') {
+        const uploadTasks = files.map(file => MediaService.uploadOne(file, folderName));
+        return Promise.all(uploadTasks);
     }
 }
 

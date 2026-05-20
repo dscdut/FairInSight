@@ -1,6 +1,7 @@
 import { AuthService } from '../../modules/auth/service/auth.service';
 import { RegisterUserDto, RegisterLawyerDto, LoginUserDto, LoginLawyerDto, ForgotPasswordDto, VerifyOtpDto, ResetPasswordDto, UpdateMyProfileDto, RefreshTokenDto } from '../../modules/auth';
 import { ValidHttpResponse } from '../../../packages/handler/response/validHttp.response';
+import { valid } from 'joi';
 
 class Controller {
     constructor() {
@@ -17,7 +18,7 @@ class Controller {
     }
 
     getMyProfile = async req => {
-        const data = await this.service.getMyProfile(req.user.payload.id); // nếu sử dụng req.user.payload.id thì không cần dùng tới phần nhập như kiểu swagger (nhập id như thế nào cũng sẽ chỉ hiện mỗi hồ sơ của họ). Như này được không ạ? (@c quynh)
+        const data = await this.service.getMyProfile(req.user.payload.id); // nếu sử dụng req.user.payload.id thì không cần dùng tới phần nhập như kiểu swagger (nhập id như thế nào (mặc dù cũng cần phải đúng với format của uuid) cũng sẽ chỉ hiện mỗi hồ sơ của họ --> bảo mật hơn?). Như này được không ạ? (@c quynh)
         return ValidHttpResponse.toOkResponse(data);
     }
     updateMyProfile = async req => {
@@ -49,6 +50,11 @@ class Controller {
 
     refreshToken = async req => {
         const data = await this.service.refreshToken(RefreshTokenDto(req.body), req.user.payload.id);
+        return ValidHttpResponse.toOkResponse(data);
+    }
+
+    uploadAvatar = async req => {
+        const data = await this.service.uploadAvatar(UploadAvatarDto(req.files));
         return ValidHttpResponse.toOkResponse(data);
     }
 }

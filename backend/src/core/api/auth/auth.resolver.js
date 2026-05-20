@@ -13,6 +13,9 @@ import {
 import { Module } from 'packages/handler/Module';
 import { AuthController } from './auth.controller';
 import { GetMyProfileParams } from '../params';
+import { authMiddleware } from 'core/modules/auth/middleware/auth.middleware';
+import { uploadMediaSwagger } from 'core/common/swagger';
+import { MediaInterceptor } from 'core/modules/document';
 
 export const AuthResolver = Module.builder()
     .addPrefix({
@@ -54,6 +57,7 @@ export const AuthResolver = Module.builder()
             method: 'get',
             params: [GetMyProfileParams],
             interceptors: [GetMyProfileInterceptor],
+            middleware: [authMiddleware], // phần này em không rõ lắm (@c quynh)
             controller: AuthController.getMyProfile,
             preAuthorization: true,
         },
@@ -61,6 +65,7 @@ export const AuthResolver = Module.builder()
             route: '/update_my_profile',
             method: 'post',
             interceptors: [UpdateMyProfileInterceptor],
+            middleware: [authMiddleware], // tương tự như trên (@c quynh)
             body: 'UpdateMyProfileDto',
             controller: AuthController.updateMyProfile,
             preAuthorization: true,
@@ -90,8 +95,18 @@ export const AuthResolver = Module.builder()
             route: '/refresh-token',
             method: 'post',
             interceptors: [RefreshTokenInterceptor],
+            middleware: [authMiddleware], // tương tự như trên (@c quynh)
             body: 'RefreshTokenDto',
             controller: AuthController.refreshToken,
             preAuthorization: true,
+        },
+        {
+            route: '/avatar',
+            method: 'post',
+            params: [uploadMediaSwagger],
+            consumes: ['multipart/form-data'],
+            interceptors: [new MediaInterceptor(10)],
+            controller: AuthController.uploadAvatar,
+            preAuthorization: true
         },
     ]);

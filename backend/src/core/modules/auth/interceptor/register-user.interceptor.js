@@ -4,7 +4,7 @@ import Joi from 'joi';
 
 export const RegisterUserInterceptor = new DefaultValidatorInterceptor(
     Joi.object({
-        role: JoiUtils.requiredString(),
+        // role: JoiUtils.requiredString(),
         fullName: JoiUtils.requiredString(),
         email: JoiUtils.email().required().pattern(/^.*@.*\.(com|net|org)$/).message({
             'string.pattern.base': 'Email must be a valid email address.'
