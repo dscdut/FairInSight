@@ -55,22 +55,6 @@ export const AuthResolver = Module.builder()
             preAuthorization: true,
         },
         {
-            route: '/me/:id',
-            method: 'get',
-            params: [GetMyProfileParams],
-            interceptors: [GetMyProfileInterceptor],
-            controller: AuthController.getMyProfile,
-            preAuthorization: true,
-        },
-        {
-            route: '/update_my_profile',
-            method: 'post',
-            interceptors: [UpdateMyProfileInterceptor],
-            body: 'UpdateMyProfileDto',
-            controller: AuthController.updateMyProfile,
-            preAuthorization: true,
-        },
-        {
             route: '/forgot_password',
             method: 'post',
             interceptors: [ForgotPasswordInterceptor],

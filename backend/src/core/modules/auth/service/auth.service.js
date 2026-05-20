@@ -20,9 +20,6 @@ class Service {
         this.userRepository = UserRepository;
         this.jwtService = JwtService;
         this.bcryptService = BcryptService;
-        this.createRefreshTokenRepository = CreateRefreshTokenRepository;
-        this.passwordResetRepository = PasswordResetRepository;
-        this.forgotPasswordRepository = ForgotPasswordRepository;
     }
 
     async register(registerDto) {
@@ -75,16 +72,6 @@ class Service {
         const isMatch = await this.bcryptService.compare(loginDto.password, user.password_hash);
         if (!isMatch) {
             throw new UnAuthorizedException('Email or password is incorrect');
-        }
-
-        if (loginDto.role === "LAWYER") {
-            let existingLicenseNumber = await connection.lawyer_details.findFirst({
-                where: {user_id: user.id}
-            });
-
-            if (existingLicenseNumber.license_number !== loginDto.license_number) {
-                throw new UnAuthorizedException('Invalid credentials')
-            }
         }
 
         const userData = {
@@ -205,7 +192,9 @@ class Service {
                 avatar_url: updateMyProfileDto.avatar_url,
                 full_name: updateMyProfileDto.full_name,
                 phone: updateMyProfileDto.phone,
-                date_of_birth: new Date(updateMyProfileDto.date_of_birth).toISOString(),
+                date_of_birth: updateMyProfileDto.date_of_birth 
+                    ? new Date(updateMyProfileDto.date_of_birth).toISOString() 
+                    : null,
                 location: updateMyProfileDto.location,
             },
             select: {
@@ -294,26 +283,6 @@ class Service {
                 password_reset_expiry: expiresAt,
             },
         });
-        return {
-            id: record.user_id || record,
-            token: record.token || token
-        };
-    }
-
-    async #createRefreshToken(userId) {
-        const token = crypto.randomBytes(32).toString('hex');
-        const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY);
-        const record = await this.createRefreshTokenRepository.createToken(userId, token, expiresAt);
-        return {
-            id: record.user_id || record,
-            token: record.token || token
-        };
-    }
-
-    async #createPasswordResetToken(userId) {
-        const token = crypto.randomBytes(32).toString('hex');
-        const expiresAt = new Date(Date.now() + PASSWORD_RESET_TOKEN_EXPIRY);
-        const record = await this.passwordResetRepository.passwordResetCreateToken(userId, token, expiresAt);
         return {
             id: record.user_id || record,
             token: record.token || token

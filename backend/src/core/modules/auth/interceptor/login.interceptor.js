@@ -2,7 +2,7 @@ import { DefaultValidatorInterceptor } from 'core/infrastructure/interceptor';
 import { JoiUtils } from 'core/utils';
 import Joi from 'joi';
 
-export const LoginUserInterceptor = new DefaultValidatorInterceptor(
+export const LoginInterceptor = new DefaultValidatorInterceptor(
     Joi.object({
         email: JoiUtils.email().required().pattern(/^.*@.*\.(com|net|org)$/).message({
             'string.pattern.base': 'Email must be a valid email address.'

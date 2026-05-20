@@ -7,7 +7,7 @@ export const UpdateMyProfileInterceptor = new DefaultValidatorInterceptor(
         avatar_url: JoiUtils.optionalString().allow(''),
         full_name: JoiUtils.optionalString().allow(''),
         phone: JoiUtils.optionalString().allow(''),
-        date_of_birth: JoiUtils.optionalString().allow('').pattern(/^\d{4}-\d{2}-\d{2}$/),
+        date_of_birth: JoiUtils.optionalString().empty(''),
         location: JoiUtils.optionalString().allow(''),
     })
 );
