@@ -20,7 +20,7 @@ export const getPasswordStrengthLabel = (score: number, password: string) => {
   return 'Mạnh'
 }
 
-export const getPasswordStrengthColor = (score: number, password: string) => {
+export const getPasswordStrengthColor = (password: string) => {
   if (!password) return ''
   return 'bg-red-500'
 }

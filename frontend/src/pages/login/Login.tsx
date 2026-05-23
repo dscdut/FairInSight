@@ -96,7 +96,7 @@ export default function Login() {
           initial={{ opacity: 0, x: -40 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4 }}
-          className='w-full max-w-md rounded-lg bg-background-secondary p-6 shadow-400'
+          className='w-full max-w-md rounded-lg bg-background-secondary p-10 shadow-400'
         >
           {/* title */}
           <div className='space-y-2 text-center '>

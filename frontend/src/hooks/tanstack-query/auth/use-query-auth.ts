@@ -13,8 +13,8 @@ import { authApi } from '@/core/services/auth.service'
 import { setToken, setUserToLS } from '@/core/shared/storage'
 import { type LoginSchema } from '@/core/zod/login.zod'
 import { type RegisterSchema } from '@/core/zod/register.zod'
-import { type VerifyAccountEmailSchema } from '@/core/zod/verify-account-email.zod'
 import { type ResetPasswordSchema } from '@/core/zod/reset-password.zod'
+import { type VerifyAccountEmailSchema } from '@/core/zod/verify-account-email.zod'
 import { type LoginApiResponse, type ResetPasswordReq } from '@/models/interface/auth.interface'
 const RESEND_COUNTDOWN = 60
 
@@ -56,7 +56,7 @@ export const useVerifyAccountEmail = () => {
   return useMutation({
     mutationKey: [MUTATION_KEYS.verifyEmail],
     mutationFn: (data: z.infer<typeof VerifyAccountEmailSchema>) => authApi.verifyEmail(data),
-    onSuccess: (response, variables) => {
+    onSuccess: (_, variables) => {
       toastifyCommon.success('OTP xác thực thành công!')
       navigate(ROUTE.AUTH.RESET_PASSWORD, { state: { email: variables.email } })
     },

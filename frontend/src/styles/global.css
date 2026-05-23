@@ -5,7 +5,6 @@
 *::-webkit-scrollbar-track {
   background: transparent;
   border-radius: 5px;
-
 }
 
 *::-webkit-scrollbar-thumb {
@@ -17,7 +16,7 @@
 @tailwind utilities;
 @layer base {
   :root {
-  /* 1. Radius */
+    /* 1. Radius */
     --radius-xss: 4px;
     --radius-xs: 8px;
     --radius-sm: 12px;
@@ -39,7 +38,6 @@
     /* Mobile margin (Default) */
     --grid-margin: 16px;
 
-
     /* =========================================
     SHADOW & ELEVATION (Effects)
     ========================================= */
@@ -48,8 +46,8 @@
     --shadow-300: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
     --shadow-400: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
     --shadow-500: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-    --shadow-600: 0 35px 60px -15px rgba(0, 0, 0, 0.3); 
-    --shadow-700: 0 45px 70px -20px rgba(0, 0, 0, 0.4); 
+    --shadow-600: 0 35px 60px -15px rgba(0, 0, 0, 0.3);
+    --shadow-700: 0 45px 70px -20px rgba(0, 0, 0, 0.4);
     --shadow-800: 0 50px 100px -20px rgba(0, 0, 0, 0.5);
 
     /* =========================================
@@ -121,23 +119,23 @@
 
     --font-size-btn-tiny: 10px;
     --line-height-btn-tiny: 12px;
-    --font-weight-btn-tiny: 600;  
+    --font-weight-btn-tiny: 600;
   }
 }
 
 /* Responsive Grid Margins */
-  @media (min-width: 768px) {
-    :root {
-      --grid-margin: 32px;
-    }
+@media (min-width: 768px) {
+  :root {
+    --grid-margin: 32px;
   }
+}
 
-  @media (min-width: 1024px) {
-    :root {
-      --grid-margin: 64px;
-      --grid-gutter: 32px;
-    }
+@media (min-width: 1024px) {
+  :root {
+    --grid-margin: 64px;
+    --grid-gutter: 32px;
   }
+}
 
 /* Add Google Sans Flex font */
 @font-face {

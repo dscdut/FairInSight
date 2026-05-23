@@ -1,9 +1,6 @@
-type Props = {
-  error: Error
-  resetErrorBoundary: () => void
-}
+import { type FallbackProps } from 'react-error-boundary'
 
-const ErrorFallback = ({ error, resetErrorBoundary }: Props) => {
+const ErrorFallback = ({ error, resetErrorBoundary }: FallbackProps) => {
   return (
     <div className='min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4'>
       <div className='max-w-lg w-full bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden'>
@@ -28,7 +25,7 @@ const ErrorFallback = ({ error, resetErrorBoundary }: Props) => {
         <div className='pt-12 pb-8 px-8'>
           <h2 className='text-2xl font-bold text-gray-900 dark:text-white text-center mb-2'>😢 Đã xảy ra lỗi!</h2>
           <p className='text-gray-600 dark:text-gray-300 text-center mb-8'>
-            {error.message || 'Đã xảy ra lỗi không mong muốn'}
+            {error instanceof Error ? error.message : 'Đã xảy lỗi không mong muốn'}
           </p>
 
           {/* Action Buttons */}
