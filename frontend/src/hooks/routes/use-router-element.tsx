@@ -15,6 +15,8 @@ const HomePage = lazy(() => import('@/pages/home/HomePage'))
 const Login = lazy(() => import('@/pages/login/Login'))
 const Register = lazy(() => import('@/pages/register/Register'))
 const VerifyAcountEmail = lazy(() => import('@/pages/verify-account-email/VerifyAcountEmail'))
+const ForgotPassword = lazy(() => import('@/pages/forgot-password/ForgotPassword'))
+const ResetPassword = lazy(() => import('@/pages/reset-password/ResetPassword'))
 const Dashboard = lazy(() => import('@/pages/admin/dashboard'))
 const Users = lazy(() => import('@/pages/admin/users'))
 const PageNotFound = lazy(() => import('@/pages/404/PageNotFound'))
@@ -22,7 +24,13 @@ const Profile = lazy(() => import('@/pages/profile/Profile'))
 
 export default function useRoutesElements() {
   const location = useLocation()
-  const isAuthPath = [ROUTE.AUTH.LOGIN, ROUTE.AUTH.REGISTER].includes(location.pathname)
+  const isAuthPath = [
+    ROUTE.AUTH.LOGIN,
+    ROUTE.AUTH.REGISTER,
+    ROUTE.AUTH.FORGOT_PASSWORD,
+    ROUTE.AUTH.VERIFY_ACCOUNT_EMAIL,
+    ROUTE.AUTH.RESET_PASSWORD
+  ].includes(location.pathname)
   const isAdminPath = location.pathname.startsWith('/admin')
 
   const routeElements = (
@@ -31,7 +39,9 @@ export default function useRoutesElements() {
         <Route path={ROUTE.HOME} element={<HomePage />} />
         <Route path={ROUTE.AUTH.LOGIN} element={<Login />} />
         <Route path={ROUTE.AUTH.REGISTER} element={<Register />} />
+        <Route path={ROUTE.AUTH.FORGOT_PASSWORD} element={<ForgotPassword />} />
         <Route path={ROUTE.AUTH.VERIFY_ACCOUNT_EMAIL} element={<VerifyAcountEmail />} />
+        <Route path={ROUTE.AUTH.RESET_PASSWORD} element={<ResetPassword />} />
 
         {/* Client protected routes */}
         <Route element={<ProtectedRoute redirectPath={ROUTE.AUTH.LOGIN} />}>

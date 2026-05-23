@@ -43,6 +43,11 @@ export interface VerifyEmailRes {
   message: string
 }
 
+export interface ResetPasswordReq {
+  email: string
+  password: string
+}
+
 export interface RememberMeData {
   email: string
   password: string

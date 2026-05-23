@@ -146,10 +146,10 @@ const Header = () => {
                 variant='outline'
                 className='px-4 py-2 font-medium text-gray-900 rounded-md border border-gray-200 transition-all duration-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 focus-visible:ring-2 focus-visible:ring-blue-500'
               >
-                <Link to={ROUTE.AUTH.LOGIN}>{tAuth('auth.login')}</Link>
+                <Link to={ROUTE.AUTH.LOGIN}>{tAuth('login')}</Link>
               </Button>
               <Button className='px-4 py-2 font-medium text-white bg-primary rounded-md transition-all duration-200 dark:bg-primary/80 hover:bg-primary/80 dark:hover:bg-primary/80 focus-visible:ring-2 focus-visible:ring-primary/80'>
-                <Link to={ROUTE.AUTH.REGISTER}>{tAuth('auth.register')}</Link>
+                <Link to={ROUTE.AUTH.REGISTER}>{tAuth('register')}</Link>
               </Button>
             </div>
           )}

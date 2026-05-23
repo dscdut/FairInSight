@@ -3,6 +3,7 @@ import { type AxiosInstance } from 'axios'
 import axiosClient from '@/core/services/axios-client'
 import {
   type VerifyEmailReq,
+  type ResetPasswordReq,
   type Account,
   type LoginResponse,
   type LoginApiResponse,
@@ -15,6 +16,7 @@ const API_REGISTER_URL = '/auth/register'
 const API_REFRESH_TOKEN_URL = '/auth/refresh-token'
 const API_VERIFY_EMAIL_URL = '/auth/verify-email'
 const API_RESEND_CODE_URL = '/auth/resend-verification-email'
+const API_RESET_PASSWORD_URL = '/auth/reset-password'
 const API_LOGOUT_URL = '/auth/logout'
 
 export type AuthApi = {
@@ -23,6 +25,7 @@ export type AuthApi = {
   refreshToken: (refreshToken: string) => Promise<LoginResponse>
   verifyEmail: (params: VerifyEmailReq) => Promise<VerifyEmailRes>
   resendVerificationCode: (email: string) => Promise<{ message: string }>
+  resetPassword: (params: ResetPasswordReq) => Promise<{ message: string }>
   logout: (refresh_token: string) => Promise<void>
 }
 
@@ -41,6 +44,9 @@ export const createAuthApi = (client: AxiosInstance): AuthApi => ({
   },
   resendVerificationCode(email) {
     return client.post(API_RESEND_CODE_URL, { email })
+  },
+  resetPassword(params) {
+    return client.post(API_RESET_PASSWORD_URL, params)
   },
   logout(refresh_token) {
     return client.post(API_LOGOUT_URL, { refresh_token })

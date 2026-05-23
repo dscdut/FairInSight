@@ -3,24 +3,24 @@ import { useCallback, useEffect, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion } from 'framer-motion'
 import { useForm } from 'react-hook-form'
-import { Link, useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { type z } from 'zod'
 
-import Logo from '@/components/logo/logo'
 import { Button } from '@/components/ui/button'
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp'
 import { ROUTE } from '@/core/constants/path'
 import { VerifyAccountEmailSchema } from '@/core/zod/verify-account-email.zod'
-import { useResendVerificationCode, useVerifyAccountEmail } from '@/hooks/tanstack-query/auth/use-query-auth'
-import { containerVariants, itemVariants } from '@/styles/variant/style-variant'
+import { useResendVerificationCode } from '@/hooks/tanstack-query/auth/use-query-auth'
+
 const RESEND_COUNTDOWN = 60
 
 export default function VerifyEmail() {
   const location = useLocation()
-  const [countdown, setCountdown] = useState<number>(RESEND_COUNTDOWN)
-  const [canResend, setCanResend] = useState<boolean>(false)
+  const navigate = useNavigate()
+
+  const [countdown, setCountdown] = useState(RESEND_COUNTDOWN)
+  const [canResend, setCanResend] = useState(false)
 
   const form = useForm<z.infer<typeof VerifyAccountEmailSchema>>({
     resolver: zodResolver(VerifyAccountEmailSchema),
@@ -30,166 +30,122 @@ export default function VerifyEmail() {
     }
   })
 
+  // set email từ state
   useEffect(() => {
     const email = location.state?.email
-    if (email) {
-      form.setValue('email', email)
-    }
-  }, [form, location.state])
+    if (email) form.setValue('email', email)
+  }, [location.state, form])
 
+  // countdown resend
   useEffect(() => {
-    let timer: NodeJS.Timeout
-    if (countdown > 0 && !canResend) {
-      timer = setInterval(() => {
+    if (countdown === 0) {
+      setCanResend(true)
+      return
+    }
+
+    if (!canResend) {
+      const timer = setInterval(() => {
         setCountdown((prev) => prev - 1)
       }, 1000)
-    } else if (countdown === 0) {
-      setCanResend(true)
-    }
-    return () => clearInterval(timer)
-  }, [countdown, canResend])
 
-  const { mutate: verifyEmail, isPending: isVerifying } = useVerifyAccountEmail()
+      return () => clearInterval(timer)
+    }
+  }, [countdown, canResend])
 
   const { mutate: resendCode, isPending: isResending } = useResendVerificationCode({
     setCountdown,
     setCanResend
   })
 
+  // fake verify
   const handleVerify = useCallback(
     (data: z.infer<typeof VerifyAccountEmailSchema>) => {
-      verifyEmail(data)
+      setTimeout(() => {
+        navigate(ROUTE.AUTH.RESET_PASSWORD, {
+          state: { email: data.email }
+        })
+      }, 800)
     },
-    [verifyEmail]
+    [navigate]
   )
 
   const handleResendCode = useCallback(() => {
     const email = form.getValues('email')
-    if (email) {
-      resendCode(email)
-    }
+    if (email) resendCode(email)
   }, [form, resendCode])
 
   return (
-    <div className='flex justify-center w-full min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50'>
-      <motion.div
-        initial={{ opacity: 0, x: -100 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 1 }}
-        className='hidden justify-center items-center w-full md:flex'
-      >
-        <img
-          src='https://img.freepik.com/free-vector/secure-login-concept-illustration_114360-4585.jpg'
-          alt='Email Verification'
-          className='my-10 ml-44 rounded-lg shadow-2xl transition-transform duration-300 transform hover:scale-105'
-        />
-      </motion.div>
-      <div className='flex items-center justify-center w-full mx-auto my-auto md:justify-between md:max-w-[90rem] md:ml-80 md:mr-[8rem]'>
+    <div
+      className='relative flex min-h-screen w-full justify-center bg-cover bg-center'
+      style={{ backgroundImage: "url('/bg.jpg')" }}
+    >
+      <div className='absolute inset-0 bg-slate-950/70' />
+
+      <div className='relative z-10 flex items-center justify-center px-4'>
         <motion.div
-          initial='hidden'
-          animate='visible'
-          variants={containerVariants}
-          className='flex flex-col items-center space-y-2 w-full md:items-start'
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className='w-full max-w-md rounded-2xl bg-white/95 p-8 shadow-xl backdrop-blur'
         >
-          <motion.div variants={itemVariants} className='mb-10 w-40'>
-            <Logo />
-          </motion.div>
-          <motion.h1
-            variants={itemVariants}
-            className='text-5xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600'
-          >
-            Verify Your Account
-          </motion.h1>
-          <motion.p variants={itemVariants} className='px-10 text-sm text-center text-gray-600 md:text-left md:px-0'>
-            We've sent a verification code to your email address. Please enter it below to verify your account.
-          </motion.p>
+          {/* HEADER */}
+          <div className='space-y-3 text-center'>
+            <h1 className='text-2xl font-bold text-red-900'>Xác nhận OTP</h1>
+            <p className='text-sm text-slate-500'>Mã OTP 6 chữ số đã được gửi tới email của bạn.</p>
+          </div>
+
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleVerify)} className='space-y-6 w-10/12'>
-              <motion.div variants={itemVariants}>
-                <FormField
-                  control={form.control}
-                  name='email'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className='text-gray-700'>Email</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder='Enter your email'
-                          type='email'
-                          {...field}
-                          className='transition-all duration-300 focus:ring-2 focus:ring-indigo-500'
-                          disabled
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </motion.div>
-              <motion.div variants={itemVariants}>
-                <FormField
-                  control={form.control}
-                  name='verificationCode'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className='text-gray-700'>Verification Code</FormLabel>
-                      <FormControl>
-                        <InputOTP
-                          maxLength={6}
-                          value={field.value}
-                          onChange={field.onChange}
-                          containerClassName='gap-2 w-full'
-                        >
-                          <InputOTPGroup className='justify-between w-full'>
-                            <InputOTPSlot index={0} className='flex-1' />
-                            <InputOTPSlot index={1} className='flex-1' />
-                            <InputOTPSlot index={2} className='flex-1' />
-                            <InputOTPSlot index={3} className='flex-1' />
-                            <InputOTPSlot index={4} className='flex-1' />
-                            <InputOTPSlot index={5} className='flex-1' />
-                          </InputOTPGroup>
-                        </InputOTP>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </motion.div>
+            <form onSubmit={form.handleSubmit(handleVerify)} className='mt-6 space-y-6'>
+              {/* OTP INPUT */}
+              <FormField
+                control={form.control}
+                name='verificationCode'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <InputOTP
+                        maxLength={6}
+                        value={field.value}
+                        onChange={field.onChange}
+                        containerClassName='w-full gap-2'
+                      >
+                        <InputOTPGroup className='w-full justify-between'>
+                          {Array.from({ length: 6 }).map((_, i) => (
+                            <InputOTPSlot
+                              key={i}
+                              index={i}
+                              className='flex-1 rounded-xl border bg-slate-100 text-center text-lg font-semibold'
+                            />
+                          ))}
+                        </InputOTPGroup>
+                      </InputOTP>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-              <motion.div variants={itemVariants} className='flex flex-col space-y-4'>
-                <Button
-                  loading={isVerifying}
-                  className='w-full text-white bg-gradient-to-r from-indigo-600 to-purple-600 shadow-lg transition-all duration-300 hover:from-indigo-700 hover:to-purple-700 hover:shadow-xl'
-                  type='submit'
-                >
-                  Verify Email
-                </Button>
-                <div className='flex justify-center items-center space-x-2 text-sm text-gray-600'>
-                  <span>Didn't receive the code?</span>
-                  <button
-                    type='button'
-                    onClick={handleResendCode}
-                    disabled={!canResend || isResending}
-                    className={`${
-                      canResend && !isResending
-                        ? 'text-indigo-600 hover:text-indigo-700 hover:underline'
-                        : 'text-gray-400 cursor-not-allowed'
-                    } transition-colors duration-300`}
-                  >
-                    {isResending ? 'Sending...' : canResend ? 'Resend Code' : `Resend in ${countdown}s`}
-                  </button>
-                </div>
-              </motion.div>
+              {/* BUTTON */}
+              <Button
+                type='submit'
+                className='w-full rounded-md bg-red-900 py-3 font-semibold text-white hover:bg-red-800'
+              >
+                Xác nhận OTP
+              </Button>
 
-              <motion.p variants={itemVariants} className='flex justify-center items-center text-gray-600'>
-                Already verified?&nbsp;
-                <Link
-                  to={ROUTE.AUTH.LOGIN}
-                  className='text-indigo-600 transition-colors duration-300 hover:text-indigo-700 hover:underline'
+              {/* RESEND */}
+              <div className='text-center text-sm'>
+                <button
+                  type='button'
+                  onClick={handleResendCode}
+                  disabled={!canResend || isResending}
+                  className={`font-semibold ${
+                    canResend && !isResending ? 'text-red-900 hover:text-red-700' : 'cursor-not-allowed text-slate-400'
+                  }`}
                 >
-                  Sign in
-                </Link>
-              </motion.p>
+                  {isResending ? 'Đang gửi...' : canResend ? 'Gửi lại mã' : `Gửi lại mã (${countdown}s)`}
+                </button>
+              </div>
             </form>
           </Form>
         </motion.div>

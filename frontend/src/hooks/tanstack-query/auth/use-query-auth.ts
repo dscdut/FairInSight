@@ -14,7 +14,8 @@ import { setToken, setUserToLS } from '@/core/shared/storage'
 import { type LoginSchema } from '@/core/zod/login.zod'
 import { type RegisterSchema } from '@/core/zod/register.zod'
 import { type VerifyAccountEmailSchema } from '@/core/zod/verify-account-email.zod'
-import { type LoginApiResponse } from '@/models/interface/auth.interface'
+import { type ResetPasswordSchema } from '@/core/zod/reset-password.zod'
+import { type LoginApiResponse, type ResetPasswordReq } from '@/models/interface/auth.interface'
 const RESEND_COUNTDOWN = 60
 
 export const useLoginAuth = () => {
@@ -55,11 +56,24 @@ export const useVerifyAccountEmail = () => {
   return useMutation({
     mutationKey: [MUTATION_KEYS.verifyEmail],
     mutationFn: (data: z.infer<typeof VerifyAccountEmailSchema>) => authApi.verifyEmail(data),
-    onSuccess: () => {
-      toastifyCommon.success('Email verified successfully! 🎉')
-      navigate(ROUTE.AUTH.LOGIN)
+    onSuccess: (response, variables) => {
+      toastifyCommon.success('OTP xác thực thành công!')
+      navigate(ROUTE.AUTH.RESET_PASSWORD, { state: { email: variables.email } })
     },
     onError: (error: AxiosError) => handleError(error, 'Failed to verify email')
+  })
+}
+
+export const useResetPasswordAuth = () => {
+  const navigate = useNavigate()
+  return useMutation({
+    mutationKey: [MUTATION_KEYS.resetPassword],
+    mutationFn: (data: z.infer<typeof ResetPasswordSchema>) => authApi.resetPassword(data as ResetPasswordReq),
+    onSuccess: () => {
+      toastifyCommon.success('Mật khẩu đã được cập nhật. Vui lòng đăng nhập lại.')
+      navigate(ROUTE.AUTH.LOGIN)
+    },
+    onError: (error: AxiosError) => handleError(error, 'Failed to reset password')
   })
 }
 

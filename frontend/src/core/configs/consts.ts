@@ -112,6 +112,7 @@ export const numberConstants = {
   EIGHT: 8,
   NINE: 9,
   TEN: 10,
+  fifty: 50,
   ONE_HUNDRED: 100
 }
 

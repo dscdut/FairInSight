@@ -4,7 +4,8 @@ export const ROUTE = {
     LOGIN: '/login',
     REGISTER: '/register',
     VERIFY_ACCOUNT_EMAIL: '/verify-account-email',
-    FORGOT_PASSWORD: '/forgot-password'
+    FORGOT_PASSWORD: '/forgot-password',
+    RESET_PASSWORD: '/reset-password'
   },
   BLOG: '/blog',
   PROFILE: {
