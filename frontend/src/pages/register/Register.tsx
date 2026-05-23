@@ -17,13 +17,17 @@ import { containerVariants, itemVariants } from '@/core/lib/variant/style-varian
 import { RegisterSchema } from '@/core/zod'
 import { useAuthRedirect } from '@/hooks/auth/use-auth-redirect'
 import { useRegisterAuth } from '@/hooks/tanstack-query/auth/use-query-auth'
+import { type RoleType } from '@/models/types/role.type'
 
 export default function Register() {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false)
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false)
 
   useAuthRedirect()
-
+  const roleOptions: RoleType[] = [
+    { value: 'client', label: 'Khách hàng' },
+    { value: 'lawyer', label: 'Luật sư' }
+  ]
   const form = useForm<z.infer<typeof RegisterSchema>>({
     resolver: zodResolver(RegisterSchema),
     defaultValues: {
@@ -89,12 +93,8 @@ export default function Register() {
                       <FormControl>
                         <div className='flex justify-center'>
                           <div className='inline-flex w-full gap-1 rounded-full bg-slate-100 p-1 shadow-sm'>
-                            {[
-                              { value: 'client', label: 'Khách hàng' },
-                              { value: 'lawyer', label: 'Luật sư' }
-                            ].map((option) => {
+                            {roleOptions.map((option) => {
                               const isActive = field.value === option.value
-
                               return (
                                 <button
                                   key={option.value}
