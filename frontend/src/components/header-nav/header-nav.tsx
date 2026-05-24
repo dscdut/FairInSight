@@ -40,7 +40,7 @@ const Header = () => {
 
   return (
     <header className='fixed top-0 left-0 z-50 w-full border-b border-gray-200 backdrop-blur bg-white/80 dark:bg-gray-900/80 dark:border-gray-800'>
-      <nav className='container flex justify-between items-center px-4 py-3 mx-auto'>
+      <nav className='container flex justify-between items-center py-3 mx-auto'>
         <Logo />
         <ul className='hidden gap-6 items-center md:flex'>
           {navLinks.map((link) => (
