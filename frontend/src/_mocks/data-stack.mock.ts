@@ -1,77 +1,47 @@
 import {
-  SiEslint,
-  SiGit,
-  SiGithub,
-  SiJest,
-  SiPrettier,
-  SiReact,
-  SiReactquery,
-  SiShadcnui,
-  SiTailwindcss,
-  SiTypescript,
-  SiVercel,
-  SiVite
-} from 'react-icons/si'
+  Scale,
+  Home,
+  Briefcase,
+  Heart,
+  Gavel,
+  ShieldCheck,
+  Landmark
+} from 'lucide-react'
 
-export const techStack = [
+export const legalFields = [
   {
-    name: 'React',
-    icon: SiReact,
-    color: 'text-blue-500'
-  },
-  {
-    name: 'TypeScript',
-    icon: SiTypescript,
+    key: 'civil',
+    icon: Scale,
     color: 'text-blue-600'
   },
   {
-    name: 'TailwindCSS',
-    icon: SiTailwindcss,
-    color: 'text-cyan-500'
+    key: 'housing',
+    icon: Home,
+    color: 'text-emerald-600'
   },
   {
-    name: 'Vite',
-    icon: SiVite,
-    color: 'text-purple-500'
+    key: 'business',
+    icon: Briefcase,
+    color: 'text-amber-600'
   },
   {
-    name: 'React Query',
-    icon: SiReactquery,
-    color: 'text-[#f59e0b]'
+    key: 'marriage',
+    icon: Heart,
+    color: 'text-rose-600'
   },
   {
-    name: 'Jest',
-    icon: SiJest,
+    key: 'criminal',
+    icon: Gavel,
     color: 'text-red-600'
   },
   {
-    name: 'ESLint',
-    icon: SiEslint,
+    key: 'labor',
+    icon: ShieldCheck,
+    color: 'text-indigo-600'
+  },
+  {
+    key: 'admin',
+    icon: Landmark,
     color: 'text-purple-600'
-  },
-  {
-    name: 'Prettier',
-    icon: SiPrettier,
-    color: 'text-pink-500'
-  },
-  {
-    name: 'Git',
-    icon: SiGit,
-    color: 'text-orange-500'
-  },
-  {
-    name: 'GitHub',
-    icon: SiGithub,
-    color: 'text-gray-900 dark:text-white'
-  },
-  {
-    name: 'Shadcn/UI',
-    icon: SiShadcnui,
-    color: 'text-black'
-  },
-  {
-    name: 'Vercel',
-    icon: SiVercel,
-    color: 'text-gray-900 dark:text-white'
   }
 ]

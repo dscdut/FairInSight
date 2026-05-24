@@ -1,9 +1,11 @@
 import Header from '@/components/header-nav/header-nav'
-import { FeaturesSection } from '@/pages/home/components/features-section'
+import { AboutSection } from '@/pages/home/components/about-section'
+import { AISection } from '@/pages/home/components/ai-section'
+import { ContactSection } from '@/pages/home/components/contact-section'
 import { FooterSection } from '@/pages/home/components/footer-section'
-import { GettingStartedSection } from '@/pages/home/components/getting-started-section'
 import { HeroSection } from '@/pages/home/components/hero-section'
-import { TechStackSection } from '@/pages/home/components/tech-stack-section'
+import { LibrarySection } from '@/pages/home/components/library-section'
+
 
 const HomePage = () => {
   return (
@@ -11,9 +13,10 @@ const HomePage = () => {
       <Header />
       <main>
         <HeroSection />
-        <FeaturesSection />
-        <TechStackSection />
-        <GettingStartedSection />
+        <AboutSection />
+        <LibrarySection/>
+        <AISection/>
+        <ContactSection/>
       </main>
 
       <FooterSection />
