@@ -1,90 +1,122 @@
 {
   "home": {
     "hero": {
-      "title": "React TypeScript Boilerplate",
-      "description": "A modern, feature-rich React TypeScript boilerplate with best practices, performance optimizations, and developer experience in mind.",
+      "logo":"FairInsights: ",
+      "title": "Connecting trust, delivering effective legal solutions",
+      "description": "This platform connects you with reputable lawyers, helping you resolve all legal issues transparently and effectively.",
       "getStarted": "Get Started",
-      "viewGithub": "View on GitHub"
+      "searchLaw": "Search Law"
+    },
+    "dashboard": {
+      "title": "Dashboard"
+    },
+    "library": {
+      "title": "Consulting Fields",
+      "description": "We provide comprehensive legal consultation services across various fields of life and business:",
+      "civil": {
+        "title": "Civil Law",
+        "description": "Consultation on contracts, compensation for damages, inheritance, ownership, and other civil disputes."
+      },
+      "housing": {
+        "title": "Land & Housing",
+        "description": "Procedures for land titles, land disputes, real estate transactions, transfers, and zoning."
+      },
+      "business": {
+        "title": "Business & Commercial",
+        "description": "Corporate establishment, mergers and acquisitions, intellectual property, and commercial disputes."
+      },
+      "marriage": {
+        "title": "Marriage & Family",
+        "description": "Procedures for marriage, divorce, joint asset division, child custody, and child support."
+      },
+      "criminal": {
+        "title": "Criminal Law",
+        "description": "Defense and protection of legal rights in criminal cases, counseling on mitigating liability."
+      },
+      "labor": {
+        "title": "Labor & Insurance",
+        "description": "Resolving labor contract disputes, social insurance regimes, salaries, and allowances."
+      },
+      "admin": {
+        "title": "Administrative Law",
+        "description": "Complaints against administrative decisions or actions, and public administrative procedures."
+      }
+    },
+    "about": {
+      "title": "About"
+    },
+    "AI_assistance": {
+      "title": "AI Assistance",
+      "sectionTitle": "AI Assistant for Vietnamese Legal Research",
+      "description": "Applying artificial intelligence to make legal information search fast, precise, and highly efficient.",
+      "features": {
+        "nlp": {
+          "title": "Natural Language",
+          "description": "Ask questions in plain everyday language without needing complex legal terminology."
+        },
+        "citation": {
+          "title": "Accurate Citations",
+          "description": "Cross-reference answers directly with official laws, decrees, and current circulars."
+        },
+        "speed": {
+          "title": "Extreme Speed",
+          "description": "Analyze thousands of legal documents and return synthesized answers within seconds."
+        }
+      },
+      "chatMock": {
+        "userQuestion": "What is the maximum duration for a land purchase deposit contract?",
+        "aiResponse": "According to Article 328 of the 2015 Civil Code, current Vietnamese law does not specify a maximum deposit duration. This period is completely subject to the mutual agreement of the parties involved in the contract.",
+        "placeholder": "Ask your legal question here...",
+        "buttonSend": "Ask AI Assistant"
+      }
+    },
+    "contacts": {
+      "title": "Contacts",
+      "ctaTitle": "Ready to protect your rights?",
+      "ctaDesc": "Let the experts from FairInsights walk with you on the path to finding justice.",
+      "ctaBtn": "Get started for free"
     },
     "features": {
-      "title": "Features",
-      "description": "Everything you need to build modern React applications",
-      "typescript": {
-        "title": "TypeScript",
-        "description": "Built with TypeScript for better development experience and type safety"
+      "title": "Why choose FairInsights?",
+      "description": "FairInsights is your trusted companion for Vietnamese legal needs, offering reliable information and AI-powered assistance for seamless legal workflows.",
+      "reputable": {
+        "title": "Trustworthy",
+        "description": "Highly reputable, secure, and precise legal consultation services from leading experts."
       },
-      "modernStack": {
-        "title": "Modern Stack",
-        "description": "Latest React features, Vite, TailwindCSS, and more"
+      "fast": {
+        "title": "Fast & Efficient",
+        "description": "Resolve legal queries and process documents quickly and efficiently."
       },
-      "performance": {
-        "title": "Performance",
-        "description": "Optimized for performance with code splitting and lazy loading"
+      "affordable": {
+        "title": "Reasonable Cost",
+        "description": "Optimized and transparent pricing models tailored to your budget and needs."
       },
-      "developerExperience": {
-        "title": "Developer Experience",
-        "description": "Great developer experience with hot reload and TypeScript support"
-      },
-      "bestPractices": {
-        "title": "Best Practices",
-        "description": "Follows React best practices and modern development standards"
-      },
-      "readyToUse": {
-        "title": "Ready to Use",
-        "description": "Includes authentication, routing, and other common features"
+      "easyConnect": {
+        "title": "Easy Lawyer Connection",
+        "description": "Directly connect with a network of professional and experienced lawyers anytime, anywhere."
       }
     },
-    "techStack": {
-      "title": "Tech Stack",
+    "fields": {
+      "title": "Fields",
       "description": "Built with the latest and greatest technologies"
     },
-    "gettingStarted": {
-      "title": "Getting Started",
-      "description": "Start building your next React application in minutes",
-      "clone": {
-        "title": "Clone the repository",
-        "description": "Start by cloning the repository to your local machine",
-        "code": "git clone https://github.com/vophuocthanh/react-boilerplate-practices-2025"
-      },
-      "install": {
-        "title": "Install dependencies",
-        "description": "Install all required dependencies using your favorite package manager",
-        "code": "yarn install"
-      },
-      "start": {
-        "title": "Start development",
-        "description": "Start the development server and begin coding",
-        "code": "yarn dev"
-      },
-      "build": {
-        "title": "Build for production",
-        "description": "Build your application for production deployment",
-        "code": "yarn build"
-      }
-    },
     "footer": {
-      "description": "A modern React TypeScript boilerplate with best practices and developer experience in mind.",
-      "documentation": {
-        "title": "Documentation",
-        "gettingStarted": "Getting Started",
-        "features": "Features",
-        "apiReference": "API Reference",
-        "examples": "Examples"
-      },
-      "resources": {
-        "title": "Resources",
-        "github": "GitHub",
-        "discord": "Discord",
-        "twitter": "Twitter",
-        "blog": "Blog"
+      "description": "FairInsights is an AI-powered legal assistant and trusted lawyer network platform in Vietnam, delivering fast, transparent, and highly reliable legal solutions.",
+      "navigation": {
+        "title": "Navigation",
+        "dashboard": "Dashboard",
+        "about": "About",
+        "library": "Consulting Fields",
+        "aiAssistance": "AI Assistance",
+        "contacts": "Contacts"
       },
       "legal": {
         "title": "Legal",
         "privacy": "Privacy Policy",
         "terms": "Terms of Service",
-        "license": "License"
+        "license": "Operating Regulations"
       },
-      "copyright": "© {{year}} React Boilerplate. All rights reserved."
+      "copyright": "© {{year}} FairInsights. All rights reserved."
     }
   }
 }

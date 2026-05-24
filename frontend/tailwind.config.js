@@ -64,6 +64,7 @@ export default {
         
         background: {
           primary: "var(--background-primary)",
+          primaryLight: "var(--background-primary-light)",
           secondary: "var(--background-secondary)",
           tertiary: "var(--background-tertiary)",
         },

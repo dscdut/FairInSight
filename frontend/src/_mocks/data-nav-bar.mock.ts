@@ -1,5 +1,7 @@
 export const navLinks = [
-  { labelKey: 'features.title', to: '#features' },
-  { labelKey: 'techStack.title', to: '#tech-stack' },
-  { labelKey: 'gettingStarted.title', to: '#getting-started' }
+  { labelKey: 'dashboard.title', to: '#dashboard' },
+  { labelKey: 'about.title', to: '#about' },
+  { labelKey: 'library.title', to: '#library' },
+  { labelKey: 'AI_assistance.title', to: '#ai-assistance' },
+  { labelKey: 'contacts.title', to: '#contacts' }
 ]

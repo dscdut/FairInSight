@@ -1,90 +1,121 @@
 {
   "home": {
     "hero": {
-      "title": "React TypeScript Boilerplate",
-      "description": "Một React TypeScript boilerplate hiện đại, đầy đủ tính năng với các best practices, tối ưu hiệu năng và trải nghiệm phát triển.",
+      "logo": "FairInsights: ",
+      "title": "Kết nối niềm tin, giải quyết pháp lý hiệu quả",
+      "description": "Nền tảng kết nối bạn với đội luật sư uy tín, giúp giải quyết mọi vấn đề pháp lý một cách minh bạch và hiệu quả",
       "getStarted": "Bắt đầu",
-      "viewGithub": "Xem trên GitHub"
+      "searchLaw": "Tra cứu luật"
+    },
+    "dashboard": {
+      "title": "Trang chủ"
+    },
+    "library": {
+      "title": "Các lĩnh vực tư vấn",
+      "description": "Chúng tôi cung cấp dịch vụ tư vấn pháp lý toàn diện cho mọi khía cạnh trong đời sống và kinh doanh:",
+      "civil": {
+        "title": "Dân sự",
+        "description": "Tư vấn hợp đồng, bồi thường thiệt hại, thừa kế, quyền sở hữu và các tranh chấp dân sự khác."
+      },
+      "housing": {
+        "title": "Đất đai & Nhà ở",
+        "description": "Tư vấn thủ tục sổ đỏ, tranh chấp đất đai, mua bán chuyển nhượng nhà đất và quy hoạch."
+      },
+      "business": {
+        "title": "Kinh doanh & Thương mại",
+        "description": "Tư vấn thành lập doanh nghiệp, mua bán sáp nhập, sở hữu trí tuệ và giải quyết tranh chấp kinh doanh."
+      },
+      "marriage": {
+        "title": "Hôn nhân & Gia đình",
+        "description": "Tư vấn thủ tục kết hôn, ly hôn, phân chia tài sản chung, quyền nuôi con và cấp dưỡng."
+      },
+      "criminal": {
+        "title": "Hình sự",
+        "description": "Bào chữa, bảo vệ quyền lợi hợp pháp trong các vụ án hình sự, tư vấn giảm nhẹ trách nhiệm."
+      },
+      "labor": {
+        "title": "Lao động & Bảo hiểm",
+        "description": "Giải quyết tranh chấp hợp đồng lao động, chế độ bảo hiểm xã hội, tiền lương và trợ cấp."
+      },
+      "admin": {
+        "title": "Hành chính",
+        "description": "Tư vấn khiếu nại quyết định hành chính, hành vi hành chính và các thủ tục hành chính công."
+      }
+    },
+    "about": {
+      "title": "Giới thiệu"
+    },
+    "AI_assistance": {
+      "title": "Trợ lý AI",
+      "sectionTitle": "Trợ lý AI tra cứu hệ thống pháp luật Việt Nam",
+      "description": "Ứng dụng trí tuệ nhân tạo giúp tìm kiếm thông tin pháp luật hiệu quả và nhanh chóng.",
+      "features": {
+        "nlp": {
+          "title": "Ngôn ngữ tự nhiên",
+          "description": "Hỏi đáp bằng ngôn ngữ giao tiếp thông thường, không cần thuật ngữ luật phức tạp."
+        },
+        "citation": {
+          "title": "Trích dẫn chính xác",
+          "description": "Đối chiếu trực tiếp với các điều khoản Bộ luật, Nghị định, Thông tư hiện hành."
+        },
+        "speed": {
+          "title": "Tốc độ vượt trội",
+          "description": "Phân tích hàng ngàn văn bản pháp lý và đưa ra câu trả lời trong vài giây."
+        }
+      },
+      "chatMock": {
+        "userQuestion": "Thời hạn đặt cọc mua đất tối đa là bao lâu?",
+        "aiResponse": "Theo quy định tại Điều 328 Bộ luật Dân sự 2015, pháp luật hiện hành không quy định thời hạn đặt cọc tối đa. Thời hạn này hoàn toàn do các bên tự do thỏa thuận trong hợp đồng đặt cọc để bảo đảm giao kết hoặc thực hiện hợp đồng.",
+        "placeholder": "Nhập câu hỏi pháp lý của bạn ở đây...",
+        "buttonSend": "Hỏi Trợ lý AI"
+      }
+    },
+    "contacts": {
+      "title": "Liên hệ",
+      "ctaTitle": "Sẵn sàng bảo vệ quyền lợi của bạn?",
+      "ctaDesc": "Hãy để các chuyên gia từ FairInsights đồng hành cùng bạn trên con đường tìm kiếm công lý.",
+      "ctaBtn": "Bắt đầu miễn phí"
     },
     "features": {
-      "title": "Tính năng",
-      "description": "Mọi thứ bạn cần để xây dựng ứng dụng React hiện đại",
-      "typescript": {
-        "title": "TypeScript",
-        "description": "Được xây dựng với TypeScript để có trải nghiệm phát triển tốt hơn và an toàn về kiểu dữ liệu"
+      "title": "Vì sao chọn FairInsights?",
+      "description": "FairInsights là người bạn đồng hành đáng tin cậy cho nhu cầu pháp lý của bạn tại Việt Nam, cung cấp thông tin đáng tin cậy và hỗ trợ AI cho quy trình pháp lý liền mạch.",
+      "reputable": {
+        "title": "Uy tín",
+        "description": "Dịch vụ tư vấn pháp lý uy tín, bảo mật và chính xác từ các chuyên gia hàng đầu."
       },
-      "modernStack": {
-        "title": "Stack Hiện đại",
-        "description": "Các tính năng React mới nhất, Vite, TailwindCSS và nhiều hơn nữa"
+      "fast": {
+        "title": "Nhanh chóng",
+        "description": "Giải quyết hồ sơ, trả lời thắc mắc pháp lý một cách nhanh chóng và kịp thời."
       },
-      "performance": {
-        "title": "Hiệu năng",
-        "description": "Tối ưu hiệu năng với code splitting và lazy loading"
+      "affordable": {
+        "title": "Chi phí hợp lý",
+        "description": "Tối ưu hóa chi phí với các gói dịch vụ đa dạng, minh bạch và phù hợp ngân sách."
       },
-      "developerExperience": {
-        "title": "Trải nghiệm phát triển",
-        "description": "Trải nghiệm phát triển tuyệt vời với hot reload và hỗ trợ TypeScript"
-      },
-      "bestPractices": {
-        "title": "Best Practices",
-        "description": "Tuân thủ các best practices của React và tiêu chuẩn phát triển hiện đại"
-      },
-      "readyToUse": {
-        "title": "Sẵn sàng sử dụng",
-        "description": "Bao gồm xác thực, routing và các tính năng phổ biến khác"
+      "easyConnect": {
+        "title": "Kết nối luật sư dễ dàng",
+        "description": "Kết nối trực tiếp với mạng lưới luật sư chuyên nghiệp và giàu kinh nghiệm mọi lúc mọi nơi."
       }
     },
-    "techStack": {
-      "title": "Công nghệ",
-      "description": "Được xây dựng với những công nghệ mới nhất"
-    },
-    "gettingStarted": {
-      "title": "Bắt đầu",
-      "description": "Bắt đầu xây dựng ứng dụng React tiếp theo của bạn trong vài phút",
-      "clone": {
-        "title": "Clone repository",
-        "description": "Bắt đầu bằng cách clone repository về máy local",
-        "code": "git clone https://github.com/vophuocthanh/react-boilerplate-practices-2025"
-      },
-      "install": {
-        "title": "Cài đặt dependencies",
-        "description": "Cài đặt tất cả dependencies cần thiết bằng package manager yêu thích của bạn",
-        "code": "yarn install"
-      },
-      "start": {
-        "title": "Bắt đầu phát triển",
-        "description": "Khởi động development server và bắt đầu code",
-        "code": "yarn dev"
-      },
-      "build": {
-        "title": "Build cho production",
-        "description": "Build ứng dụng của bạn để triển khai production",
-        "code": "yarn build"
-      }
+    "fields": {
+      "title": "Các lĩnh vực tư vấn"
     },
     "footer": {
-      "description": "Một React TypeScript boilerplate hiện đại với best practices và trải nghiệm phát triển.",
-      "documentation": {
-        "title": "Tài liệu",
-        "gettingStarted": "Bắt đầu",
-        "features": "Tính năng",
-        "apiReference": "Tham khảo API",
-        "examples": "Ví dụ"
-      },
-      "resources": {
-        "title": "Tài nguyên",
-        "github": "GitHub",
-        "discord": "Discord",
-        "twitter": "Twitter",
-        "blog": "Blog"
+      "description": "FairInsights là nền tảng trợ lý pháp lý AI và kết nối mạng lưới luật sư uy tín hàng đầu Việt Nam, đem lại các giải pháp pháp lý nhanh chóng, minh bạch và tin cậy.",
+      "navigation": {
+        "title": "Chuyển hướng",
+        "dashboard": "Trang chủ",
+        "about": "Giới thiệu",
+        "library": "Lĩnh vực tư vấn",
+        "aiAssistance": "Trợ lý AI",
+        "contacts": "Liên hệ"
       },
       "legal": {
         "title": "Pháp lý",
         "privacy": "Chính sách bảo mật",
         "terms": "Điều khoản dịch vụ",
-        "license": "Giấy phép"
+        "license": "Quy chế hoạt động"
       },
-      "copyright": "© {{year}} React Boilerplate. Bảo lưu mọi quyền."
+      "copyright": "© {{year}} FairInsights. Bảo lưu mọi quyền."
     }
   }
 }

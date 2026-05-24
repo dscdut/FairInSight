@@ -7,11 +7,13 @@
   --black: #000000;
 
   /* Primary (Red) */
+  --primary-50: #fdd2d4;
   --primary-400: #C64A50;
   --primary-500: #B81D24;
   --primary-600: #93171D;
 
   /* Greys */
+  --grey-50: #F9FAFB;
   --grey-100: #F3F4F6;
   --grey-200: #E5E7EA;
   --grey-300: #D2D5DB;
@@ -34,8 +36,9 @@
     2. SEMANTIC TOKENS (Light Mode)
     ========================================= */
   --background-primary: var(--white);
+  --background-primary-light: var(--primary-50);
   --background-secondary: var(--grey-100);
-  --background-tertiary: var(--grey-200);
+  --background-tertiary: var(--grey-50);
 
   --text-primary: var(--grey-900);
   --text-secondary: var(--grey-600);
