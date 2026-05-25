@@ -14,7 +14,7 @@ const Logo = ({ className = '' }) => {
         className={`flex items-center space-x-2 ${className}`}
       >
         <div className='relative'>
-          <img src={logo} alt='Logo' className='w-10 h-9' />
+          <img src={logo} alt='Logo' className='w-10 h-9 hidden sm:block' />
         </div>
         <span className='text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary'>
           FairInsights

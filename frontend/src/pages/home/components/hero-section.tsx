@@ -26,7 +26,7 @@ export const HeroSection = () => {
               <span className='text-primary'>{t('home.hero.logo')}</span>
               {t('home.hero.title')}
             </h1>
-            <p className='text-p sm:text-p md:text-p text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto'>
+            <p className='text-p sm:text-p md:text-p text-gray-600 dark:text-gray-300 mb-8 max-w-3xl'>
               {t('home.hero.description')}
             </p>
             <div className='flex flex-col sm:flex-row items-start justify-start gap-4'>

@@ -42,12 +42,12 @@ const Header = () => {
     <header className='fixed top-0 left-0 z-50 w-full border-b border-gray-200 backdrop-blur bg-white/80 dark:bg-gray-900/80 dark:border-gray-800'>
       <nav className='container flex justify-between items-center py-3 mx-auto'>
         <Logo />
-        <ul className='hidden gap-6 items-center md:flex'>
+        <ul className='hidden gap-6 items-center lg:flex'>
           {navLinks.map((link) => (
             <li key={link.to}>
               <button
                 onClick={(e) => handleSmoothScroll(e, link.to)}
-                className='px-2 py-1 font-medium text-tertiary bg-transparent rounded border-none transition-colors cursor-pointer dark:text-gray-200 hover:text-primary dark:hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500'
+                className='px-2 py-1 font-medium text-tertiary bg-transparent rounded border-none transition-colors cursor-pointer dark:text-gray-200 hover:text-primary dark:hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary'
                 tabIndex={0}
                 aria-label={t(`home.${link.labelKey}`)}
               >
@@ -68,7 +68,7 @@ const Header = () => {
                   <div
                     role='button'
                     tabIndex={0}
-                    className='relative w-10 h-10 rounded-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500'
+                    className='relative w-10 h-10 rounded-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary'
                   >
                     <Avatar className='w-10 h-10'>
                       <AvatarImage src={'/images/avatar.png'} alt={user?.name} />
@@ -108,7 +108,7 @@ const Header = () => {
                   <div
                     role='button'
                     tabIndex={0}
-                    className='relative w-10 h-10 rounded-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500'
+                    className='relative w-10 h-10 rounded-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary'
                   >
                     <Avatar className='w-10 h-10'>
                       <AvatarImage src={'/images/avatar.png'} alt={user?.name} />
@@ -144,7 +144,7 @@ const Header = () => {
             <div className='hidden gap-2 items-center md:flex'>
               <Button
                 variant='outline'
-                className='px-4 py-2 font-medium text-gray-900 rounded-md border border-gray-200 transition-all duration-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 focus-visible:ring-2 focus-visible:ring-blue-500'
+                className='px-4 py-2 font-medium text-gray-900 rounded-md border border-gray-200 transition-all duration-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 focus-visible:ring-2 focus-visible:ring-primary'
               >
                 <Link to={ROUTE.AUTH.LOGIN}>{tAuth('login')}</Link>
               </Button>
@@ -153,20 +153,20 @@ const Header = () => {
               </Button>
             </div>
           )}
-        </div>
 
-        {/* Mobile menu button */}
-        <button
-          className='flex justify-center items-center p-2 rounded md:hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500'
-          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-          onClick={() => setMenuOpen(!menuOpen)}
-        >
-          {menuOpen ? (
-            <X className='w-7 h-7 text-gray-700 dark:text-gray-200' />
-          ) : (
-            <Menu className='w-7 h-7 text-gray-700 dark:text-gray-200' />
-          )}
-        </button>
+          {/* Mobile menu button */}
+          <button
+            className='flex justify-center items-center p-2 rounded md:hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-primary'
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            onClick={() => setMenuOpen(!menuOpen)}
+          >
+            {menuOpen ? (
+              <X className='w-7 h-7 text-gray-700 dark:text-gray-200' />
+            ) : (
+              <Menu className='w-7 h-7 text-gray-700 dark:text-gray-200' />
+            )}
+          </button>
+        </div>        
       </nav>
 
       {/* Mobile nav menu */}
@@ -180,7 +180,7 @@ const Header = () => {
                     handleSmoothScroll(e, link.to)
                     setMenuOpen(false)
                   }}
-                  className='px-2 py-2 w-full font-medium text-left text-gray-700 bg-transparent rounded border-none transition-colors cursor-pointer dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500'
+                  className='px-2 py-2 w-full font-medium text-left text-gray-700 bg-transparent rounded border-none transition-colors cursor-pointer dark:text-gray-200 hover:text-primary dark:hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary'
                   tabIndex={0}
                   aria-label={t(`home.${link.labelKey}`)}
                 >
@@ -192,15 +192,15 @@ const Header = () => {
               <div className='flex flex-col gap-2'>
                 <Button
                   variant='outline'
-                  className='px-4 py-2 font-medium text-gray rounded-md border border-gray-200 transition-all duration-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 dark:text-gray hover:bg-gray-100 dark:hover:bg-gray-700 focus-visible:ring-2 focus-visible:ring-blue-500'
+                  className='px-4 py-2 font-medium text-gray rounded-md border border-gray-200 transition-all duration-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 dark:text-gray hover:bg-gray-100 dark:hover:bg-gray-700 focus-visible:ring-2 focus-visible:ring-primary'
                 >
                   <Link to={ROUTE.AUTH.LOGIN} onClick={() => setMenuOpen(false)}>
-                    {tAuth('auth.login')}
+                    {tAuth('login')}
                   </Link>
                 </Button>
-                <Button className='px-4 py-2 font-medium text-white bg-blue-600 rounded-md transition-all duration-200 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 focus-visible:ring-2 focus-visible:ring-blue-500'>
+                <Button className='px-4 py-2 font-medium text-white bg-primary rounded-md transition-all duration-200 dark:bg-primary hover:bg-primary dark:hover:bg-primary focus-visible:ring-2 focus-visible:ring-primary'>
                   <Link to={ROUTE.AUTH.REGISTER} onClick={() => setMenuOpen(false)}>
-                    {tAuth('auth.register')}
+                    {tAuth('register')}
                   </Link>
                 </Button>
               </div>
