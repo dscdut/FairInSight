@@ -194,6 +194,7 @@ export default function Login() {
                   variant={'default'}
                   type='submit'
                   size={'lg'}
+                  className='w-full'
                 >
                   {t('login')}
                 </Button>
@@ -214,6 +215,7 @@ export default function Login() {
                   variant={'secondary'}
                   type='button'
                   size={'lg'}
+                  className='w-full'
                 >
                   <svg className='h-5 w-5 shrink-0' viewBox='0 0 24 24'>
                     <path

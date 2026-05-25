@@ -228,7 +228,11 @@ export default function Register() {
 
               {/* SUBMIT */}
               <motion.div variants={itemVariants}>
-                <Button loading={isPending} type='submit' size={'lg'}>
+                <Button
+                  loading={isPending}
+                  type='submit' size={'lg'}
+                  className='w-full'
+                >
                   {t('register')}
                 </Button>
               </motion.div>
