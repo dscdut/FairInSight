@@ -35,7 +35,7 @@ class Controller {
      * Update authenticated user's profile
      */
     updateOne = async req => {
-        await this.service.upsertOne(UpdateUserDto(req.body), req.user.payload.userId);
+        await this.service.upsertOne(UpdateUserDto(req.body), req.user.payload.id);
         return ValidHttpResponse.toNoContentResponse();
     };
 
@@ -63,7 +63,7 @@ class Controller {
      */
     banUser = async req => {
         const banDto = BanUserDto(req.body);
-        const adminId = req.user?.payload?.userId;
+        const adminId = req.user?.payload?.id;
 
         const data = await this.service.banUser(
             req.params.id,
@@ -79,7 +79,7 @@ class Controller {
      */
     unbanUser = async req => {
         const unbanDto = UnbanUserDto(req.body);
-        const adminId = req.user?.payload?.userId;
+        const adminId = req.user?.payload?.id;
 
         const data = await this.service.unbanUser(
             req.params.id,
