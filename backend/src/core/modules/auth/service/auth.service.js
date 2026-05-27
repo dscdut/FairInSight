@@ -19,7 +19,7 @@ class Service {
         }
 
         if (user.banned_by) {
-            throw new UnAuthorizedException('Tài khoản của bạn đã bị khóa');
+            throw new UnAuthorizedException('Your account has been banned');
         }
 
         const isMatch = await this.bcryptService.compare(
