@@ -22,11 +22,11 @@ export function parsePaginationAndFilters(query, options = {}) {
     const filter = {};
 
     if (query && typeof query === 'object') {
-        for (const key of Object.keys(query)) {
+        Object.keys(query).forEach(key => {
             if (allowedFilters.includes(key) && query[key] !== undefined && query[key] !== null) {
                 filter[key] = query[key];
             }
-        }
+        });
     }
 
     return { page, size, filter };

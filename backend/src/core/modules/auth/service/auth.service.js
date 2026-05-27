@@ -1,7 +1,4 @@
-import { pick } from 'lodash';
 import { JwtPayload } from 'core/modules/auth/dto/jwt-sign.dto';
-import { UserDataService } from 'core/modules/user/services/userData.service';
-import { joinUserRoles } from 'core/utils/userFilter';
 import { BcryptService } from './bcrypt.service';
 import { JwtService } from './jwt.service';
 import { UserRepository } from '../../user/user.repository';
@@ -19,6 +16,10 @@ class Service {
 
         if (!user) {
             throw new UnAuthorizedException('Email or password is incorrect');
+        }
+
+        if (user.banned_by) {
+            throw new UnAuthorizedException('Tài khoản của bạn đã bị khóa');
         }
 
         const isMatch = await this.bcryptService.compare(

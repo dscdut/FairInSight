@@ -1,8 +1,13 @@
-import pick from 'lodash/pick';
+import { Role } from 'core/common/enum';
 
 class Service {
     getUserInfo(user) {
-        return pick(user, ['id', 'email', 'roles', 'fullName']);
+        return {
+            id: user.id,
+            fullName: user.full_name,
+            email: user.email,
+            role: (user.roles?.name || Role.USER).toLowerCase(),
+        };
     }
 }
 

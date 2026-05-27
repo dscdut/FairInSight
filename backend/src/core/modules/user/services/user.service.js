@@ -1,8 +1,9 @@
 import { BcryptService } from 'core/modules/auth';
 import { Optional } from 'core/utils';
-import { NotFoundException, DuplicateException, BadRequestException } from 'packages/httpException';
+import { NotFoundException, BadRequestException } from 'packages/httpException';
 import { Role, UserStatus, UserActionType } from 'core/common/enum';
 import { UserRepository } from '../user.repository';
+import { UserDataService } from './userData.service';
 
 class Service {
     constructor() {
@@ -53,13 +54,14 @@ class Service {
         return user;
     }
 
+
     /**
    * Format user for list response
    * Includes code, role, status, and available actions
    */
     toUserListItem(user) {
         const role = (user.roles?.name || Role.USER).toLowerCase();
-        const status = user.deleted_at ? UserStatus.BANNED : UserStatus.ACTIVE;
+        const status = user.banned_by ? UserStatus.BANNED : UserStatus.ACTIVE;
         return {
             id: user.id,
             userCode: `USR-${user.id.slice(0, 8).toUpperCase()}`,
@@ -119,15 +121,16 @@ class Service {
    */
     async banUser(id, byUserId, reason) {
         // Validate user exists and is not already banned
-        const user = await this.repository.findByIdIncludingDeleted(id);
+        const user = await this.repository.findById(id);
         Optional.of(user).throwIfNotPresent(new NotFoundException());
 
-        if (user.deleted_at) {
-            throw new BadRequestException('User is already banned');
+        const role = (user.roles?.name || Role.USER).toUpperCase();
+        if (role !== Role.USER) {
+            throw new BadRequestException('Only users with USER role can be banned');
         }
 
         // Ban the user
-        const result = await this.repository.setDeletedState(id, true);
+        const result = await this.repository.setBanState(id, true, byUserId, reason);
         if (result.count === 0) {
             throw new BadRequestException('Failed to ban user');
         }
@@ -135,10 +138,7 @@ class Service {
         // Return updated state using already fetched user data
         return {
             data: {
-                id: user.id,
-                fullName: user.full_name,
-                email: user.email,
-                role: (user.roles?.name || Role.USER).toLowerCase(),
+                ...UserDataService.getUserInfo(user),
                 status: UserStatus.BANNED,
                 bannedAt: new Date().toISOString(),
                 bannedBy: byUserId,
@@ -153,15 +153,11 @@ class Service {
    */
     async unbanUser(id, byUserId, reason) {
         // Validate user exists and is currently banned
-        const user = await this.repository.findByIdIncludingDeleted(id);
+        const user = await this.repository.findById(id);
         Optional.of(user).throwIfNotPresent(new NotFoundException());
 
-        if (!user.deleted_at) {
-            throw new BadRequestException('User is not banned');
-        }
-
         // Unban the user
-        const result = await this.repository.setDeletedState(id, false);
+        const result = await this.repository.setBanState(id, false);
         if (result.count === 0) {
             throw new BadRequestException('Failed to unban user');
         }
@@ -169,10 +165,7 @@ class Service {
         // Return updated state using already fetched user data
         return {
             data: {
-                id: user.id,
-                fullName: user.full_name,
-                email: user.email,
-                role: (user.roles?.name || Role.USER).toLowerCase(),
+                ...UserDataService.getUserInfo(user),
                 status: UserStatus.ACTIVE,
                 unbannedAt: new Date().toISOString(),
                 unbannedBy: byUserId,
@@ -191,15 +184,10 @@ class Service {
         return {
             data: {
                 items: items.map(user => ({
-                    id: user.id,
-                    fullName: user.full_name,
-                    email: user.email,
-                    userCode: `USR-${user.id.slice(0, 8).toUpperCase()}`,
-                    avatar: user.avatar_url,
-                    role: (user.roles?.name || Role.USER).toLowerCase(),
-                    bannedAt: user.deleted_at.toISOString(),
-                    bannedBy: null,
-                    banReason: null,
+                    ...this.toUserListItem(user),
+                    bannedAt: user.deleted_at?.toISOString() || null,
+                    bannedBy: user.banned_by,
+                    banReason: user.ban_reason,
                 })),
                 pagination: {
                     page,
@@ -219,7 +207,7 @@ class Service {
         // Validate role value
         const role = (payload?.role || '').toLowerCase();
         const allowedRoles = [Role.USER, Role.LAWYER, Role.ADMIN].map(r => r.toLowerCase());
-        
+
         if (!allowedRoles.includes(role)) {
             throw new BadRequestException(`role must be one of: ${allowedRoles.join(', ')}`);
         }

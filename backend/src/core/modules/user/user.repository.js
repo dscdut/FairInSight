@@ -59,9 +59,9 @@ class Repository extends BaseRepository {
 
         if (filter.status) {
             if (filter.status === 'banned') {
-                where.deleted_at = { not: null };
+                where.banned_by = { not: null };
             } else if (filter.status === 'active') {
-                where.deleted_at = null;
+                where.banned_by = null;
             }
         }
 
@@ -80,11 +80,11 @@ class Repository extends BaseRepository {
     }
 
     /**
-     * List banned users (soft-deleted) with pagination
+     * List banned users with pagination
      */
     async listBanned({ page, size }) {
         const skip = (page - 1) * size;
-        const where = { NOT: { deleted_at: null } };
+        const where = { deleted_at: null, NOT: { banned_by: null } };
 
         const [items, total] = await Promise.all([
             prisma.users.findMany({
@@ -92,7 +92,7 @@ class Repository extends BaseRepository {
                 include: DEFAULT_INCLUDE,
                 skip,
                 take: size,
-                orderBy: { deleted_at: 'desc' },
+                orderBy: { updated_at: 'desc' },
             }),
             prisma.users.count({ where }),
         ]);
@@ -119,6 +119,19 @@ class Repository extends BaseRepository {
                 ? { id, deleted_at: null }
                 : { id, NOT: { deleted_at: null } },
             data: { deleted_at: isDeleted ? new Date() : null },
+        });
+    }
+
+    /**
+     * Set user ban state
+     */
+    async setBanState(id, isBanned, bannedBy = null, banReason = null) {
+        return prisma.users.updateMany({
+            where: { id, deleted_at: null },
+            data: {
+                banned_by: isBanned ? bannedBy : null,
+                ban_reason: isBanned ? banReason : null,
+            },
         });
     }
 
