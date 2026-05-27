@@ -3,20 +3,32 @@ import { useCallback, useEffect } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion } from 'framer-motion'
 import { useForm } from 'react-hook-form'
+import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from 'react-router-dom'
 import { type z } from 'zod'
 
+import { logo } from '@/assets/images'
+import { FadeUp } from '@/components/animated/animated-component'
 import PasswordStrengthBar from '@/components/PasswordStrengthBar/PasswordStrengthBar'
-import { Button } from '@/components/ui/button'
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
+import {
+  Button,
+  FormControl,
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  Input
+} from '@/components/ui'
 import { ROUTE } from '@/core/constants/path'
+import { containerVariants, itemVariants } from '@/core/lib/variant/style-variant'
 import { ResetPasswordSchema } from '@/core/zod/reset-password.zod'
 import { useResetPasswordAuth } from '@/hooks/tanstack-query/auth/use-query-auth'
 
 type ResetPasswordForm = z.infer<typeof ResetPasswordSchema>
 
 export default function ResetPassword() {
+  const { t } = useTranslation('auth')
   const location = useLocation()
   const emailFromState = location.state?.email as string | undefined
 
@@ -46,108 +58,117 @@ export default function ResetPassword() {
 
   return (
     <div
-      className='relative flex justify-center w-full min-h-screen bg-cover bg-center'
+      className='relative flex min-h-screen items-center justify-center bg-cover bg-center'
       style={{ backgroundImage: "url('/bg.jpg')" }}
     >
-      <div className='absolute inset-0 bg-slate-950/70' />
+      <div className='absolute inset-0 bg-slate-950/70 backdrop-blur-[2px]' />
 
-      <div className='relative z-10 flex min-h-screen items-center justify-center px-4'>
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className='w-full max-w-md rounded-2xl bg-white p-8 shadow-xl'
+      <div className='container relative z-10 flex justify-center px-4'>
+        <FadeUp
+          className='w-full max-w-md rounded-lg bg-background-secondary p-8 shadow-400'
         >
-          <div className='space-y-3 text-left'>
-            <h1 className='text-3xl font-bold text-red-900'>Tạo mật khẩu mới</h1>
-            <p className='text-sm text-slate-500'>
-              Vui lòng nhập mật khẩu mới của bạn bên dưới. Hãy đảm bảo mật khẩu này khác với các mật khẩu cũ để tăng
-              cường bảo mật.
-            </p>
+          {/* Brand Logo & Title */}
+          <div className='space-y-2 text-center'>
+            <div className='flex justify-center mb-4'>
+              <img src={logo} alt='FairInsights Logo' className='h-10 w-auto' />
+            </div>
+            <h1 className='text-h3 text-primary font-extrabold tracking-tight'>{t('resetPasswordTitle')}</h1>
+            <p className='text-small text-text-secondary mt-2'>{t('resetPasswordDesc')}</p>
           </div>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleResetPassword)} className='mt-6 space-y-5'>
-              {/* EMAIL */}
-              <FormField
-                control={form.control}
-                name='email'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className='font-bold'>EMAIL</FormLabel>
-                    <FormControl>
-                      <Input type='email' {...field} disabled className='bg-slate-100' />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+            <form onSubmit={form.handleSubmit(handleResetPassword)} className='mt-8 space-y-6'>
+              <motion.div variants={containerVariants} initial='hidden' animate='visible' className='space-y-5'>
+                {/* EMAIL */}
+                <motion.div variants={itemVariants}>
+                  <FormField
+                    control={form.control}
+                    name='email'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className='text-small text-text-primary'>{t('email')}</FormLabel>
+                        <FormControl>
+                          <Input type='email' {...field} disabled />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </motion.div>
 
-              {/* PASSWORD */}
-              <FormField
-                control={form.control}
-                name='password'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className='text-sm font-semibold font-bold'>MẬT KHẨU MỚI</FormLabel>
+                {/* PASSWORD */}
+                <motion.div variants={itemVariants}>
+                  <FormField
+                    control={form.control}
+                    name='password'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className='text-small text-text-primary'>{t('newPasswordLabel')}</FormLabel>
+                        <FormControl>
+                          <Input
+                            type='password'
+                            placeholder={t('newPasswordPlaceholder')}
+                            {...field}
+                          />
+                        </FormControl>
+                        <PasswordStrengthBar password={form.watch('password') || ''} />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </motion.div>
 
-                    <FormControl>
-                      <Input
-                        type='password'
-                        placeholder='Nhập mật khẩu mới'
-                        {...field}
-                        className='bg-slate-100 h-[45px]'
-                      />
-                    </FormControl>
+                {/* CONFIRM PASSWORD */}
+                <motion.div variants={itemVariants}>
+                  <FormField
+                    control={form.control}
+                    name='confirmPassword'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className='text-small text-text-primary'>{t('confirmPasswordLabel')}</FormLabel>
+                        <FormControl>
+                          <Input
+                            type='password'
+                            placeholder={t('confirmPasswordPlaceholder')}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </motion.div>
 
-                    <PasswordStrengthBar password={form.watch('password') || ''} />
+                {/* BUTTON */}
+                <motion.div variants={itemVariants}>
+                  <Button
+                    loading={isResetting}
+                    type='submit'
+                    variant='default'
+                    size='lg'
+                    className='w-full mt-2'
+                  >
+                    {t('changePasswordBtn')}
+                  </Button>
+                </motion.div>
 
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* CONFIRM PASSWORD */}
-              <FormField
-                control={form.control}
-                name='confirmPassword'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className='font-bold'>XÁC NHẬN MẬT KHẨU</FormLabel>
-                    <FormControl>
-                      <Input
-                        type='password'
-                        placeholder='Nhập lại mật khẩu'
-                        {...field}
-                        className='bg-slate-100 h-[45px]'
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* BUTTON */}
-              <Button
-                loading={isResetting}
-                type='submit'
-                className='w-full rounded-md bg-red-800 py-3 text-white font-semibold hover:bg-red-900'
-              >
-                Đổi mật khẩu
-              </Button>
-
-              {/* FOOTER */}
-              <p className='text-center text-sm text-slate-500'>
-                Gặp vấn đề? <span className='text-red-700 font-medium cursor-pointer'>Liên hệ tư vấn viên</span>
-              </p>
-
-              <div className='text-center'>
-                <Link to={ROUTE.AUTH.LOGIN} className='text-sm text-slate-500 hover:text-red-700'>
-                  ← Quay lại đăng nhập
-                </Link>
-              </div>
+                {/* FOOTER */}
+                <motion.div variants={itemVariants} className='text-center text-small text-text-secondary pt-2 space-y-4'>
+                  <p>
+                    {t('havingTrouble')}{' '}
+                    <span className='text-primary font-semibold hover:underline cursor-pointer'>
+                      {t('contactSupport')}
+                    </span>
+                  </p>
+                  <div>
+                    <Link to={ROUTE.AUTH.LOGIN} className='font-semibold text-primary hover:text-primary-600 transition-colors duration-200'>
+                      ← {t('backToLogin')}
+                    </Link>
+                  </div>
+                </motion.div>
+              </motion.div>
             </form>
           </Form>
-        </motion.div>
+        </FadeUp>
       </div>
     </div>
   )
