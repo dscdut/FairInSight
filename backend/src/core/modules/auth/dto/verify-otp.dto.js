@@ -1,12 +1,12 @@
 import { ApiDocument } from 'core/config/swagger.config';
 import { SwaggerDocument } from 'packages/swagger';
 
-ApiDocument.addModel('LoginDto', {
+ApiDocument.addModel('VerifyOtpDto', {
     email: SwaggerDocument.ApiProperty({ type: 'string' }),
-    password: SwaggerDocument.ApiProperty({ type: 'string' }),
+    otp: SwaggerDocument.ApiProperty({ type: 'string' }),
 });
 
-export const LoginDto = body => ({
+export const VerifyOtpDto = body => ({
     email: body.email,
-    password: body.password,
+    otp: body.otp,
 });

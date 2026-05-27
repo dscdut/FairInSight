@@ -1,12 +1,10 @@
 import { ApiDocument } from 'core/config/swagger.config';
 import { SwaggerDocument } from 'packages/swagger';
 
-ApiDocument.addModel('LoginDto', {
+ApiDocument.addModel('ForgotPasswordDto', {
     email: SwaggerDocument.ApiProperty({ type: 'string' }),
-    password: SwaggerDocument.ApiProperty({ type: 'string' }),
 });
 
-export const LoginDto = body => ({
+export const ForgotPasswordDto = body => ({
     email: body.email,
-    password: body.password,
 });
