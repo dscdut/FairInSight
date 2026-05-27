@@ -32,9 +32,9 @@ services:
     volumes:
       - ./backend:/app
       - /app/node_modules
-    # Auto migrate and seed before starting
+    # Apply committed migrations and seed before starting
     command: >
-      sh -c "npx prisma migrate dev --name init && 
+      sh -c "npx prisma migrate deploy && 
              npx prisma db seed && 
              npm run dev"
 

@@ -7,6 +7,8 @@ export const CreateUserInterceptor = new DefaultValidatorInterceptor(
         email: JoiUtils.email().required(),
         fullName: JoiUtils.requiredString().min(1),
         password: JoiUtils.password().required(),
-        confirmPassword: JoiUtils.password().required(),
+        confirmPassword: Joi.any().valid(Joi.ref('password')).required().messages({
+            'any.only': 'Password does not match',
+        }),
     })
 );
