@@ -263,6 +263,8 @@ model users {
   created_at               DateTime?       @default(now()) @db.Timestamptz(6)
   updated_at               DateTime?       @default(now()) @db.Timestamptz(6)
   deleted_at               DateTime?       @db.Timestamptz(6)
+  banned_by                String?         @db.Uuid
+  ban_reason               String?
   analysis                 analysis[]
   chat_requests            chat_requests[]
   conversations            conversations[]

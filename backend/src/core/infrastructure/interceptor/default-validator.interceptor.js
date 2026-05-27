@@ -5,6 +5,7 @@ export class DefaultValidatorInterceptor extends AbstractInputValidatorIntercept
       * @type {import('joi').ObjectSchema<TSchema>} schema
       */
     schema;
+
     source;
 
     /**

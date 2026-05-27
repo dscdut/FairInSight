@@ -5,28 +5,22 @@ const DEFAULT_INCLUDE = { roles: true };
 const INCLUDE_WITH_LAWYER = { roles: true, lawyer_details: true };
 
 class Repository extends BaseRepository {
-  constructor() {
-    super('users');
-  }
+    constructor() {
+        super('users');
+    }
 
     /**
      * Find active user by email
      */
     async findByEmail(email) {
-        return prisma.users.findFirst({
-            where: { email, deleted_at: null },
-            include: DEFAULT_INCLUDE,
-        });
+        return super.findOne({ email }, DEFAULT_INCLUDE);
     }
 
     /**
      * Find active user by ID
      */
     async findById(id) {
-        return prisma.users.findFirst({
-            where: { id, deleted_at: null },
-            include: DEFAULT_INCLUDE,
-        });
+        return super.findById(id, DEFAULT_INCLUDE);
     }
 
     /**
@@ -39,30 +33,13 @@ class Repository extends BaseRepository {
         });
     }
 
-    /**
-     * Insert new user
-     */
-    async insert(createUserDto) {
-        return prisma.users.create({
-            data: {
-                email: createUserDto.email,
-                full_name: createUserDto.full_name,
-                password_hash: createUserDto.password,
-                role_id: createUserDto.role_id || null,
-            },
-            include: DEFAULT_INCLUDE,
-        });
-    }
+
 
     /**
      * Update user by ID
      */
     async updateById(id, payload) {
-        return prisma.users.update({
-            where: { id },
-            data: payload,
-            include: DEFAULT_INCLUDE,
-        });
+        return super.update(id, payload, DEFAULT_INCLUDE);
     }
 
     /**
@@ -149,7 +126,7 @@ class Repository extends BaseRepository {
      * Count active users
      */
     async countActiveUsers() {
-        return prisma.users.count({ where: { deleted_at: null } });
+        return super.count();
     }
 
     /**
@@ -163,27 +140,22 @@ class Repository extends BaseRepository {
      * Update user role
      */
     async updateRole(userId, roleId) {
-        return prisma.users.update({
-            where: { id: userId },
-            data: { role_id: roleId },
-            include: INCLUDE_WITH_LAWYER,
-        });
+        return super.update(userId, { role_id: roleId }, INCLUDE_WITH_LAWYER);
     }
 
     /**
      * Upsert lawyer details
      */
-    async upsertLawyerDetails(userId, payload) {
+    async upsertLawyerDetails(userId, lawyerData) {
         return prisma.lawyer_details.upsert({
             where: { user_id: userId },
             create: {
                 user_id: userId,
-                license_number: payload.licenseNumber || null,
-                bar_association: payload.licenseIssuer || null,
+                ...lawyerData,
             },
             update: {
-                license_number: payload.licenseNumber || undefined,
-                bar_association: payload.licenseIssuer || undefined,
+                license_number: lawyerData.license_number || undefined,
+                bar_association: lawyerData.bar_association || undefined,
             },
         });
     }
@@ -191,35 +163,28 @@ class Repository extends BaseRepository {
     /**
      * Update role and lawyer details in transaction
      */
-    async updateRoleAndLawyerDetails(userId, roleId, payload) {
+    async updateRoleAndLawyerDetails(userId, roleId, lawyerData) {
         return prisma.$transaction(async tx => {
-            // Update user role
-            await tx.users.update({
-                where: { id: userId },
-                data: { role_id: roleId },
-            });
+            // Update user role using super
+            await super.update(userId, { role_id: roleId }, null, tx);
 
-            // Update lawyer details if role is lawyer
-            if (payload && payload.role === 'lawyer') {
+            // Update lawyer details if lawyerData is provided
+            if (lawyerData) {
                 await tx.lawyer_details.upsert({
                     where: { user_id: userId },
                     create: {
                         user_id: userId,
-                        license_number: payload.licenseNumber || null,
-                        bar_association: payload.licenseIssuer || null,
+                        ...lawyerData,
                     },
                     update: {
-                        license_number: payload.licenseNumber || undefined,
-                        bar_association: payload.licenseIssuer || undefined,
+                        license_number: lawyerData.license_number || undefined,
+                        bar_association: lawyerData.bar_association || undefined,
                     },
                 });
             }
 
             // Return updated user
-            return tx.users.findFirst({
-                where: { id: userId },
-                include: INCLUDE_WITH_LAWYER,
-            });
+            return super.findById(userId, INCLUDE_WITH_LAWYER, tx);
         });
     }
 }

@@ -1,11 +1,9 @@
-export const joinUserRoles = user => {
-    return {
-        id: user.id,
-        email: user.email,
-        fullName: user.full_name,
-        roles: user.roles?.name || null,
-    };
-};
+export const joinUserRoles = user => ({
+    id: user.id,
+    email: user.email,
+    fullName: user.full_name,
+    roles: user.roles?.name || null,
+});
 
 export const joinUsersRoles = users => {
     const listUsers = [];
