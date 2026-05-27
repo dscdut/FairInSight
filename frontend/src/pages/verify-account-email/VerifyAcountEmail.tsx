@@ -3,19 +3,32 @@ import { useCallback, useEffect, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion } from 'framer-motion'
 import { useForm } from 'react-hook-form'
+import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { type z } from 'zod'
 
-import { Button } from '@/components/ui/button'
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form'
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp'
+import { logo } from '@/assets/images'
+import { FadeUp } from '@/components/animated/animated-component'
+import {
+  Button,
+  FormControl,
+  Form,
+  FormField,
+  FormItem,
+  FormMessage,
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot
+} from '@/components/ui'
 import { ROUTE } from '@/core/constants/path'
+import { containerVariants, itemVariants } from '@/core/lib/variant/style-variant'
 import { VerifyAccountEmailSchema } from '@/core/zod/verify-account-email.zod'
 import { useResendVerificationCode } from '@/hooks/tanstack-query/auth/use-query-auth'
 
 const RESEND_COUNTDOWN = 60
 
 export default function VerifyEmail() {
+  const { t } = useTranslation('auth')
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -79,76 +92,90 @@ export default function VerifyEmail() {
       className='relative flex min-h-screen w-full justify-center bg-cover bg-center'
       style={{ backgroundImage: "url('/bg.jpg')" }}
     >
-      <div className='absolute inset-0 bg-slate-950/70' />
+      <div className='absolute inset-0 bg-slate-950/70 backdrop-blur-[2px]' />
 
-      <div className='relative z-10 flex items-center justify-center px-4'>
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className='w-full max-w-md rounded-2xl bg-white/95 p-8 shadow-xl backdrop-blur'
+      <div className='container relative z-10 flex justify-center items-center px-4'>
+        <FadeUp
+          className='w-full max-w-md rounded-lg bg-background-secondary p-8 shadow-400'
         >
           {/* HEADER */}
-          <div className='space-y-3 text-center'>
-            <h1 className='text-2xl font-bold text-red-900'>Xác nhận OTP</h1>
-            <p className='text-sm text-slate-500'>Mã OTP 6 chữ số đã được gửi tới email của bạn.</p>
+          <div className='space-y-2 text-center'>
+            <div className='flex justify-center mb-4'>
+              <img src={logo} alt='FairInsights Logo' className='h-10 w-auto' />
+            </div>
+            <h1 className='text-h3 text-primary font-extrabold tracking-tight'>{t('verifyOtpTitle')}</h1>
+            <p className='text-small text-text-secondary mt-2'>{t('verifyOtpDesc')}</p>
           </div>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleVerify)} className='mt-6 space-y-6'>
-              {/* OTP INPUT */}
-              <FormField
-                control={form.control}
-                name='verificationCode'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <InputOTP
-                        maxLength={6}
-                        value={field.value}
-                        onChange={field.onChange}
-                        containerClassName='w-full gap-2'
-                      >
-                        <InputOTPGroup className='w-full justify-between'>
-                          {Array.from({ length: 6 }).map((_, i) => (
-                            <InputOTPSlot
-                              key={i}
-                              index={i}
-                              className='flex-1 rounded-xl border bg-slate-100 text-center text-lg font-semibold'
-                            />
-                          ))}
-                        </InputOTPGroup>
-                      </InputOTP>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <form onSubmit={form.handleSubmit(handleVerify)} className='mt-8 space-y-6'>
+              <motion.div variants={containerVariants} initial='hidden' animate='visible' className='space-y-5'>
+                {/* OTP INPUT */}
+                <motion.div variants={itemVariants}>
+                  <FormField
+                    control={form.control}
+                    name='verificationCode'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <InputOTP
+                            maxLength={6}
+                            value={field.value}
+                            onChange={field.onChange}
+                            containerClassName='w-full gap-2'
+                          >
+                            <InputOTPGroup className='w-full justify-between'>
+                              {Array.from({ length: 6 }).map((_, i) => (
+                                <InputOTPSlot
+                                  key={i}
+                                  index={i}
+                                  className='flex-1 rounded-xl border bg-background text-center text-lg font-semibold'
+                                />
+                              ))}
+                            </InputOTPGroup>
+                          </InputOTP>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </motion.div>
 
-              {/* BUTTON */}
-              <Button
-                type='submit'
-                className='w-full rounded-md bg-red-900 py-3 font-semibold text-white hover:bg-red-800'
-              >
-                Xác nhận OTP
-              </Button>
+                {/* BUTTON */}
+                <motion.div variants={itemVariants}>
+                  <Button
+                    type='submit'
+                    variant='default'
+                    size='lg'
+                    className='w-full mt-2'
+                  >
+                    {t('verifyOtpBtn')}
+                  </Button>
+                </motion.div>
 
-              {/* RESEND */}
-              <div className='text-center text-sm'>
-                <button
-                  type='button'
-                  onClick={handleResendCode}
-                  disabled={!canResend || isResending}
-                  className={`font-semibold ${
-                    canResend && !isResending ? 'text-red-900 hover:text-red-700' : 'cursor-not-allowed text-slate-400'
-                  }`}
-                >
-                  {isResending ? 'Đang gửi...' : canResend ? 'Gửi lại mã' : `Gửi lại mã (${countdown}s)`}
-                </button>
-              </div>
+                {/* RESEND */}
+                <motion.div variants={itemVariants} className='text-center text-small pt-2'>
+                  <button
+                    type='button'
+                    onClick={handleResendCode}
+                    disabled={!canResend || isResending}
+                    className={`font-semibold transition-colors duration-200 ${
+                      canResend && !isResending
+                        ? 'text-primary hover:text-primary-600'
+                        : 'cursor-not-allowed text-text-tertiary'
+                    }`}
+                  >
+                    {isResending
+                      ? t('sending')
+                      : canResend
+                      ? t('resendCode')
+                      : `${t('resendCode')} (${countdown}s)`}
+                  </button>
+                </motion.div>
+              </motion.div>
             </form>
           </Form>
-        </motion.div>
+        </FadeUp>
       </div>
     </div>
   )
