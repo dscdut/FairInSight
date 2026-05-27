@@ -5,3 +5,5 @@ export * from './optional';
 export * from './joi.util';
 export * from './sentryUtils';
 export * from './dtoFilter';
+export * from './pagination.util';
+
