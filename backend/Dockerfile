@@ -14,7 +14,7 @@ RUN apk add --no-cache openssl
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN npx prisma generate
+RUN npx prisma generate --schema=prisma/schema
 
 EXPOSE 3000
 CMD ["npm", "run", "dev"]

@@ -6,6 +6,7 @@
     "author": "dscdut",
     "license": "MIT",
     "prisma": {
+        "schema": "prisma/schema",
         "seed": "node prisma/seed.js"
     },
     "scripts": {
@@ -20,7 +21,7 @@
         "db:migrate": "npx prisma migrate dev",
         "db:studio": "npx prisma studio",
         "db:seed": "npx prisma db seed",
-        "postinstall": "prisma generate"
+        "postinstall": "prisma generate --schema=prisma/schema"
     },
     "dependencies": {
         "@prisma/adapter-pg": "^7.8.0",
