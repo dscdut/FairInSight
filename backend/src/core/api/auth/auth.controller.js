@@ -1,7 +1,6 @@
 import { AuthService } from '../../modules/auth/service/auth.service';
 import { RegisterDto, LoginDto, ForgotPasswordDto, VerifyOtpDto, ResetPasswordDto, UpdateMyProfileDto, RefreshTokenDto } from '../../modules/auth';
 import { ValidHttpResponse } from '../../../packages/handler/response/validHttp.response';
-import { valid } from 'joi';
 
 class Controller {
     constructor() {

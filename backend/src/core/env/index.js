@@ -13,11 +13,8 @@ export const FORGOT_PASSWORD_TOKEN_EXPIRY =
     Number.parseInt(process.env.FORGOT_PASSWORD_TOKEN_EXPIRY, 10) || 15 * 60 * 1000;
 export const PASSWORD_RESET_TOKEN_EXPIRY =
     Number.parseInt(process.env.PASSWORD_RESET_TOKEN_EXPIRY, 10) || 15 * 60 * 1000;
-export const SMTP_HOST = process.env.SMTP_HOST;
-export const SMTP_PORT = Number.parseInt(process.env.SMTP_PORT, 10) || 587;
-export const SMTP_USER = process.env.SMTP_USER;
-export const SMTP_PASS = process.env.SMTP_PASS;
-export const SMTP_FROM = process.env.SMTP_FROM;
+export const RESEND_API_KEY = process.env.RESEND_API_KEY;
+export const RESEND_FROM = process.env.RESEND_FROM;
 export const { DATABASE_URL } = process.env;
 export const ROOT_DIR =
     process.env === 'production'

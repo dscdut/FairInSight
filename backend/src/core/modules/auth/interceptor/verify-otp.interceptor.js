@@ -8,5 +8,6 @@ export const VerifyOtpInterceptor = new DefaultValidatorInterceptor(
             'string.pattern.base': 'Email must be a valid email address.'
         }),
         otp: JoiUtils.requiredString(),
+        type: Joi.string().valid('email', 'password').optional(),
     })
 );
