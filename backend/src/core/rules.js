@@ -13,10 +13,10 @@ export const Role = {
     },
     LAWYER: {
         name: 'LAWYER',
-        // permissions: ['TEST_AUTHORIZATION']
+        permissions: ['TEST_AUTHORIZATION']
     },
     USER: {
         name: 'USER',
-        // permissions: ['TEST_AUTHORIZATION']
+        permissions: ['TEST_AUTHORIZATION']
     }
 };
