@@ -28,15 +28,6 @@ export const UserResolver = Module.builder()
             controller: UserController.listUsers,
             preAuthorization: true,
         },
-        // Create new user (public)
-        {
-            route: '/',
-            method: 'post',
-            interceptors: [CreateUserInterceptor],
-            body: 'CreateUserDto',
-            controller: UserController.createOne,
-            preAuthorization: false,
-        },
         // Update user profile (authenticated)
         {
             route: '/',

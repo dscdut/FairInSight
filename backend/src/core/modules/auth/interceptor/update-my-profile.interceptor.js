@@ -4,10 +4,10 @@ import Joi from 'joi';
 
 export const UpdateMyProfileInterceptor = new DefaultValidatorInterceptor(
     Joi.object({
-        avatar_url: JoiUtils.optionalString().allow(''),
-        full_name: JoiUtils.optionalString().allow(''),
+        avatarUrl: JoiUtils.optionalString().allow(''),
+        fullName: JoiUtils.optionalString().allow(''),
         phone: JoiUtils.optionalString().allow(''),
-        date_of_birth: JoiUtils.optionalString().empty(''),
+        dateOfBirth: JoiUtils.optionalString().empty(''),
         location: JoiUtils.optionalString().allow(''),
     })
 );
