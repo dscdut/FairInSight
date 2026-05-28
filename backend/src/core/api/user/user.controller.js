@@ -28,7 +28,7 @@ class Controller {
     updateOne = async req => {
         await this.service.upsertOne(UpdateUserDto(req.body), req.user.payload.id);
         return ValidHttpResponse.toNoContentResponse();
-    };
+    };  
 
     /**
      * GET /api/v1/users/{id}
