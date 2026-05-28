@@ -10,7 +10,6 @@ import {
 } from 'core/modules/auth';
 import { Module } from 'packages/handler/Module';
 import { AuthController } from './auth.controller';
-import { GetMyProfileParams } from '../params';
 import { authMiddleware } from 'core/modules/auth/middleware/auth.middleware';
 import { uploadMediaSwagger } from 'core/common/swagger';
 import { MediaInterceptor } from 'core/modules/document';
@@ -37,17 +36,16 @@ export const AuthResolver = Module.builder()
             controller: AuthController.register,
         },
         {
-            route: '/me/:id',
+            route: '/me',
             method: 'get',
-            params: [GetMyProfileParams],
             interceptors: [GetMyProfileInterceptor],
             middleware: [authMiddleware],
             controller: AuthController.getMyProfile,
             preAuthorization: true,
         },
         {
-            route: '/update_my_profile',
-            method: 'post',
+            route: '/me',
+            method: 'patch',
             interceptors: [UpdateMyProfileInterceptor],
             middleware: [authMiddleware],
             body: 'UpdateMyProfileDto',
@@ -55,14 +53,14 @@ export const AuthResolver = Module.builder()
             preAuthorization: true,
         },
         {
-            route: '/forgot_password',
+            route: '/forgot-password',
             method: 'post',
             interceptors: [ForgotPasswordInterceptor],
             body: 'ForgotPasswordDto',
             controller: AuthController.forgotPassword,
         },
         {
-            route: '/verify_otp',
+            route: '/verify-otp',
             method: 'post',
             interceptors: [VerifyOtpInterceptor],
             body: 'VerifyOtpDto',
