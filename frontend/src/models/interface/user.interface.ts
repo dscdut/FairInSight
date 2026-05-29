@@ -1,6 +1,8 @@
+import { type RoleSystem, type RoleUser } from "../types/role.type"
+
 export interface UserResponseType {
-  id: string
-  name: string
+  userId: string
+  fullName: string
   email: string
-  role: string
+  roleName: RoleSystem | RoleUser
 }

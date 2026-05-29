@@ -1,6 +1,8 @@
 import type HttpStatusCode from "@/core/constants/http"
 
-import { type RoleUser, type RoleSystem } from "../types/role.type"
+import { type RoleUser } from "../types/role.type"
+
+import { type UserResponseType } from "./user.interface"
 
 export interface APIResponse<T> {
   data: T
@@ -15,7 +17,7 @@ export interface LoginApiResponse {
 }
 
 export interface LoginResponse {
-  user: { userId: string; fullName: string; email: string; roleName: RoleSystem | RoleUser }
+  user: UserResponseType
   accessToken: string
   refreshToken: string
 }
