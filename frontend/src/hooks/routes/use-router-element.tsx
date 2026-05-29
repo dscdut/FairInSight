@@ -6,18 +6,20 @@ import LayoutClient from '@/app/layout/layout-client'
 import LayoutMain from '@/app/layout/layout-main'
 import SuspenseProvider from '@/app/providers/suspense-provider'
 import AnimatedLayout from '@/components/animated/animated-layout'
+import HomeOrDashboard from '@/components/auth/home-or-dashboard'
 import ProtectedRoute from '@/components/auth/protected-route'
 import { ROUTE } from '@/core/constants/path'
 import ProfileEdit from '@/pages/profile/ProfileEdit'
 
 // Lazy load components
-const HomePage = lazy(() => import('@/pages/home/HomePage'))
+// const HomePage = lazy(() => import('@/pages/home/HomePage'))
 const Login = lazy(() => import('@/pages/login/Login'))
 const Register = lazy(() => import('@/pages/register/Register'))
 const VerifyAcountEmail = lazy(() => import('@/pages/verify-account-email/VerifyAcountEmail'))
 const ForgotPassword = lazy(() => import('@/pages/forgot-password/ForgotPassword'))
 const ResetPassword = lazy(() => import('@/pages/reset-password/ResetPassword'))
 const Dashboard = lazy(() => import('@/pages/admin/dashboard'))
+// const UserDashboard = lazy(() => import('@/pages/users/dashboard/Dashboard'))
 const Users = lazy(() => import('@/pages/admin/users'))
 const PageNotFound = lazy(() => import('@/pages/404/PageNotFound'))
 const Profile = lazy(() => import('@/pages/profile/Profile'))
@@ -36,7 +38,7 @@ export default function useRoutesElements() {
   const routeElements = (
     <SuspenseProvider>
       <Routes>
-        <Route path={ROUTE.HOME} element={<HomePage />} />
+        <Route path={ROUTE.HOME} element={<HomeOrDashboard />} />
         <Route path={ROUTE.AUTH.LOGIN} element={<Login />} />
         <Route path={ROUTE.AUTH.REGISTER} element={<Register />} />
         <Route path={ROUTE.AUTH.FORGOT_PASSWORD} element={<ForgotPassword />} />

@@ -71,15 +71,15 @@ const Header = () => {
                     className='relative w-10 h-10 rounded-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary'
                   >
                     <Avatar className='w-10 h-10'>
-                      <AvatarImage src={'/images/avatar.png'} alt={user?.name} />
-                      <AvatarFallback>{getInitials(user?.name || '')}</AvatarFallback>
+                      <AvatarImage src={'/images/avatar.png'} alt={user?.fullName} />
+                      <AvatarFallback>{getInitials(user?.fullName || '')}</AvatarFallback>
                     </Avatar>
                   </div>
                 </PopoverTrigger>
                 <PopoverContent className='p-4 w-60'>
                   <div className='space-y-4'>
                     <div className='space-y-1'>
-                      <p className='text-sm font-medium'>{user?.name}</p>
+                      <p className='text-sm font-medium'>{user?.fullName}</p>
                       <p className='text-sm text-gray-500 dark:text-gray-400'>{user?.email}</p>
                     </div>
                     <div className='space-y-2'>
@@ -111,15 +111,15 @@ const Header = () => {
                     className='relative w-10 h-10 rounded-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary'
                   >
                     <Avatar className='w-10 h-10'>
-                      <AvatarImage src={'/images/avatar.png'} alt={user?.name} />
-                      <AvatarFallback>{getInitials(user?.name || '')}</AvatarFallback>
+                      <AvatarImage src={'/images/avatar.png'} alt={user?.fullName} />
+                      <AvatarFallback>{getInitials(user?.fullName || '')}</AvatarFallback>
                     </Avatar>
                   </div>
                 </PopoverTrigger>
                 <PopoverContent className='p-4 w-60'>
                   <div className='space-y-4'>
                     <div className='space-y-1'>
-                      <p className='text-sm font-medium'>{user?.name}</p>
+                      <p className='text-sm font-medium'>{user?.fullName}</p>
                       <p className='text-sm text-gray-500 dark:text-gray-400'>{user?.email}</p>
                     </div>
                     <div className='space-y-2'>
@@ -127,13 +127,13 @@ const Header = () => {
                         <Button variant='ghost' className='flex justify-start items-center w-full'>
                           <Link to={ROUTE.PROFILE.ROOT} className='flex items-center'>
                             <User className='mr-2 w-4 h-4' />
-                            {tAuth('auth.profile')}
+                            {tAuth('profile')}
                           </Link>
                         </Button>
                       </div>
                       <Button variant='destructive' className='w-full' onClick={handleLogout}>
                         <LogOut className='mr-2 w-4 h-4' />
-                        {tAuth('auth.logout')}
+                        {tAuth('logout')}
                       </Button>
                     </div>
                   </div>

@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { motion } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { type z } from 'zod'
 
 import { IconEye, IconNonEye } from '@/assets/icons'
@@ -33,6 +33,7 @@ import { type RememberMeData } from '@/models/interface/auth.interface'
 
 export default function Login() {
   const { t } = useTranslation('auth')
+  const location = useLocation()
   const { loginStart, loginSuccess, loginFailure, isLoading } = useAuthStore()
 
   const [isPasswordVisible, setIsPasswordVisible] = useState(false)
@@ -85,15 +86,21 @@ export default function Login() {
   }
 
   useEffect(() => {
-    const saved = localStorage.getItem(REMEMBER_ME)
-    if (saved) {
-      const parsed: RememberMeData = JSON.parse(saved)
-      if (parsed.isRemembered) {
-        form.setValue('email', parsed.email)
-        form.setValue('password', parsed.password)
+    if (location.state?.autoLogin && location.state?.email && location.state?.password) {
+      form.setValue('email', location.state.email)
+      form.setValue('password', location.state.password)
+      onSubmit({ email: location.state.email, password: location.state.password })
+    } else {
+      const saved = localStorage.getItem(REMEMBER_ME)
+      if (saved) {
+        const parsed: RememberMeData = JSON.parse(saved)
+        if (parsed.isRemembered) {
+          form.setValue('email', parsed.email)
+          form.setValue('password', parsed.password)
+        }
       }
     }
-  }, [form])
+  }, [form, location.state, onSubmit])
 
   return (
     <div
