@@ -31,8 +31,8 @@ export const useAuthStore = create<AuthStore>((set) => ({
       isLoading: false,
       isAuthenticated: true,
       user: data?.user,
-      access_token: data?.access_token,
-      refresh_token: data?.refresh_token,
+      access_token: data?.accessToken,
+      refresh_token: data?.refreshToken,
       error: null
     })
   },
@@ -48,6 +48,27 @@ export const useAuthStore = create<AuthStore>((set) => ({
     clearLS()
     set({
       ...initialState
+    })
+  },
+
+  registerStart: () => {
+    set({
+      isLoading: true,
+      error: null
+    })
+  },
+
+  registerSuccess: () => {
+    set({
+      isLoading: false,
+      error: null
+    })
+  },
+
+  registerFailure: (error: string) => {
+    set({
+      isLoading: false,
+      error
     })
   },
 

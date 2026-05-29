@@ -4,9 +4,9 @@ import { numberConstants } from '@/core/configs/consts'
 
 export const LoginSchema = z.object({
   email: z.string().min(numberConstants.TWO, {
-    message: 'Email is valid.'
+    message: 'Email chưa được xác thực.'
   }),
-  password: z.string().min(numberConstants.SIX, {
-    message: 'Password must be at least 6 characters.'
+  password: z.string().min(numberConstants.EIGHT, {
+    message: 'Mật khẩu phải tối thiểu 8 kí tự.'
   })
 })

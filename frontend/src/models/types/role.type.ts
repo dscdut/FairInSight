@@ -1,6 +1,8 @@
 export interface RoleType {
-  value: Role
+  value: RoleUser
   label: string
 }
 
-export type Role = 'client' | 'lawyer'
+export type RoleUser = 'USER' | 'LAWYER'
+
+export type RoleSystem = 'USER' | 'ADMIN'
