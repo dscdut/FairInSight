@@ -21,7 +21,7 @@ import {
   FormMessage,
   Input,
 } from '@/components/ui'
-import { PASSWORD_TYPE, TEXT_TYPE } from '@/core/configs/consts'
+import { PASSWORD_TYPE, ROLE_LAWYER, ROLE_USER, TEXT_TYPE } from '@/core/configs/consts'
 import { ROUTE } from '@/core/constants/path'
 import { containerVariants, itemVariants } from '@/core/lib/variant/style-variant'
 import { RegisterSchema } from '@/core/zod'
@@ -36,8 +36,8 @@ export default function Register() {
 
   useAuthRedirect()
   const roleOptions: RoleType[] = [
-    { value: 'USER', label: t('roleClient') },
-    { value: 'LAWYER', label: t('roleLawyer') }
+    { value: ROLE_USER, label: t('roleClient') },
+    { value: ROLE_LAWYER, label: t('roleLawyer') }
   ]
   const form = useForm<z.infer<typeof RegisterSchema>>({
     resolver: zodResolver(RegisterSchema),
@@ -46,7 +46,7 @@ export default function Register() {
       password: '',
       confirmPassword: '',
       fullName: '',
-      role: 'USER',
+      role: ROLE_USER,
       referralCode: ''
     }
   })

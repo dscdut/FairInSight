@@ -66,6 +66,7 @@ export default function VerifyEmail() {
 
   const { mutate: verifyEmail, isPending: isVerifying } = useVerifyEmailAuth()
 
+
   const handleVerify = useCallback(
     (data: z.infer<typeof VerifyAccountEmailSchema>) => {
       const flowType = location.state?.password ? 'register' : 'forgot_password'

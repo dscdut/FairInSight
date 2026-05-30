@@ -27,6 +27,8 @@ const Header = () => {
   const { t: tAuth } = useTranslation('auth')
   const [menuOpen, setMenuOpen] = useState(false)
   const { isAuthenticated, user, logout } = useAuthStore()
+  const fullName = user?.fullName || ''
+  const email = user?.email || ''
 
   const getInitials = (name: string) => {
     return name
@@ -62,7 +64,7 @@ const Header = () => {
           <LanguageSwitcher />
 
           {isAuthenticated ? (
-            <div className='flex sm:hidden'>
+            <div className='sm:flex'>
               <Popover>
                 <PopoverTrigger asChild>
                   <div
@@ -71,56 +73,16 @@ const Header = () => {
                     className='relative w-10 h-10 rounded-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary'
                   >
                     <Avatar className='w-10 h-10'>
-                      <AvatarImage src={'/images/avatar.png'} alt={user?.fullName} />
-                      <AvatarFallback>{getInitials(user?.fullName || '')}</AvatarFallback>
+                      <AvatarImage src={'/images/avatar.png'} alt={fullName} />
+                      <AvatarFallback>{getInitials(fullName)}</AvatarFallback>
                     </Avatar>
                   </div>
                 </PopoverTrigger>
                 <PopoverContent className='p-4 w-60'>
                   <div className='space-y-4'>
                     <div className='space-y-1'>
-                      <p className='text-sm font-medium'>{user?.fullName}</p>
-                      <p className='text-sm text-gray-500 dark:text-gray-400'>{user?.email}</p>
-                    </div>
-                    <div className='space-y-2'>
-                      <div className='border-b border-gray-200 dark:border-gray-800'>
-                        <Button variant='ghost' className='flex justify-start items-center w-full'>
-                          <Link to={ROUTE.PROFILE.ROOT} className='flex items-center'>
-                            <User className='mr-2 w-4 h-4' />
-                            {tAuth('auth.profile')}
-                          </Link>
-                        </Button>
-                      </div>
-                      <Button variant='destructive' className='w-full' onClick={handleLogout}>
-                        <LogOut className='mr-2 w-4 h-4' />
-                        {tAuth('auth.logout')}
-                      </Button>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-          ) : null}
-          {isAuthenticated ? (
-            <div className='hidden sm:flex'>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <div
-                    role='button'
-                    tabIndex={0}
-                    className='relative w-10 h-10 rounded-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary'
-                  >
-                    <Avatar className='w-10 h-10'>
-                      <AvatarImage src={'/images/avatar.png'} alt={user?.fullName} />
-                      <AvatarFallback>{getInitials(user?.fullName || '')}</AvatarFallback>
-                    </Avatar>
-                  </div>
-                </PopoverTrigger>
-                <PopoverContent className='p-4 w-60'>
-                  <div className='space-y-4'>
-                    <div className='space-y-1'>
-                      <p className='text-sm font-medium'>{user?.fullName}</p>
-                      <p className='text-sm text-gray-500 dark:text-gray-400'>{user?.email}</p>
+                      <p className='text-sm font-medium'>{fullName}</p>
+                      <p className='text-sm text-gray-500 dark:text-gray-400'>{email}</p>
                     </div>
                     <div className='space-y-2'>
                       <div className='border-b border-gray-200 dark:border-gray-800'>

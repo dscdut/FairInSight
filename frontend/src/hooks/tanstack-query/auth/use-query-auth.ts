@@ -3,15 +3,12 @@ import { type AxiosError } from 'axios'
 import { useNavigate } from 'react-router-dom'
 import { type z } from 'zod'
 
-import { ROLE_ADMIN } from '@/core/configs/consts'
-import isEqual from '@/core/configs/is-equal'
 import { ROUTE } from '@/core/constants/path'
 import { handleError } from '@/core/helpers/error-handler'
 import { MUTATION_KEYS } from '@/core/helpers/key-tanstack'
+import { processLoginSuccess } from '@/core/helpers/process-login-success'
 import toastifyCommon from '@/core/lib/toastify-common'
 import { authApi } from '@/core/services/auth.service'
-import { setToken } from '@/core/shared/storage'
-import { useAuthStore } from '@/core/store/features/auth/authStore'
 // import { type LoginSchema } from '@/core/zod/login.zod'
 import { type ForgotEmailSchema } from '@/core/zod/forgot-email.zod'
 import { type RegisterSchema } from '@/core/zod/register.zod'
@@ -22,6 +19,7 @@ import {
   type ResetPasswordReq
 } from '@/models/interface/auth.interface'
 
+
 // Login
 export const useLoginAuth = () => {
   const navigate = useNavigate()
@@ -29,13 +27,7 @@ export const useLoginAuth = () => {
     mutationKey: [MUTATION_KEYS.login],
     mutationFn: (data: Account) => authApi.login(data),
     onSuccess: (response: LoginApiResponse) => {
-      const { accessToken, refreshToken, user } = response.data
-      setToken(accessToken, refreshToken)
-      const targetRoute =
-        isEqual(user.roleName, ROLE_ADMIN)
-          ? `${ROUTE.ADMIN.ROOT}/${ROUTE.ADMIN.DASHBOARD}`
-          : ROUTE.HOME
-      navigate(targetRoute)
+      processLoginSuccess(response, navigate)
       toastifyCommon.success('Đăng nhập thành công')
     },
     onError: (error: AxiosError, variables) => {
@@ -91,6 +83,8 @@ export const useEmailForgotPassAuth = () => {
 // VERIFY EMAIL
 export const useVerifyEmailAuth = () => {
   const navigate = useNavigate()
+  const { mutateAsync: login } = useLoginAuth()
+
   return useMutation({
     mutationKey: [MUTATION_KEYS.verifyEmail],
     mutationFn: (data: { otp: string; email?: string; type?: 'register' | 'forgot_password'; password?: string }) =>
@@ -101,21 +95,10 @@ export const useVerifyEmailAuth = () => {
         navigate(ROUTE.AUTH.RESET_PASSWORD, { state: { email: variables.email } })
       } else if (variables.password && variables.email) {
         try {
-          const loginResponse = await authApi.login({
+          await login({
             email: variables.email,
             password: variables.password
           })
-          const { accessToken, refreshToken, user } = loginResponse.data
-          setToken(accessToken, refreshToken)
-          useAuthStore.getState().loginSuccess(loginResponse.data)
-          
-          const targetRoute =
-            isEqual(user.roleName, ROLE_ADMIN)
-              ? `${ROUTE.ADMIN.ROOT}/${ROUTE.ADMIN.DASHBOARD}`
-              : ROUTE.HOME
-          
-          navigate(targetRoute)
-          toastifyCommon.success('Đăng ký thành công')
         } catch (error) {
           navigate(ROUTE.AUTH.LOGIN)
         }

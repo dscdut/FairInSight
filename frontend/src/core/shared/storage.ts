@@ -45,7 +45,7 @@ export const getUserFromLocalStorage = (): UserResponseType | null => {
 
 export const removeAccessTokenFromLS = () => localStorage.removeItem(ACCESS_TOKEN_LOCAL_STORAGE_KEY)
 
-// export const setUserToLS = (user: Account) =>
-//   localStorage.setItem(USER_LOCAL_STORAGE_KEY, JSON.stringify(user))
+export const setUserToLS = (user: UserResponseType) =>
+  localStorage.setItem(USER_LOCAL_STORAGE_KEY, JSON.stringify(user))
 
 export const removeRefreshTokenFromLS = () => localStorage.removeItem(REFRESH_TOKEN_LOCAL_STORAGE_KEY)
