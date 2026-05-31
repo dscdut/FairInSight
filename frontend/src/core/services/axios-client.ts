@@ -110,10 +110,10 @@ axiosClient.interceptors.response.use(
           return Promise.reject(error)
         }
 
-        const { access_token } = await authApi.refreshToken(refresh_token)
-        setAccessTokenToLS(access_token)
-        originalRequest.headers.Authorization = `Bearer ${access_token}`
-        processQueue(null, access_token)
+        const { accessToken } = await authApi.refreshToken(refresh_token)
+        setAccessTokenToLS(accessToken)
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`
+        processQueue(null, accessToken)
         return axiosClient(originalRequest)
       } catch (refreshError) {
         processQueue(refreshError, null)

@@ -1,3 +1,9 @@
+import type HttpStatusCode from "@/core/constants/http"
+
+import { type RoleUser } from "../types/role.type"
+
+import { type UserResponseType } from "./user.interface"
+
 export interface APIResponse<T> {
   data: T
   message: string
@@ -11,9 +17,15 @@ export interface LoginApiResponse {
 }
 
 export interface LoginResponse {
-  user: { id: string; name: string; email: string; role: string }
-  access_token: string
-  refresh_token: string
+  user: UserResponseType
+  accessToken: string
+  refreshToken: string
+}
+
+export interface LoginErrorResponse {
+  code: string
+  message?: string
+  status: HttpStatusCode
 }
 
 // define the Account interface
@@ -21,31 +33,43 @@ export interface Account {
   email?: string
   password?: string
   confirmPassword?: string
-  name?: string
+  fullName?: string
+  role?: RoleUser
   phone?: string
+  referralCode?: string
+  avatarUrl?: string
+  dateOfBirth?: string;
+  location?: string;
 }
 
 // define the RegisterReponse interface
 export interface RegisterReponse {
-  name: string
+  id: string
+  fullName: string
   email: string
-  password: string
-  confirmPassword: string
-  phone?: string
+  roleName: RoleUser
 }
 
-export interface VerifyEmailReq {
-  email: string
-  verificationCode: string
-}
-
-export interface VerifyEmailRes {
+export interface RegisterApiResponse {
+  data: RegisterReponse
   message: string
 }
 
-export interface ResetPasswordReq {
+export interface SendEmailReq {
   email: string
-  password: string
+}
+
+// define the VerifyEmailReq interface
+export interface VerifyOtpReq {
+  email?: string;
+  otp: string
+  type: string;
+}
+
+export interface ResetPasswordReq {
+  token: string
+  newPassword: string
+  confirmNewPassword: string
 }
 
 export interface RememberMeData {

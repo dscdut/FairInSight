@@ -112,7 +112,7 @@ export const numberConstants = {
   EIGHT: 8,
   NINE: 9,
   TEN: 10,
-  fifty: 50,
+  FIFTY: 50,
   ONE_HUNDRED: 100
 }
 
@@ -152,7 +152,8 @@ export const DATE_PLACEHOLDER = STANDARD_DATE_FORMAT_SLASH.toLowerCase()
 
 // config role
 export const ROLE_ADMIN = 'ADMIN'
-export const ROLE_EMPLOYEE = 'EMPLOYEE'
+export const ROLE_USER = 'USER'
+export const ROLE_LAWYER = 'LAWYER'
 
 // config type text
 export const TEXT_TYPE = 'text'

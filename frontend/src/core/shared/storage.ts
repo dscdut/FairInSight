@@ -3,6 +3,7 @@ import {
   REFRESH_TOKEN_LOCAL_STORAGE_KEY,
   USER_LOCAL_STORAGE_KEY
 } from '@/core/helpers/common'
+// import { type Account } from '@/models/interface/auth.interface'
 import { type UserResponseType } from '@/models/interface/user.interface'
 
 export const LocalStorageEventTarget = new EventTarget()
@@ -44,7 +45,7 @@ export const getUserFromLocalStorage = (): UserResponseType | null => {
 
 export const removeAccessTokenFromLS = () => localStorage.removeItem(ACCESS_TOKEN_LOCAL_STORAGE_KEY)
 
-export const setUserToLS = (user: { id: string; name: string; email: string; role: string }) =>
+export const setUserToLS = (user: UserResponseType) =>
   localStorage.setItem(USER_LOCAL_STORAGE_KEY, JSON.stringify(user))
 
 export const removeRefreshTokenFromLS = () => localStorage.removeItem(REFRESH_TOKEN_LOCAL_STORAGE_KEY)
