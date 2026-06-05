@@ -103,6 +103,14 @@ class Repository {
         });
     }
 
+    async deleteRefreshToken(token) {
+        return connection.refresh_tokens.update({
+            where: { token },
+            data: { deleted_at: Date.now() },
+            select: { user_id: true, deleted_at: true }
+        });
+    }
+
     async upsertRefreshToken(userId, token, expiresAt) {
         return connection.refresh_tokens.upsert({
             where: { user_id: userId },
@@ -110,6 +118,10 @@ class Repository {
             create: { user_id: userId, token, expires_at: expiresAt },
             select: { user_id: true, token: true },
         });
+    }
+
+    async deleteRefreshToken(token) {
+        
     }
 }
 

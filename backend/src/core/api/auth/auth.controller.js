@@ -44,6 +44,10 @@ class Controller {
         const data = await this.service.refreshToken(RefreshTokenDto(req.body), req.user.payload.id);
         return ValidHttpResponse.toOkResponse(data);
     }
+
+    logout = async req => {
+        const data = await this.service.logout()
+    }
 }
 
 export const AuthController = new Controller();

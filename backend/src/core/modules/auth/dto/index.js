@@ -6,3 +6,4 @@ export * from './verify-otp.dto';
 export * from './reset-password.dto';
 export * from './update-my-profile.dto';
 export * from './refresh-token.dto';
+export * from './logout.dto';
