@@ -99,10 +99,9 @@ export const useVerifyEmailAuth = () => {
   })
 }
 
-// VERIFY EMAIL
-export const useVerifyEmailAuth = () => {
+// RESET PASSWORD
+export const useResetPasswordAuth = () => {
   const navigate = useNavigate()
-  const { mutateAsync: login } = useLoginAuth()
 
   return useMutation({
     mutationKey: [MUTATION_KEYS.resetPassword],
