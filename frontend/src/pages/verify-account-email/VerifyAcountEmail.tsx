@@ -66,11 +66,10 @@ export default function VerifyEmail() {
 
   const { mutate: verifyEmail, isPending: isVerifying } = useVerifyEmailAuth()
 
-
   const handleVerify = useCallback(
     (data: z.infer<typeof VerifyAccountEmailSchema>) => {
       const flowType = location.state?.password ? 'register' : 'forgot_password'
-      
+
       verifyEmail({
         otp: data.otp,
         email: data.email,
@@ -80,7 +79,7 @@ export default function VerifyEmail() {
     },
     [verifyEmail, location.state]
   )
-  
+
   return (
     <div
       className='relative flex min-h-screen w-full justify-center bg-cover bg-center'
@@ -89,9 +88,7 @@ export default function VerifyEmail() {
       <div className='absolute inset-0 bg-slate-950/70 backdrop-blur-[2px]' />
 
       <div className='container relative z-10 flex justify-center items-center px-4'>
-        <FadeUp
-          className='w-full max-w-md rounded-lg bg-background-secondary p-8 shadow-400'
-        >
+        <FadeUp className='w-full max-w-md rounded-lg bg-background-secondary p-8 shadow-400'>
           {/* HEADER */}
           <div className='space-y-2 text-center'>
             <div className='flex justify-center mb-4'>
@@ -137,13 +134,7 @@ export default function VerifyEmail() {
 
                 {/* BUTTON */}
                 <motion.div variants={itemVariants}>
-                  <Button
-                    loading={isVerifying}
-                    type='submit'
-                    variant='default'
-                    size='lg'
-                    className='w-full mt-2'
-                  >
+                  <Button loading={isVerifying} type='submit' variant='default' size='lg' className='w-full mt-2'>
                     {t('verifyOtpBtn')}
                   </Button>
                 </motion.div>
@@ -152,12 +143,10 @@ export default function VerifyEmail() {
                 <motion.div variants={itemVariants} className='text-center text-small pt-2'>
                   <button
                     type='button'
-                    onClick={()=>{}}
+                    onClick={() => {}}
                     disabled={!canResend}
                     className={`font-semibold transition-colors duration-200 ${
-                      canResend
-                        ? 'text-primary hover:text-primary-600'
-                        : 'cursor-not-allowed text-text-tertiary'
+                      canResend ? 'text-primary hover:text-primary-600' : 'cursor-not-allowed text-text-tertiary'
                     }`}
                   >
                     {/* {isResending

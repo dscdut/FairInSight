@@ -7,3 +7,7 @@ export const MUTATION_KEYS = {
   resendCode: 'resendCode',
   resetPassword: 'resetPassword'
 }
+
+export const QUERY_KEYS = {
+  userInfo: 'userInfo'
+}

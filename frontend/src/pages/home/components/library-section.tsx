@@ -34,9 +34,7 @@ export const LibrarySection = () => {
           <h2 className='text-h3 sm:text-h2 font-semibold text-primary dark:text-white mb-2 sm:mb-4'>
             {t('home.library.title')}
           </h2>
-          <p className='text-p text-gray-600 dark:text-gray-300 max-w-3xl'>
-            {t('home.library.description')}
-          </p>
+          <p className='text-p text-gray-600 dark:text-gray-300 max-w-3xl'>{t('home.library.description')}</p>
         </div>
 
         <div className='relative px-1'>

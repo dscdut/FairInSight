@@ -3,8 +3,11 @@ import {
   Calendar,
   CreditCard,
   FileText,
+  Home,
   Mail,
+  MessageSquare,
   PieChart,
+  Scale,
   Settings,
   ShoppingCart,
   TrendingUp,
@@ -14,37 +17,44 @@ import {
 import { ROUTE } from '@/core/constants/path'
 import { type TSidebarLinks } from '@/models/types/general.type'
 
-export const sidebarLinks: TSidebarLinks[] = [
+export const adminSidebarLinks: TSidebarLinks[] = [
   {
-    title: 'Dashboard',
+    title: 'Trang chủ',
+    titleKey: 'dashboard',
     icon: <BarChart3 className='w-5 h-5' />,
     path: ROUTE.ADMIN.DASHBOARD
   },
   {
-    title: 'Analytics',
+    title: 'Phân tích',
+    titleKey: 'analytics',
     icon: <PieChart className='w-5 h-5' />,
     path: ROUTE.ADMIN.ANALYTICS.ROOT,
     children: [
       {
-        title: 'Overview',
+        title: 'Tổng quan',
+        titleKey: 'overview',
         path: ROUTE.ADMIN.ANALYTICS.OVERVIEW
       },
       {
-        title: 'Sales Analytics',
+        title: 'Phân tích doanh thu',
+        titleKey: 'sales',
         path: ROUTE.ADMIN.ANALYTICS.SALES
       },
       {
-        title: 'User Analytics',
+        title: 'Phân tích người dùng',
+        titleKey: 'user_analytics',
         path: ROUTE.ADMIN.ANALYTICS.USERS
       },
       {
-        title: 'Performance',
+        title: 'Hiệu suất hệ thống',
+        titleKey: 'performance',
         path: ROUTE.ADMIN.ANALYTICS.PERFORMANCE
       }
     ]
   },
   {
-    title: 'Users',
+    title: 'Quản lý người dùng',
+    titleKey: 'users',
     icon: <Users className='w-5 h-5' />,
     path: ROUTE.ADMIN.USERS,
     children: [
@@ -220,5 +230,50 @@ export const sidebarLinks: TSidebarLinks[] = [
         path: 'settings/backup'
       }
     ]
+  }
+]
+
+export const userSideBarLinks: TSidebarLinks[] = [
+  {
+    title: 'Trang chủ',
+    titleKey: 'home',
+    icon: <Home className='w-5 h-5' />,
+    path: ROUTE.USER.ROOT
+  },
+  {
+    title: 'Chat với AI',
+    titleKey: 'chat_ai',
+    icon: <MessageSquare className='w-5 h-5' />,
+    path: ROUTE.USER.CHAT_AI
+  },
+  {
+    title: 'Kho biểu mẫu',
+    titleKey: 'template',
+    icon: <FileText className='w-5 h-5' />,
+    path: ROUTE.USER.TEMPLATE
+  },
+  {
+    title: 'Phân tích pháp lý',
+    titleKey: 'legal_analysis',
+    icon: <Scale className='w-5 h-5' />,
+    path: ROUTE.USER.LEGAL_ANALYSIS
+  },
+  {
+    title: 'Quản lý báo cáo',
+    titleKey: 'report',
+    icon: <BarChart3 className='w-5 h-5' />,
+    path: ROUTE.USER.REPORT
+  },
+  {
+    title: 'Quản lý người dùng',
+    titleKey: 'users',
+    icon: <Users className='w-5 h-5' />,
+    path: ROUTE.USER.USER
+  },
+  {
+    title: 'Cài đặt',
+    titleKey: 'setting',
+    icon: <Settings className='w-5 h-5' />,
+    path: ROUTE.PROFILE.ROOT
   }
 ]

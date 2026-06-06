@@ -1,15 +1,15 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { type AxiosError } from 'axios'
 import { useNavigate } from 'react-router-dom'
 import { type z } from 'zod'
 
 import { ROUTE } from '@/core/constants/path'
 import { handleError } from '@/core/helpers/error-handler'
-import { MUTATION_KEYS } from '@/core/helpers/key-tanstack'
+import { MUTATION_KEYS, QUERY_KEYS } from '@/core/helpers/key-tanstack'
 import { processLoginSuccess } from '@/core/helpers/process-login-success'
 import toastifyCommon from '@/core/lib/toastify-common'
 import { authApi } from '@/core/services/auth.service'
-// import { type LoginSchema } from '@/core/zod/login.zod'
+import { useAuthStore } from '@/core/store/features/auth/authStore'
 import { type ForgotEmailSchema } from '@/core/zod/forgot-email.zod'
 import { type RegisterSchema } from '@/core/zod/register.zod'
 import {
@@ -18,7 +18,6 @@ import {
   type LoginApiResponse,
   type ResetPasswordReq
 } from '@/models/interface/auth.interface'
-
 
 // Login
 export const useLoginAuth = () => {
@@ -120,5 +119,18 @@ export const useResetPasswordAuth = () => {
       navigate(ROUTE.AUTH.LOGIN)
     },
     onError: (error: AxiosError) => handleError(error, 'Failed to reset password')
+  })
+}
+
+export const useUserInfo = () => {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+
+  return useQuery({
+    queryKey: [QUERY_KEYS.userInfo],
+    queryFn: async () => {
+      const userData = await authApi.getUserInfo()
+      return userData
+    },
+    enabled: isAuthenticated
   })
 }

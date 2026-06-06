@@ -1,13 +1,5 @@
 import { motion } from 'framer-motion'
-import {
-  Calendar,
-  FileText,
-  FolderOpen,
-  MessageSquare,
-  PlusCircle,
-  TrendingUp,
-  UserCheck
-} from 'lucide-react'
+import { Calendar, FileText, FolderOpen, MessageSquare, PlusCircle, TrendingUp, UserCheck } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { ROUTE } from '@/core/constants/path'
@@ -18,7 +10,7 @@ export default function UserDashboard() {
 
   return (
     <div className='min-h-screen bg-slate-50/50 py-8 dark:bg-slate-900/50'>
-      <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
+      <div>
         {/* Welcome Section */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -35,7 +27,8 @@ export default function UserDashboard() {
               Xin chào, {user?.fullName || 'Quý khách'}!
             </h1>
             <p className='mt-3 text-lg text-slate-300'>
-              Chào mừng bạn đến với Cổng thông tin Pháp lý Thông minh. Tại đây, bạn có thể tương tác với Luật sư AI, gửi yêu cầu tư vấn và quản lý tất cả hồ sơ vụ việc của mình một cách bảo mật và hiệu quả.
+              Chào mừng bạn đến với Cổng thông tin Pháp lý Thông minh. Tại đây, bạn có thể tương tác với Luật sư AI, gửi
+              yêu cầu tư vấn và quản lý tất cả hồ sơ vụ việc của mình một cách bảo mật và hiệu quả.
             </p>
           </div>
         </motion.div>
@@ -43,10 +36,30 @@ export default function UserDashboard() {
         {/* Quick Stats Grid */}
         <div className='mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4'>
           {[
-            { label: 'Vụ việc đang xử lý', value: '02', icon: FolderOpen, color: 'text-blue-600 bg-blue-50 dark:bg-blue-950/30' },
-            { label: 'Yêu cầu tư vấn', value: '05', icon: MessageSquare, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/30' },
-            { label: 'Tài liệu lưu trữ', value: '12', icon: FileText, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30' },
-            { label: 'Lịch hẹn sắp tới', value: '01', icon: Calendar, color: 'text-amber-600 bg-amber-50 dark:bg-amber-950/30' }
+            {
+              label: 'Vụ việc đang xử lý',
+              value: '02',
+              icon: FolderOpen,
+              color: 'text-blue-600 bg-blue-50 dark:bg-blue-950/30'
+            },
+            {
+              label: 'Yêu cầu tư vấn',
+              value: '05',
+              icon: MessageSquare,
+              color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/30'
+            },
+            {
+              label: 'Tài liệu lưu trữ',
+              value: '12',
+              icon: FileText,
+              color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30'
+            },
+            {
+              label: 'Lịch hẹn sắp tới',
+              value: '01',
+              icon: Calendar,
+              color: 'text-amber-600 bg-amber-50 dark:bg-amber-950/30'
+            }
           ].map((stat, i) => (
             <motion.div
               key={i}
@@ -116,9 +129,7 @@ export default function UserDashboard() {
                     <h3 className='mt-4 text-lg font-semibold text-slate-900 group-hover:text-indigo-600 dark:text-slate-100 dark:group-hover:text-indigo-400 transition-colors'>
                       {action.title}
                     </h3>
-                    <p className='mt-2 text-sm text-slate-500 leading-relaxed dark:text-slate-400'>
-                      {action.desc}
-                    </p>
+                    <p className='mt-2 text-sm text-slate-500 leading-relaxed dark:text-slate-400'>{action.desc}</p>
                   </div>
                   <div className='mt-6'>
                     {action.link.startsWith('#') ? (
@@ -126,7 +137,10 @@ export default function UserDashboard() {
                         {action.actionText} →
                       </button>
                     ) : (
-                      <Link to={action.link} className='inline-flex items-center text-sm font-semibold text-indigo-600 dark:text-indigo-400 group-hover:underline'>
+                      <Link
+                        to={action.link}
+                        className='inline-flex items-center text-sm font-semibold text-indigo-600 dark:text-indigo-400 group-hover:underline'
+                      >
                         {action.actionText} →
                       </Link>
                     )}
@@ -143,27 +157,51 @@ export default function UserDashboard() {
               <div className='flow-root'>
                 <ul className='-mb-8'>
                   {[
-                    { title: 'Tạo yêu cầu tư vấn thành công', time: '10 phút trước', desc: 'Yêu cầu tư vấn về Hợp đồng dịch vụ của bạn đã được gửi.', current: true },
-                    { title: 'AI phân tích tài liệu hoàn tất', time: '2 giờ trước', desc: 'Hợp đồng lao động mẫu đã được phân tích rủi ro pháp lý.', current: false },
-                    { title: 'Cập nhật tài khoản thành công', time: '1 ngày trước', desc: 'Thông tin hồ sơ cá nhân của bạn đã được cập nhật.', current: false }
+                    {
+                      title: 'Tạo yêu cầu tư vấn thành công',
+                      time: '10 phút trước',
+                      desc: 'Yêu cầu tư vấn về Hợp đồng dịch vụ của bạn đã được gửi.',
+                      current: true
+                    },
+                    {
+                      title: 'AI phân tích tài liệu hoàn tất',
+                      time: '2 giờ trước',
+                      desc: 'Hợp đồng lao động mẫu đã được phân tích rủi ro pháp lý.',
+                      current: false
+                    },
+                    {
+                      title: 'Cập nhật tài khoản thành công',
+                      time: '1 ngày trước',
+                      desc: 'Thông tin hồ sơ cá nhân của bạn đã được cập nhật.',
+                      current: false
+                    }
                   ].map((activity, i) => (
                     <li key={i}>
                       <div className='relative pb-8'>
                         {i !== 2 && (
-                          <span className='absolute left-5 top-5 -ml-px h-full w-0.5 bg-slate-200 dark:bg-slate-800' aria-hidden='true' />
+                          <span
+                            className='absolute left-5 top-5 -ml-px h-full w-0.5 bg-slate-200 dark:bg-slate-800'
+                            aria-hidden='true'
+                          />
                         )}
                         <div className='relative flex space-x-3'>
                           <div>
-                            <span className={`h-10 w-10 rounded-full flex items-center justify-center ring-8 ring-white dark:ring-slate-950 ${
-                              activity.current ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
-                            }`}>
+                            <span
+                              className={`h-10 w-10 rounded-full flex items-center justify-center ring-8 ring-white dark:ring-slate-950 ${
+                                activity.current
+                                  ? 'bg-indigo-500 text-white'
+                                  : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                              }`}
+                            >
                               <TrendingUp className='h-5 w-5' />
                             </span>
                           </div>
                           <div className='flex-1 min-w-0 pt-1.5'>
                             <p className='text-sm font-semibold text-slate-900 dark:text-slate-100'>{activity.title}</p>
                             <p className='text-xs text-slate-400 dark:text-slate-500 mt-0.5'>{activity.time}</p>
-                            <p className='text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed'>{activity.desc}</p>
+                            <p className='text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed'>
+                              {activity.desc}
+                            </p>
                           </div>
                         </div>
                       </div>

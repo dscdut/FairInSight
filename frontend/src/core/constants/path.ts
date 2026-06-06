@@ -7,13 +7,19 @@ export const ROUTE = {
     FORGOT_PASSWORD: '/forgot-password',
     RESET_PASSWORD: '/reset-password'
   },
-  BLOG: '/blog',
   PROFILE: {
     ROOT: '/profile',
-    EDIT: 'edit'
+    EDIT: '/profile/edit'
   },
   USER: {
     ROOT: '/',
+    BLOG: '/blog',
+    CHAT_AI: '/chat-ai',
+    TEMPLATE: '/template',
+    LEGAL_ANALYSIS: '/legal-analysis',
+    REPORT: '/report',
+    USER: '/user',
+    SETTING: '/setting'
   },
   ADMIN: {
     ROOT: '/admin',

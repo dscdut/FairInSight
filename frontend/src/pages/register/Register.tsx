@@ -11,16 +11,7 @@ import { IconEye, IconNonEye } from '@/assets/icons'
 import { logo } from '@/assets/images'
 import { FadeUp } from '@/components/animated/animated-component'
 import PasswordStrengthBar from '@/components/PasswordStrengthBar/PasswordStrengthBar'
-import {
-  Button,
-  FormControl,
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  Input,
-} from '@/components/ui'
+import { Button, FormControl, Form, FormField, FormItem, FormLabel, FormMessage, Input } from '@/components/ui'
 import { PASSWORD_TYPE, ROLE_LAWYER, ROLE_USER, TEXT_TYPE } from '@/core/configs/consts'
 import { ROUTE } from '@/core/constants/path'
 import { containerVariants, itemVariants } from '@/core/lib/variant/style-variant'
@@ -69,9 +60,7 @@ export default function Register() {
       <div className='absolute inset-0 bg-slate-950/70 backdrop-blur-[2px]' />
 
       <div className='relative flex justify-center items-center px-4 my-8 w-full max-w-7xl'>
-        <FadeUp
-          className='w-full max-w-xl rounded-lg bg-background-secondary p-8 shadow-400'
-        >
+        <FadeUp className='w-full max-w-xl rounded-lg bg-background-secondary p-8 shadow-400'>
           {/* HEADER */}
           <div className='space-y-2 text-center'>
             <img src={logo} alt='Logo' className='w-auto h-12 mx-auto' />
@@ -187,7 +176,9 @@ export default function Register() {
                   name='confirmPassword'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className='text-small font-medium text-text-primary'>{t('confirmPasswordLabel')}</FormLabel>
+                      <FormLabel className='text-small font-medium text-text-primary'>
+                        {t('confirmPasswordLabel')}
+                      </FormLabel>
                       <FormControl>
                         <Input
                           placeholder={t('confirmPasswordPlaceholder')}
@@ -210,7 +201,9 @@ export default function Register() {
                     name='referralCode'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className='text-small font-medium text-text-primary'>{t('referralCodeLabel')}</FormLabel>
+                        <FormLabel className='text-small font-medium text-text-primary'>
+                          {t('referralCodeLabel')}
+                        </FormLabel>
                         <FormControl>
                           <Input placeholder={t('referralCodePlaceholder')} {...field} />
                         </FormControl>
@@ -223,11 +216,7 @@ export default function Register() {
 
               {/* SUBMIT */}
               <motion.div variants={itemVariants}>
-                <Button
-                  loading={isPending}
-                  type='submit' size={'lg'}
-                  className='w-full'
-                >
+                <Button loading={isPending} type='submit' size={'lg'} className='w-full'>
                   {t('register')}
                 </Button>
               </motion.div>

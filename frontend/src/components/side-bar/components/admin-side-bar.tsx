@@ -1,15 +1,17 @@
 import { useState } from 'react'
 
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Crown } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from 'react-router-dom'
 
 import isEqual from '@/core/configs/is-equal'
-import { sidebarLinks } from '@/core/constants/general.const'
+import { adminSidebarLinks } from '@/core/constants/general.const'
 import { ROUTE } from '@/core/constants/path'
 import { cn } from '@/core/lib/utils'
 import useToggleSideBar from '@/core/store/features/sidebar'
 
-const SideBar = () => {
+export default function AdminSideBar() {
+  const { t } = useTranslation('navBar')
   const location = useLocation()
   const { sidebarOpen, toggleSidebar } = useToggleSideBar()
   const [expandedMenus, setExpandedMenus] = useState<string[]>([])
@@ -17,11 +19,12 @@ const SideBar = () => {
   const isActiveLink = (linkPath: string) => {
     const currentPath = location.pathname
     const routePath = `${ROUTE.ADMIN.ROOT}/${linkPath}`
-    if (isEqual(currentPath, ROUTE.ADMIN.DASHBOARD)) {
+    const dashboardPath = `${ROUTE.ADMIN.ROOT}/${ROUTE.ADMIN.DASHBOARD}`
+    if (isEqual(currentPath, dashboardPath)) {
       return (
-        isEqual(currentPath, ROUTE.ADMIN.DASHBOARD) ||
-        isEqual(currentPath, ROUTE.ADMIN.ROOT) ||
-        isEqual(currentPath, `${ROUTE.ADMIN.ROOT}/`)
+        isEqual(linkPath, ROUTE.ADMIN.DASHBOARD) ||
+        isEqual(linkPath, ROUTE.ADMIN.ROOT) ||
+        isEqual(linkPath, `${ROUTE.ADMIN.ROOT}/`)
       )
     }
     return isEqual(currentPath, routePath) || currentPath.startsWith(`${routePath}/`)
@@ -38,10 +41,10 @@ const SideBar = () => {
   return (
     <aside
       className={cn(
-        'flex relative flex-col bg-white border-r border-gray-200 shadow-xl transition-all duration-500 ease-in-out md:flex dark:bg-gray-800 dark:border-gray-700',
+        'flex relative flex-col h-full bg-white border-r border-gray-200 shadow-xl transition-all duration-500 md:flex dark:bg-gray-900 dark:border-gray-700',
         sidebarOpen ? 'w-72' : 'w-20'
       )}
-      aria-label='Sidebar navigation'
+      aria-label='Admin Sidebar navigation'
     >
       {/* Header */}
       <div
@@ -52,7 +55,7 @@ const SideBar = () => {
       >
         {sidebarOpen && (
           <div className='flex gap-3 items-center'>
-            <div className='flex justify-center items-center w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg'>
+            <div className='flex justify-center items-center w-10 h-10 bg-gradient-to-br from-primary to-primary-400 rounded-xl shadow-lg'>
               <Crown className='w-6 h-6 text-white' />
             </div>
             <div className='flex flex-col'>
@@ -86,25 +89,25 @@ const SideBar = () => {
         )}
         role='navigation'
       >
-        {sidebarLinks.map((link, index) => (
+        {adminSidebarLinks.map((link, index) => (
           <div key={link.title} className='space-y-1'>
             {/* Main Menu Item */}
             {link.children ? (
               <button
                 onClick={() => toggleSubmenu(link.title)}
                 className={cn(
-                  'w-full flex items-center gap-4 rounded-xl text-sm font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 group relative overflow-hidden',
+                  'w-full flex items-center gap-4 rounded-xl text-small font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/50 group relative overflow-hidden',
                   sidebarOpen ? 'px-4 py-3.5' : 'px-3 py-3.5 justify-center',
                   isActiveLink(link.path)
-                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/25 transform scale-[1.02]'
+                    ? 'bg-gradient-to-r from-primary to-primary-400 text-white shadow-lg shadow-primary/25 transform scale-[1.02]'
                     : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100 hover:shadow-lg hover:transform hover:scale-[1.02] dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700'
                 )}
-                title={!sidebarOpen ? link.title : undefined}
+                title={!sidebarOpen ? t(link.titleKey || link.title) : undefined}
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 {/* Active indicator */}
                 {isActiveLink(link.path) && (
-                  <div className='absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-blue-400 to-purple-400 rounded-r-full' />
+                  <div className='absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-primary to-primary-400 rounded-r-full' />
                 )}
 
                 {/* Icon */}
@@ -131,7 +134,7 @@ const SideBar = () => {
                           : 'text-gray-600 group-hover:text-gray-800 dark:text-gray-300 dark:group-hover:text-white'
                       )}
                     >
-                      {link.title}
+                      {t(link.titleKey || link.title)}
                     </span>
                     <span
                       className={cn(
@@ -153,7 +156,7 @@ const SideBar = () => {
                 {/* Hover effect background */}
                 <div
                   className={cn(
-                    'absolute inset-0 bg-gradient-to-r from-blue-600/10 to-purple-600/10 transition-all duration-300 rounded-xl',
+                    'absolute inset-0 bg-primary/10 transition-all duration-300 rounded-xl',
                     isActiveLink(link.path) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                   )}
                 />
@@ -161,27 +164,27 @@ const SideBar = () => {
                 {/* Tooltip for collapsed state */}
                 {!sidebarOpen && (
                   <div className='absolute left-full invisible z-50 px-3 py-2 ml-3 text-sm text-white whitespace-nowrap bg-gray-800 rounded-lg border border-gray-600 shadow-xl opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:visible dark:bg-gray-700 dark:border-gray-600'>
-                    {link.title}
+                    {t(link.titleKey || link.title)}
                     <div className='absolute left-0 top-1/2 w-2 h-2 bg-gray-800 border-b border-l border-gray-600 transform rotate-45 -translate-x-1 -translate-y-1/2 dark:bg-gray-700 dark:border-gray-600'></div>
                   </div>
                 )}
               </button>
             ) : (
               <Link
-                to={`/admin/${link.path}`}
+                to={`${ROUTE.ADMIN.ROOT}/${link.path}`}
                 className={cn(
-                  'flex items-center gap-4 rounded-xl text-sm font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 group relative overflow-hidden',
+                  'flex items-center gap-4 rounded-xl text-small transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/50 group relative overflow-hidden',
                   sidebarOpen ? 'px-4 py-3.5' : 'px-3 py-3.5 justify-center',
                   isActiveLink(link.path)
-                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/25 transform scale-[1.02]'
+                    ? 'bg-gradient-to-r from-primary to-primary-400 text-white shadow-lg shadow-primary/25 transform scale-[1.02]'
                     : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100 hover:shadow-lg hover:transform hover:scale-[1.02] dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700'
                 )}
-                title={!sidebarOpen ? link.title : undefined}
+                title={!sidebarOpen ? t(link.titleKey || link.title) : undefined}
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 {/* Active indicator */}
                 {isActiveLink(link.path) && (
-                  <div className='absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-blue-400 to-purple-400 rounded-r-full' />
+                  <div className='absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-primary to-primary-400 rounded-r-full' />
                 )}
 
                 {/* Icon */}
@@ -207,14 +210,14 @@ const SideBar = () => {
                         : 'text-gray-600 group-hover:text-gray-800 dark:text-gray-300 dark:group-hover:text-white'
                     )}
                   >
-                    {link.title}
+                    {t(link.titleKey || link.title)}
                   </span>
                 )}
 
                 {/* Hover effect background */}
                 <div
                   className={cn(
-                    'absolute inset-0 bg-gradient-to-r from-blue-600/10 to-purple-600/10 transition-all duration-300 rounded-xl',
+                    'absolute inset-0 bg-primary/10 transition-all duration-300 rounded-xl',
                     isActiveLink(link.path) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                   )}
                 />
@@ -222,7 +225,7 @@ const SideBar = () => {
                 {/* Tooltip for collapsed state */}
                 {!sidebarOpen && (
                   <div className='absolute left-full invisible z-50 px-3 py-2 ml-3 text-sm text-white whitespace-nowrap bg-gray-800 rounded-lg border border-gray-600 shadow-xl opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:visible dark:bg-gray-700 dark:border-gray-600'>
-                    {link.title}
+                    {t(link.titleKey || link.title)}
                     <div className='absolute left-0 top-1/2 w-2 h-2 bg-gray-800 border-b border-l border-gray-600 transform rotate-45 -translate-x-1 -translate-y-1/2 dark:bg-gray-700 dark:border-gray-600'></div>
                   </div>
                 )}
@@ -235,21 +238,21 @@ const SideBar = () => {
                 {link.children.map((child, childIndex) => (
                   <Link
                     key={child.title}
-                    to={`/admin/${child.path}`}
+                    to={`${ROUTE.ADMIN.ROOT}/${child.path}`}
                     className={cn(
-                      'm-2 flex items-center gap-3 rounded-lg text-xs font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30 group relative overflow-hidden',
+                      'm-2 flex items-center gap-3 rounded-lg text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/30 group relative overflow-hidden',
                       'px-3 py-2.5 pl-8',
                       isActiveLink(child.path)
-                        ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-600 border-l-2 border-blue-400 dark:text-blue-300'
-                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700'
+                        ? 'bg-primary/10 text-primary border-l-2 border-primary dark:text-primary'
+                        : 'text-tertiary hover:text-gray-800 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700'
                     )}
                     style={{ animationDelay: `${index * 50 + childIndex * 25}ms` }}
                   >
-                    <span className='truncate'>{child.title}</span>
+                    <span className='truncate'>{t(child.titleKey || child.title)}</span>
 
                     {/* Active indicator for submenu */}
                     {isActiveLink(child.path) && (
-                      <div className='absolute top-0 bottom-0 left-0 w-0.5 bg-gradient-to-b from-blue-400 to-purple-400 rounded-r-full' />
+                      <div className='absolute top-0 bottom-0 left-0 w-0.5 bg-gradient-to-b from-primary to-primary-400 rounded-r-full' />
                     )}
                   </Link>
                 ))}
@@ -262,23 +265,23 @@ const SideBar = () => {
       {/* Footer */}
       <div
         className={cn(
-          'bg-gray-50 border-t border-gray-200 transition-all duration-300 dark:border-gray-700 dark:bg-gray-800',
+          'border-t border-gray-200 transition-all duration-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50',
           sidebarOpen ? 'p-4' : 'p-3'
         )}
       >
         {sidebarOpen ? (
           <div className='flex gap-3 items-center'>
-            <div className='flex justify-center items-center w-8 h-8 bg-gradient-to-br from-green-400 to-blue-500 rounded-full'>
-              <div className='w-3 h-3 bg-white rounded-full animate-pulse' />
+            <div className='flex justify-center items-center w-8 h-8 bg-gradient-to-br from-success-primary to-primary-400 rounded-full'>
+              <div className='w-4 h-4 bg-white rounded-full animate-pulse' />
             </div>
             <div className='flex-1'>
-              <p className='text-xs font-medium text-gray-700 dark:text-white'>System Status</p>
-              <p className='text-xs text-green-600 dark:text-green-400'>Online & Secure</p>
+              <p className='text-xs font-medium text-gray-700 dark:text-white'>{t('system_status')}</p>
+              <p className='text-xs text-success-secondary'>{t('online_secure')}</p>
             </div>
           </div>
         ) : (
           <div className='flex justify-center'>
-            <div className='flex justify-center items-center w-6 h-6 bg-gradient-to-br from-green-400 to-blue-500 rounded-full'>
+            <div className='flex justify-center items-center w-6 h-6 bg-gradient-to-br from-success-primary to-primary-400 rounded-full'>
               <div className='w-2 h-2 bg-white rounded-full animate-pulse' />
             </div>
           </div>
@@ -287,5 +290,3 @@ const SideBar = () => {
     </aside>
   )
 }
-
-export default SideBar

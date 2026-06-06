@@ -1,8 +1,8 @@
-import type HttpStatusCode from "@/core/constants/http"
+import type HttpStatusCode from '@/core/constants/http'
 
-import { type RoleUser } from "../types/role.type"
+import { type RoleSystem, type RoleUser } from '../types/role.type'
 
-import { type UserResponseType } from "./user.interface"
+import { type UserResponseType } from './user.interface'
 
 export interface APIResponse<T> {
   data: T
@@ -28,18 +28,26 @@ export interface LoginErrorResponse {
   status: HttpStatusCode
 }
 
+export interface Subscription {
+  planName?: string
+}
+
+
 // define the Account interface
 export interface Account {
+  id?: string
   email?: string
   password?: string
   confirmPassword?: string
   fullName?: string
-  role?: RoleUser
+  roleName?: RoleSystem | RoleUser
   phone?: string
   referralCode?: string
   avatarUrl?: string
-  dateOfBirth?: string;
-  location?: string;
+  dateOfBirth?: string
+  location?: string
+  subscription?: Subscription
+  createdAt?: string
 }
 
 // define the RegisterReponse interface
@@ -61,9 +69,9 @@ export interface SendEmailReq {
 
 // define the VerifyEmailReq interface
 export interface VerifyOtpReq {
-  email?: string;
+  email?: string
   otp: string
-  type: string;
+  type: string
 }
 
 export interface ResetPasswordReq {

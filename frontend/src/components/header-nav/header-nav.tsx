@@ -87,7 +87,7 @@ const Header = () => {
                     <div className='space-y-2'>
                       <div className='border-b border-gray-200 dark:border-gray-800'>
                         <Button variant='ghost' className='flex justify-start items-center w-full'>
-                          <Link to={ROUTE.PROFILE.ROOT} className='flex items-center'>
+                          <Link to={ROUTE.USER.ROOT} className='flex items-center'>
                             <User className='mr-2 w-4 h-4' />
                             {tAuth('profile')}
                           </Link>
@@ -128,7 +128,7 @@ const Header = () => {
               <Menu className='w-7 h-7 text-gray-700 dark:text-gray-200' />
             )}
           </button>
-        </div>        
+        </div>
       </nav>
 
       {/* Mobile nav menu */}

@@ -108,9 +108,7 @@ export default function Login() {
       style={{ backgroundImage: "url('/bg.jpg')" }}
     >
       <div className='container relative z-10 flex justify-center px-4'>
-        <FadeUp
-          className='w-full max-w-md rounded-lg bg-background-secondary p-8 shadow-400'
-        >
+        <FadeUp className='w-full max-w-md rounded-lg bg-background-secondary p-8 shadow-400'>
           {/* Brand Logo & Title */}
           <div className='space-y-2 text-center'>
             <div className='flex justify-center mb-4'>
@@ -137,11 +135,7 @@ export default function Login() {
                     <FormItem>
                       <FormLabel className='text-small text-text-primary'>{t('email')}</FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder='nguyenvana@gmail.com'
-                          type='email'
-                          {...field}
-                        />
+                        <Input placeholder='nguyenvana@gmail.com' type='email' {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -181,7 +175,10 @@ export default function Login() {
                     onCheckedChange={handleRememberMe}
                     className='rounded border-slate-300 text-primary focus:ring-primary h-4 w-4'
                   />
-                  <Label htmlFor='remember-me' className='text-small font-medium text-text-secondary cursor-pointer select-none'>
+                  <Label
+                    htmlFor='remember-me'
+                    className='text-small font-medium text-text-secondary cursor-pointer select-none'
+                  >
                     {t('rememberMe')}
                   </Label>
                 </div>
@@ -196,13 +193,7 @@ export default function Login() {
 
               {/* LOGIN BUTTON */}
               <motion.div variants={itemVariants}>
-                <Button
-                  loading={isLoading}
-                  variant={'default'}
-                  type='submit'
-                  size={'lg'}
-                  className='w-full'
-                >
+                <Button loading={isLoading} variant={'default'} type='submit' size={'lg'} className='w-full'>
                   {t('login')}
                 </Button>
               </motion.div>
@@ -210,20 +201,13 @@ export default function Login() {
               {/* SEPARATOR */}
               <motion.div variants={itemVariants} className='relative flex py-1 items-center'>
                 <div className='flex-grow border-t border-slate-200 dark:border-slate-800'></div>
-                <span className='flex-shrink mx-3 text-small text-text-tertiary bg-transparent px-2'>
-                  {t('or')}
-                </span>
+                <span className='flex-shrink mx-3 text-small text-text-tertiary bg-transparent px-2'>{t('or')}</span>
                 <div className='flex-grow border-t border-slate-200 dark:border-slate-800'></div>
               </motion.div>
 
               {/* GOOGLE SIGN IN */}
               <motion.div variants={itemVariants}>
-                <Button
-                  variant={'secondary'}
-                  type='button'
-                  size={'lg'}
-                  className='w-full'
-                >
+                <Button variant={'secondary'} type='button' size={'lg'} className='w-full'>
                   <svg className='h-5 w-5 shrink-0' viewBox='0 0 24 24'>
                     <path
                       fill='#4285F4'
