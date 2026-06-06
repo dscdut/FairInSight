@@ -21,6 +21,9 @@ export const ROUTE = {
     USER: '/user',
     SETTING: '/setting'
   },
+  USER: {
+    ROOT: '/',
+  },
   ADMIN: {
     ROOT: '/admin',
     DASHBOARD: 'dashboard',

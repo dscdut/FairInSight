@@ -1,6 +1,18 @@
-import { LoginInterceptor } from 'core/modules/auth';
+import {
+    LoginInterceptor,
+    RegisterInterceptor,
+    GetMyProfileInterceptor,
+    UpdateMyProfileInterceptor,
+    ForgotPasswordInterceptor,
+    VerifyOtpInterceptor,
+    ResetPasswordInterceptor,
+    RefreshTokenInterceptor,
+} from 'core/modules/auth';
 import { Module } from 'packages/handler/Module';
 import { AuthController } from './auth.controller';
+import { authMiddleware } from 'core/modules/auth/middleware/auth.middleware';
+import { uploadMediaSwagger } from 'core/common/swagger';
+import { MediaInterceptor } from 'core/modules/document';
 
 export const AuthResolver = Module.builder()
     .addPrefix({
@@ -15,5 +27,59 @@ export const AuthResolver = Module.builder()
             interceptors: [LoginInterceptor],
             body: 'LoginDto',
             controller: AuthController.login,
+        },
+        {
+            route: '/register',
+            method: 'post',
+            interceptors: [RegisterInterceptor],
+            body: 'RegisterDto',
+            controller: AuthController.register,
+        },
+        {
+            route: '/me',
+            method: 'get',
+            interceptors: [GetMyProfileInterceptor],
+            middleware: [authMiddleware],
+            controller: AuthController.getMyProfile,
+            preAuthorization: true,
+        },
+        {
+            route: '/me',
+            method: 'patch',
+            interceptors: [UpdateMyProfileInterceptor],
+            middleware: [authMiddleware],
+            body: 'UpdateMyProfileDto',
+            controller: AuthController.updateMyProfile,
+            preAuthorization: true,
+        },
+        {
+            route: '/forgot-password',
+            method: 'post',
+            interceptors: [ForgotPasswordInterceptor],
+            body: 'ForgotPasswordDto',
+            controller: AuthController.forgotPassword,
+        },
+        {
+            route: '/verify-otp',
+            method: 'post',
+            interceptors: [VerifyOtpInterceptor],
+            body: 'VerifyOtpDto',
+            controller: AuthController.verifyOtp,
+        },
+        {
+            route: '/reset-password',
+            method: 'post',
+            interceptors: [ResetPasswordInterceptor],
+            body: 'ResetPasswordDto',
+            controller: AuthController.resetPassword,
+        },
+        {
+            route: '/refresh-token',
+            method: 'post',
+            interceptors: [RefreshTokenInterceptor],
+            middleware: [authMiddleware],
+            body: 'RefreshTokenDto',
+            controller: AuthController.refreshToken,
+            preAuthorization: true,
         },
     ]);

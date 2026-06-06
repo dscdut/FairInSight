@@ -99,8 +99,11 @@ export const useVerifyEmailAuth = () => {
   })
 }
 
-export const useResetPasswordAuth = () => {
+// VERIFY EMAIL
+export const useVerifyEmailAuth = () => {
   const navigate = useNavigate()
+  const { mutateAsync: login } = useLoginAuth()
+
   return useMutation({
     mutationKey: [MUTATION_KEYS.resetPassword],
     mutationFn: (data: ResetPasswordReq) => authApi.resetPassword(data),
@@ -108,7 +111,7 @@ export const useResetPasswordAuth = () => {
       toastifyCommon.success('Mật khẩu đã được cập nhật. Vui lòng đăng nhập lại.')
       navigate(ROUTE.AUTH.LOGIN)
     },
-    onError: (error: AxiosError) => handleError(error, 'Failed to reset password')
+    onError: (error: AxiosError) => handleError(error, 'Xác thực thất bại!')
   })
 }
 

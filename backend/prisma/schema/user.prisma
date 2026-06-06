@@ -1,0 +1,111 @@
+model lawyer_certificates {
+  id               String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  lawyer_id        String?         @db.Uuid
+  certificate_name String          @db.VarChar(255)
+  file_url         String
+  issued_by        String          @db.VarChar(255)
+  issue_date       DateTime        @db.Date
+  created_at       DateTime?       @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime?       @default(now()) @db.Timestamptz(6)
+  deleted_at       DateTime?       @db.Timestamptz(6)
+  lawyer_details   lawyer_details? @relation(fields: [lawyer_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "lawyer_certificates_lawyer_id_foreign")
+}
+
+model lawyer_details {
+  user_id             String                @id @db.Uuid
+  bio                 String?
+  experience_years    Int?
+  is_verified         Boolean               @default(false)
+  rating_avg          Float?                @default(0) @db.Real
+  price_per_hour      Decimal?              @db.Decimal(10, 2)
+  status              lawyer_status         @default(OFFLINE)
+  bar_association     String?               @db.VarChar(255)
+  license_number      String?               @db.VarChar(255)
+  created_at          DateTime?             @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime?             @default(now()) @db.Timestamptz(6)
+  deleted_at          DateTime?             @db.Timestamptz(6)
+  chat_requests       chat_requests[]
+  conversations       conversations[]
+  lawyer_certificates lawyer_certificates[]
+  users               users                 @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "lawyer_details_user_id_foreign")
+  lawyer_experiences  lawyer_experiences[]
+  lawyer_specialties  lawyer_specialties[]
+  ratings             ratings[]
+  reports             reports[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model lawyer_experiences {
+  id             String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  lawyer_id      String?         @db.Uuid
+  title          String          @db.VarChar(255)
+  description    String
+  start_date     DateTime        @db.Date
+  end_date       DateTime?       @db.Date
+  created_at     DateTime?       @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime?       @default(now()) @db.Timestamptz(6)
+  deleted_at     DateTime?       @db.Timestamptz(6)
+  lawyer_details lawyer_details? @relation(fields: [lawyer_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "lawyer_experiences_lawyer_id_foreign")
+}
+
+model lawyer_specialties {
+  lawyer_id      String         @db.Uuid
+  specialty_id   String         @db.Uuid
+  lawyer_details lawyer_details @relation(fields: [lawyer_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "lawyer_specialties_lawyer_id_foreign")
+  specialties    specialties    @relation(fields: [specialty_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "lawyer_specialties_specialty_id_foreign")
+
+  @@id([lawyer_id, specialty_id])
+}
+
+model specialties {
+  id                 String               @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name               String               @unique(map: "specialties_name_unique") @db.VarChar(255)
+  created_at         DateTime?            @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime?            @default(now()) @db.Timestamptz(6)
+  deleted_at         DateTime?            @db.Timestamptz(6)
+  lawyer_specialties lawyer_specialties[]
+}
+
+model users {
+  id                       String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  email                    String          @unique(map: "unique_users_email_active", where: raw("(deleted_at IS NULL)")) @db.VarChar(255)
+  password_hash            String
+  full_name                String          @db.VarChar(255)
+  role_id                  String?         @db.Uuid
+  avatar_url               String?
+  referral_code            String?         @unique(map: "unique_users_referral_active", where: raw("(deleted_at IS NULL)")) @db.VarChar(50)
+  referred_by              String?         @db.Uuid
+  phone                    String?         @db.VarChar(20)
+  date_of_birth            DateTime?       @db.Date
+  location                 String?         @db.VarChar(255)
+  email_confirmation_token String?
+  password_reset_token     String?
+  password_reset_expiry    DateTime?       @db.Timestamptz(6)
+  is_email_confirmed       Boolean         @default(false)
+  last_login_at            DateTime?       @db.Timestamptz(6)
+  created_at               DateTime?       @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime?       @default(now()) @db.Timestamptz(6)
+  deleted_at               DateTime?       @db.Timestamptz(6)
+  banned_by                String?         @db.Uuid
+  ban_reason               String?
+  analysis                 analysis[]
+  chat_requests            chat_requests[]
+  conversations            conversations[]
+  documents                documents[]
+  laws                     laws[]
+  lawyer_details           lawyer_details?
+  messages                 messages[]
+  ratings                  ratings[]
+  refresh_tokens           refresh_tokens?
+  reports                  reports[]
+  subscriptions            subscriptions[]
+  users                    users?          @relation("usersTousers", fields: [referred_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "users_referred_by_foreign")
+  other_users              users[]         @relation("usersTousers")
+  roles                    roles?          @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "users_role_id_foreign")
+}
+
+enum lawyer_status {
+  AVAILABLE
+  BUSY
+  OFFLINE
+}
