@@ -6,7 +6,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { type Account } from '@/models/interface/auth.interface'
 
 interface AccountSettingProps {
-  user: Account
+  user: Account | undefined
   isEditing: boolean
   setIsEditing: (isEditing: boolean) => void
 }
