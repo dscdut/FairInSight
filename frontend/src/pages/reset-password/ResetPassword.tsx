@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react'
+import { useEffect } from 'react'
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion } from 'framer-motion'
@@ -23,7 +23,7 @@ import {
 import { ROUTE } from '@/core/constants/path'
 import { containerVariants, itemVariants } from '@/core/lib/variant/style-variant'
 import { ResetPasswordSchema } from '@/core/zod/reset-password.zod'
-import { useResetPasswordAuth } from '@/hooks/tanstack-query/auth/use-query-auth'
+// import { useResetPasswordAuth } from '@/hooks/tanstack-query/auth/use-query-auth'
 
 type ResetPasswordForm = z.infer<typeof ResetPasswordSchema>
 
@@ -47,14 +47,16 @@ export default function ResetPassword() {
     }
   }, [emailFromState, form])
 
-  const { mutate: resetPassword, isPending: isResetting } = useResetPasswordAuth()
+  // const { mutate: resetPassword, isPending: isResetting } = useResetPasswordAuth()
 
-  const handleResetPassword = useCallback(
-    (data: ResetPasswordForm) => {
-      resetPassword(data)
-    },
-    [resetPassword]
-  )
+  // const handleResetPassword = useCallback(
+  //   (data: ResetPasswordForm) => {
+  //     resetPassword(data)
+  //   },
+  //   [resetPassword]
+  // )
+
+  const handleResetPassword = () => {}
 
   return (
     <div
@@ -141,7 +143,7 @@ export default function ResetPassword() {
                 {/* BUTTON */}
                 <motion.div variants={itemVariants}>
                   <Button
-                    loading={isResetting}
+                    // loading={isResetting}
                     type='submit'
                     variant='default'
                     size='lg'

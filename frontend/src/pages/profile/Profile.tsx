@@ -37,13 +37,13 @@ export default function Profile() {
           <div className='w-full h-28 bg-gradient-to-r from-blue-500 to-purple-500 relative flex items-center justify-center'>
             <div className='absolute left-1/2 top-full -translate-x-1/2 -translate-y-1/2'>
               <Avatar className='h-24 w-24 border-4 border-white shadow-lg'>
-                <AvatarImage src='/images/avatar.png' alt={user?.name} />
-                <AvatarFallback className='text-lg'>{getInitials(user?.name || '')}</AvatarFallback>
+                <AvatarImage src='/images/avatar.png' alt={user?.fullName} />
+                <AvatarFallback className='text-lg'>{getInitials(user?.fullName || '')}</AvatarFallback>
               </Avatar>
             </div>
           </div>
           <div className='mt-16 w-full flex flex-col items-center px-6 pb-8'>
-            <CardTitle className='text-2xl text-center'>{user?.name}</CardTitle>
+            <CardTitle className='text-2xl text-center'>{user?.fullName}</CardTitle>
             <CardDescription className='text-base text-center'>{user?.email}</CardDescription>
             <div className='flex flex-col gap-2 mt-6 w-full'>
               <div className='flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 justify-center'>

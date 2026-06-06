@@ -31,12 +31,24 @@ class Service {
             throw new BadRequestException("Role does not exist");
         }
 
+        const otp = crypto.randomInt(100000, 999999).toString();
+        const expiresAt = new Date(Date.now() + FORGOT_PASSWORD_TOKEN_EXPIRY);
+        const emailConfirmationToken = this.#buildOtpToken(otp, expiresAt);
         const result = await this.repository.createUser({
             role_id: existingRole.id,
             email: registerDto.email,
             password_hash: registerDto.password,
             referral_code: registerDto.referralCode,
             full_name: registerDto.fullName,
+            email_confirmation_token: emailConfirmationToken,
+            is_email_confirmed: false,
+        });
+
+        const otpExpiryMinutes = Math.max(1, Math.floor(FORGOT_PASSWORD_TOKEN_EXPIRY / 60000));
+        await MailerService.send({
+            to: registerDto.email,
+            subject: 'Verify your email',
+            text: `Your OTP code is ${otp}. It expires in ${otpExpiryMinutes} minutes.`,
         });
 
         return {
@@ -59,6 +71,10 @@ class Service {
         const isMatch = await this.bcryptService.compare(loginDto.password, user.password_hash);
         if (!isMatch) {
             throw new UnAuthorizedException('Email or password is incorrect');
+        }
+
+        if (!user.is_email_confirmed) {
+            throw new UnAuthorizedException('Email is not verified');
         }
 
         const userData = {
@@ -108,11 +124,45 @@ class Service {
     }
 
     async verifyOtp(verifyOtpDto) {
+        const type = verifyOtpDto.type || 'password';
+
+        if (type === 'email') {
+            const user = await this.repository.getEmailConfirmationDataByEmail(verifyOtpDto.email);
+            if (!user) {
+                throw new BadRequestException("Email does not exist");
+            }
+
+            if (user.is_email_confirmed) {
+                return { message: 'Email is already verified' };
+            }
+
+            const parsed = this.#parseOtpToken(user.email_confirmation_token);
+            if (!parsed) {
+                throw new UnAuthorizedException("Invalid OTP");
+            }
+
+            if (parsed.expiresAt < Date.now()) {
+                throw new UnAuthorizedException("OTP has expired");
+            }
+
+            if (parsed.otp !== verifyOtpDto.otp) {
+                throw new UnAuthorizedException("Invalid OTP");
+            }
+
+            await this.repository.confirmEmail(user.id);
+
+            return { message: 'Email verified successfully' };
+        }
+
+        if (type !== 'password') {
+            throw new BadRequestException('Invalid OTP type');
+        }
+
         const existingEmail = await this.repository.findActiveUserByEmail(verifyOtpDto.email);
         if (!existingEmail) {
             throw new BadRequestException("Email does not exist");
         }
-        
+
         const existingOtp = await this.repository.getPasswordResetData(existingEmail.id);
 
         if (existingOtp.password_reset_expiry < Date.now()) {
@@ -265,6 +315,25 @@ class Service {
                 : undefined,
             createdAt: user.created_at ?? undefined,
         };
+    }
+
+    #buildOtpToken(otp, expiresAt) {
+        return `${otp}.${expiresAt.getTime()}`;
+    }
+
+    #parseOtpToken(token) {
+        if (!token) {
+            return null;
+        }
+
+        const [otp, expiresAtRaw] = String(token).split('.');
+        const expiresAt = Number.parseInt(expiresAtRaw, 10);
+
+        if (!otp || !Number.isFinite(expiresAt)) {
+            return null;
+        }
+
+        return { otp, expiresAt };
     }
 }
 

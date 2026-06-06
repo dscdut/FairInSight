@@ -42,6 +42,41 @@ class Repository {
         });
     }
 
+    async getEmailConfirmationDataByEmail(email) {
+        return connection.users.findFirst({
+            where: { email, deleted_at: null },
+            select: {
+                id: true,
+                email: true,
+                email_confirmation_token: true,
+                is_email_confirmed: true,
+            },
+        });
+    }
+
+    async updateEmailConfirmationToken(userId, token) {
+        return connection.users.update({
+            where: { id: userId },
+            data: { email_confirmation_token: token },
+            select: { id: true, email_confirmation_token: true },
+        });
+    }
+
+    async findUserByEmailConfirmationToken(token) {
+        return connection.users.findFirst({
+            where: { email_confirmation_token: token },
+            select: { id: true, is_email_confirmed: true },
+        });
+    }
+
+    async confirmEmail(userId) {
+        return connection.users.update({
+            where: { id: userId },
+            data: { is_email_confirmed: true, email_confirmation_token: null },
+            select: { id: true, is_email_confirmed: true },
+        });
+    }
+
     async getUserRoles(userId) {
         return connection.users.findFirst({
             where: { id: userId },

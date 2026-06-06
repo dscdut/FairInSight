@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { motion } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { type z } from 'zod'
 
 import { logo } from '@/assets/images'
@@ -20,17 +20,16 @@ import {
   InputOTPGroup,
   InputOTPSlot
 } from '@/components/ui'
-import { ROUTE } from '@/core/constants/path'
 import { containerVariants, itemVariants } from '@/core/lib/variant/style-variant'
 import { VerifyAccountEmailSchema } from '@/core/zod/verify-account-email.zod'
-import { useResendVerificationCode } from '@/hooks/tanstack-query/auth/use-query-auth'
+import { useVerifyEmailAuth } from '@/hooks/tanstack-query/auth/use-query-auth'
 
 const RESEND_COUNTDOWN = 60
 
 export default function VerifyEmail() {
   const { t } = useTranslation('auth')
   const location = useLocation()
-  const navigate = useNavigate()
+  // const navigate = useNavigate()
 
   const [countdown, setCountdown] = useState(RESEND_COUNTDOWN)
   const [canResend, setCanResend] = useState(false)
@@ -39,7 +38,7 @@ export default function VerifyEmail() {
     resolver: zodResolver(VerifyAccountEmailSchema),
     defaultValues: {
       email: '',
-      verificationCode: ''
+      otp: ''
     }
   })
 
@@ -65,28 +64,23 @@ export default function VerifyEmail() {
     }
   }, [countdown, canResend])
 
-  const { mutate: resendCode, isPending: isResending } = useResendVerificationCode({
-    setCountdown,
-    setCanResend
-  })
+  const { mutate: verifyEmail, isPending: isVerifying } = useVerifyEmailAuth()
 
-  // fake verify
+
   const handleVerify = useCallback(
     (data: z.infer<typeof VerifyAccountEmailSchema>) => {
-      setTimeout(() => {
-        navigate(ROUTE.AUTH.RESET_PASSWORD, {
-          state: { email: data.email }
-        })
-      }, 800)
+      const flowType = location.state?.password ? 'register' : 'forgot_password'
+      
+      verifyEmail({
+        otp: data.otp,
+        email: data.email,
+        type: flowType,
+        password: location.state?.password
+      })
     },
-    [navigate]
+    [verifyEmail, location.state]
   )
-
-  const handleResendCode = useCallback(() => {
-    const email = form.getValues('email')
-    if (email) resendCode(email)
-  }, [form, resendCode])
-
+  
   return (
     <div
       className='relative flex min-h-screen w-full justify-center bg-cover bg-center'
@@ -114,7 +108,7 @@ export default function VerifyEmail() {
                 <motion.div variants={itemVariants}>
                   <FormField
                     control={form.control}
-                    name='verificationCode'
+                    name='otp'
                     render={({ field }) => (
                       <FormItem>
                         <FormControl>
@@ -144,6 +138,7 @@ export default function VerifyEmail() {
                 {/* BUTTON */}
                 <motion.div variants={itemVariants}>
                   <Button
+                    loading={isVerifying}
                     type='submit'
                     variant='default'
                     size='lg'
@@ -157,19 +152,19 @@ export default function VerifyEmail() {
                 <motion.div variants={itemVariants} className='text-center text-small pt-2'>
                   <button
                     type='button'
-                    onClick={handleResendCode}
-                    disabled={!canResend || isResending}
+                    onClick={()=>{}}
+                    disabled={!canResend}
                     className={`font-semibold transition-colors duration-200 ${
-                      canResend && !isResending
+                      canResend
                         ? 'text-primary hover:text-primary-600'
                         : 'cursor-not-allowed text-text-tertiary'
                     }`}
                   >
-                    {isResending
+                    {/* {isResending
                       ? t('sending')
                       : canResend
                       ? t('resendCode')
-                      : `${t('resendCode')} (${countdown}s)`}
+                      : `${t('resendCode')} (${countdown}s)`} */}
                   </button>
                 </motion.div>
               </motion.div>

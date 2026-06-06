@@ -21,7 +21,7 @@ import {
   FormMessage,
   Input,
 } from '@/components/ui'
-import { PASSWORD_TYPE, TEXT_TYPE } from '@/core/configs/consts'
+import { PASSWORD_TYPE, ROLE_LAWYER, ROLE_USER, TEXT_TYPE } from '@/core/configs/consts'
 import { ROUTE } from '@/core/constants/path'
 import { containerVariants, itemVariants } from '@/core/lib/variant/style-variant'
 import { RegisterSchema } from '@/core/zod'
@@ -36,8 +36,8 @@ export default function Register() {
 
   useAuthRedirect()
   const roleOptions: RoleType[] = [
-    { value: 'client', label: t('roleClient') },
-    { value: 'lawyer', label: t('roleLawyer') }
+    { value: ROLE_USER, label: t('roleClient') },
+    { value: ROLE_LAWYER, label: t('roleLawyer') }
   ]
   const form = useForm<z.infer<typeof RegisterSchema>>({
     resolver: zodResolver(RegisterSchema),
@@ -45,13 +45,8 @@ export default function Register() {
       email: '',
       password: '',
       confirmPassword: '',
-      name: '',
-      phone: '',
-      role: 'client',
-      licenseNumber: '',
-      issuedDate: '',
-      issuedPlace: '',
-      certificate: null,
+      fullName: '',
+      role: ROLE_USER,
       referralCode: ''
     }
   })
@@ -59,8 +54,8 @@ export default function Register() {
   const { mutate: mutationRegister, isPending } = useRegisterAuth()
   const role = form.watch('role')
 
-  const handleRegister = () => {
-    mutationRegister(form.getValues())
+  const handleRegister = (data: z.infer<typeof RegisterSchema>) => {
+    mutationRegister(data)
   }
 
   const togglePasswordVisibility = () => setIsPasswordVisible((prev) => !prev)
@@ -132,7 +127,7 @@ export default function Register() {
               <motion.div variants={itemVariants}>
                 <FormField
                   control={form.control}
-                  name='name'
+                  name='fullName'
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className='text-small text-text-primary'>{t('fullNameLabel')}</FormLabel>
@@ -208,7 +203,7 @@ export default function Register() {
                 />
               </motion.div>
 
-              {role === 'lawyer' && (
+              {role === 'LAWYER' && (
                 <motion.div variants={itemVariants}>
                   <FormField
                     control={form.control}
