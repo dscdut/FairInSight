@@ -28,7 +28,7 @@ export default function AccountSetting({ user, isEditing, setIsEditing }: Accoun
               <div className='space-y-2'>
                 <Label htmlFor='name'>Full Name</Label>
                 <div className='flex gap-2'>
-                  <Input id='name' defaultValue={user?.name} disabled={!isEditing} />
+                  <Input id='name' defaultValue={user?.fullName} disabled={!isEditing} />
                   <Button variant='outline' onClick={() => setIsEditing(!isEditing)}>
                     {isEditing ? 'Save' : 'Edit'}
                   </Button>

@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 
 import { getPersistedAuth } from '@/core/shared/auth'
-import { clearLS } from '@/core/shared/storage'
+import { clearLS, setToken, setUserToLS } from '@/core/shared/storage'
 import { type LoginResponse } from '@/models/interface/auth.interface'
 
 import { type AuthState, type AuthStore } from './types'
@@ -27,12 +27,18 @@ export const useAuthStore = create<AuthStore>((set) => ({
   },
 
   loginSuccess: (data: LoginResponse) => {
+    if (data?.accessToken && data?.refreshToken) {
+      setToken(data.accessToken, data.refreshToken)
+    }
+    if (data?.user) {
+      setUserToLS(data.user)
+    }
     set({
       isLoading: false,
       isAuthenticated: true,
       user: data?.user,
-      access_token: data?.access_token,
-      refresh_token: data?.refresh_token,
+      access_token: data?.accessToken,
+      refresh_token: data?.refreshToken,
       error: null
     })
   },
@@ -51,7 +57,31 @@ export const useAuthStore = create<AuthStore>((set) => ({
     })
   },
 
+  registerStart: () => {
+    set({
+      isLoading: true,
+      error: null
+    })
+  },
+
+  registerSuccess: () => {
+    set({
+      isLoading: false,
+      error: null
+    })
+  },
+
+  registerFailure: (error: string) => {
+    set({
+      isLoading: false,
+      error
+    })
+  },
+
   updateUser: (user: LoginResponse['user']) => {
+    if (user) {
+      setUserToLS(user)
+    }
     set({
       user
     })
