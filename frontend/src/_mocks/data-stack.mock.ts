@@ -1,12 +1,4 @@
-import {
-  Scale,
-  Home,
-  Briefcase,
-  Heart,
-  Gavel,
-  ShieldCheck,
-  Landmark
-} from 'lucide-react'
+import { Scale, Home, Briefcase, Heart, Gavel, ShieldCheck, Landmark } from 'lucide-react'
 
 export const legalFields = [
   {

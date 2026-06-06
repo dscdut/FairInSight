@@ -1,15 +1,7 @@
 import { useState } from 'react'
 
 import { motion } from 'framer-motion'
-import {
-  MessageSquare,
-  FileCheck,
-  Zap,
-  Bot,
-  User,
-  Send,
-  Sparkles
-} from 'lucide-react'
+import { MessageSquare, FileCheck, Zap, Bot, User, Send, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
@@ -71,9 +63,7 @@ export const AISection = () => {
               <h2 className='text-h3 sm:text-h2 text-black dark:text-white leading-tight'>
                 {t('home.AI_assistance.sectionTitle')}
               </h2>
-              <p className='text-p text-gray-600 dark:text-gray-300 max-w-xl'>
-                {t('home.AI_assistance.description')}
-              </p>
+              <p className='text-p text-gray-600 dark:text-gray-300 max-w-xl'>{t('home.AI_assistance.description')}</p>
             </div>
 
             <div className='space-y-4'>
@@ -142,9 +132,18 @@ export const AISection = () => {
                       <Bot className='w-4 h-4' />
                     </div>
                     <div className='bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-2xl rounded-tl-none px-4 py-3 flex gap-1 items-center h-10'>
-                      <span className='w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce' style={{ animationDelay: '0ms' }} />
-                      <span className='w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce' style={{ animationDelay: '150ms' }} />
-                      <span className='w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce' style={{ animationDelay: '300ms' }} />
+                      <span
+                        className='w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce'
+                        style={{ animationDelay: '0ms' }}
+                      />
+                      <span
+                        className='w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce'
+                        style={{ animationDelay: '150ms' }}
+                      />
+                      <span
+                        className='w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce'
+                        style={{ animationDelay: '300ms' }}
+                      />
                     </div>
                   </div>
                 )}
@@ -165,7 +164,10 @@ export const AISection = () => {
                 )}
               </div>
 
-              <form onSubmit={handleMockSubmit} className='p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-800 flex gap-2'>
+              <form
+                onSubmit={handleMockSubmit}
+                className='p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-800 flex gap-2'
+              >
                 <input
                   type='text'
                   value={inputValue}
@@ -179,7 +181,6 @@ export const AISection = () => {
               </form>
             </motion.div>
           </div>
-
         </div>
       </div>
     </section>

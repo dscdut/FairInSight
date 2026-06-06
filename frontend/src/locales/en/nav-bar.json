@@ -1,0 +1,21 @@
+{
+  "dashboard": "Dashboard",
+  "analytics": "Analytics",
+  "overview": "Overview",
+  "sales": "Sales Analytics",
+  "user_analytics": "User Analytics",
+  "performance": "Performance",
+  "users": "Users Management",
+  "home": "Home",
+  "chat_ai": "AI Chat",
+  "template": "Template Repository",
+  "legal_analysis": "Legal Analysis",
+  "report": "Report Management",
+  "setting": "Settings",
+  "system_status": "System Status",
+  "online_secure": "Online & Secure",
+  "account": "Account",
+  "profile": "Profile",
+  "edit_profile": "Edit Profile",
+  "logout": "Log Out"
+}

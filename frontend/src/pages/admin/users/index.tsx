@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input'
 export default function Users() {
   const handleSearch = () => {
     // Add your search logic here
-    console.log('Search clicked')
   }
 
   return (

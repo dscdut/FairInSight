@@ -50,7 +50,9 @@ export const AboutSection = () => {
               <h3 className='text-xl font-semibold text-gray-900 dark:text-white mb-2'>
                 {t('home.features.' + feature.key + '.title')}
               </h3>
-              <p className='text-blockquote text-gray-600 dark:text-gray-300'>{t('home.features.' + feature.key + '.description')}</p>
+              <p className='text-blockquote text-gray-600 dark:text-gray-300'>
+                {t('home.features.' + feature.key + '.description')}
+              </p>
             </motion.div>
           ))}
         </div>

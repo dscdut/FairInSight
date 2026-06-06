@@ -37,11 +37,7 @@ export const ContactSection = () => {
           </p>
 
           {/* Button Call to Action */}
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className='inline-block'
-          >
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className='inline-block'>
             <Button
               size='lg'
               className='px-8 py-6 text-btn-large rounded-xl font-bold bg-primary hover:bg-primary/90 text-white shadow-md hover:shadow-lg transition-all flex items-center gap-2 group'

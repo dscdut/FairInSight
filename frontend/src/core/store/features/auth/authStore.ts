@@ -30,9 +30,6 @@ export const useAuthStore = create<AuthStore>((set) => ({
     if (data?.accessToken && data?.refreshToken) {
       setToken(data.accessToken, data.refreshToken)
     }
-    if (data?.user) {
-      setUserToLS(data.user)
-    }
     set({
       isLoading: false,
       isAuthenticated: true,
@@ -41,6 +38,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
       refresh_token: data?.refreshToken,
       error: null
     })
+    if (data?.user) setUserToLS(data?.user)
   },
 
   loginFailure: (error: string) => {
