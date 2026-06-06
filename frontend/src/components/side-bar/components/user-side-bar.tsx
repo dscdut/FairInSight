@@ -1,3 +1,5 @@
+import { useCallback } from 'react'
+
 import { ChevronLeft, ChevronRight, LogOut, Settings, User } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
@@ -11,13 +13,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import isEqual from '@/core/configs/is-equal'
 import { userSideBarLinks } from '@/core/constants/general.const'
 import { ROUTE } from '@/core/constants/path'
 import { cn } from '@/core/lib/utils'
 import { useAuthStore } from '@/core/store/features/auth/authStore'
 import useToggleSideBar from '@/core/store/features/sidebar'
-import { useUserInfo } from '@/hooks/tanstack-query/auth/use-query-auth'
 
 export default function UserSideBar() {
   const { t } = useTranslation('navBar')
@@ -25,34 +25,35 @@ export default function UserSideBar() {
   const navigate = useNavigate()
   const { sidebarOpen, toggleSidebar } = useToggleSideBar()
   const { logout } = useAuthStore()
-  const { data: user } = useUserInfo()
+  
+  const user = useAuthStore((state) => state.user)
 
-  const isActiveLink = (linkPath: string) => {
+  const isActiveLink = useCallback((linkPath: string) => {
     const currentPath = location.pathname
-    if (isEqual(linkPath, ROUTE.USER.ROOT)) {
-      return isEqual(currentPath, ROUTE.USER.ROOT)
+    if (linkPath === ROUTE.USER.ROOT) {
+      return currentPath === ROUTE.USER.ROOT
     }
-    return isEqual(currentPath, linkPath) || currentPath.startsWith(`${linkPath}/`)
-  }
+    return currentPath === linkPath || currentPath.startsWith(`${linkPath}/`)
+  }, [location.pathname])
 
-  const getInitials = (name: string) => {
+  const getInitials = useCallback((name: string) => {
     if (!name) return 'U'
     return name
       .split(' ')
       .map((n) => n[0])
       .join('')
       .toUpperCase()
-  }
+  }, [])
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     logout()
     navigate(ROUTE.AUTH.LOGIN)
-  }
+  }, [logout, navigate])
 
   return (
     <aside
       className={cn(
-        'flex relative flex-col h-full bg-white border-r border-gray-200 shadow-xl transition-all duration-500  md:flex dark:bg-gray-800 dark:border-gray-700',
+        'flex relative flex-col h-full bg-white border-r border-gray-200 shadow-xl transition-all duration-500 md:flex dark:bg-gray-800 dark:border-gray-700',
         sidebarOpen ? 'w-72' : 'w-20'
       )}
       aria-label='User Sidebar navigation'
@@ -65,7 +66,7 @@ export default function UserSideBar() {
         )}
       >
         {sidebarOpen && (
-          <div className='flex gap-3 items-center'>
+          <div className='flex gap-3 items-center animate-in fade-in duration-300'>
             <div className='transition-all duration-200 hover:scale-105'>
               <Logo />
             </div>
@@ -96,70 +97,75 @@ export default function UserSideBar() {
         )}
         role='navigation'
       >
-        {userSideBarLinks.map((link, index) => (
-          <div key={link.title} className='space-y-1'>
-            <Link
-              to={link.path}
-              className={cn(
-                'flex items-center gap-4 rounded-xl text-small font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/50 group relative overflow-hidden',
-                sidebarOpen ? 'px-4 py-3.5' : 'px-3 py-3.5 justify-center',
-                isActiveLink(link.path)
-                  ? 'bg-gradient-to-r from-primary to-primary-400 text-white shadow-lg shadow-primary/25 transform scale-[1.02]'
-                  : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100 hover:shadow-lg hover:transform hover:scale-[1.02] dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700'
-              )}
-              title={!sidebarOpen ? t(link.titleKey || link.title) : undefined}
-              style={{ animationDelay: `${index * 50}ms` }}
-            >
-              {/* Active indicator */}
-              {isActiveLink(link.path) && (
-                <div className='absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-primary to-primary-400 rounded-r-full' />
-              )}
+        {userSideBarLinks.map((link, index) => {
+          const isLinkActive = isActiveLink(link.path)
+          const linkText = t(link.titleKey || link.title)
 
-              {/* Icon */}
-              <span
+          return (
+            <div key={link.title} className='space-y-1'>
+              <Link
+                to={link.path}
                 className={cn(
-                  'flex-shrink-0 transition-all duration-300 relative z-10',
-                  sidebarOpen ? 'w-5 h-5' : 'w-6 h-6',
-                  isActiveLink(link.path)
-                    ? 'text-white'
-                    : 'text-tertiary group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-white'
+                  'flex items-center gap-4 rounded-xl text-small font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary group relative overflow-hidden',
+                  sidebarOpen ? 'px-4 py-3' : 'px-3 py-3 justify-center',
+                  isLinkActive
+                    ? 'bg-gradient-to-r from-primary to-primary-400 text-white shadow-lg shadow-primary/25 transform scale-[1.02]'
+                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100 hover:shadow-lg hover:transform hover:scale-[1.02] dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700'
                 )}
+                title={!sidebarOpen ? linkText : undefined}
+                style={{ animationDelay: `${index * 50}ms` }}
               >
-                {link.icon}
-              </span>
+                {/* Active indicator */}
+                {isLinkActive && (
+                  <div className='absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-primary to-primary-400 rounded-r-full' />
+                )}
 
-              {/* Text */}
-              {sidebarOpen && (
+                {/* Icon */}
                 <span
                   className={cn(
-                    'transition-all duration-300 relative z-10 truncate',
-                    isActiveLink(link.path)
+                    'flex-shrink-0 transition-all duration-300 relative z-10',
+                    sidebarOpen ? 'w-5 h-5' : 'w-6 h-6',
+                    isLinkActive
                       ? 'text-white'
-                      : 'text-tertiary group-hover:text-gray-800 dark:text-gray-300 dark:group-hover:text-white'
+                      : 'text-tertiary group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-white'
                   )}
                 >
-                  {t(link.titleKey || link.title)}
+                  {link.icon}
                 </span>
-              )}
 
-              {/* Hover effect background */}
-              <div
-                className={cn(
-                  'absolute inset-0 bg-primary/10 transition-all duration-300 rounded-xl',
-                  isActiveLink(link.path) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                {/* Text */}
+                {sidebarOpen && (
+                  <span
+                    className={cn(
+                      'transition-all duration-300 relative z-10 truncate',
+                      isLinkActive
+                        ? 'text-white'
+                        : 'text-tertiary group-hover:text-gray-800 dark:text-gray-300 dark:group-hover:text-white'
+                    )}
+                  >
+                    {linkText}
+                  </span>
                 )}
-              />
 
-              {/* Tooltip for collapsed state */}
-              {!sidebarOpen && (
-                <div className='absolute left-full invisible z-50 px-3 py-2 ml-3 text-sm text-white whitespace-nowrap bg-gray-800 rounded-lg border border-gray-600 shadow-xl opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:visible dark:bg-gray-700 dark:border-gray-600'>
-                  {t(link.titleKey || link.title)}
-                  <div className='absolute left-0 top-1/2 w-2 h-2 bg-gray-800 border-b border-l border-gray-600 transform rotate-45 -translate-x-1 -translate-y-1/2 dark:bg-gray-700 dark:border-gray-600'></div>
-                </div>
-              )}
-            </Link>
-          </div>
-        ))}
+                {/* Hover effect background */}
+                <div
+                  className={cn(
+                    'absolute inset-0 bg-primary/10 transition-all duration-300 rounded-xl',
+                    isLinkActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                  )}
+                />
+
+                {/* Tooltip for collapsed state */}
+                {!sidebarOpen && (
+                  <div className='absolute left-full invisible z-50 px-3 py-2 ml-3 text-sm text-white whitespace-nowrap bg-gray-800 rounded-lg border border-gray-600 shadow-xl opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:visible dark:bg-gray-700 dark:border-gray-600'>
+                    {linkText}
+                    <div className='absolute left-0 top-1/2 w-2 h-2 bg-gray-800 border-b border-l border-primary transform rotate-45 -translate-x-1 -translate-y-1/2 dark:bg-gray-700 dark:border-primary'></div>
+                  </div>
+                )}
+              </Link>
+            </div>
+          )
+        })}
       </nav>
 
       {/* User Information Footer */}
@@ -185,6 +191,7 @@ export default function UserSideBar() {
                     sidebarOpen ? 'w-10 h-10' : 'w-8 h-8'
                   )}
                 >
+                  {/* Sử dụng optional chaining an toàn để tránh crash khi chưa có dữ liệu */}
                   <AvatarImage src='/images/avatar.png' alt={user?.fullName} />
                   <AvatarFallback className='bg-primary text-white font-bold'>
                     {getInitials(user?.fullName || '')}
@@ -194,7 +201,7 @@ export default function UserSideBar() {
               </div>
 
               {sidebarOpen && (
-                <div className='flex-1 min-w-0'>
+                <div className='flex-1 min-w-0 animate-in fade-in duration-300'>
                   <p className='text-sm font-semibold text-slate-800 dark:text-slate-200 truncate leading-none mb-1'>
                     {user?.fullName || 'Người dùng'}
                   </p>
@@ -217,8 +224,12 @@ export default function UserSideBar() {
               <p className='text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1'>
                 {t('account')}
               </p>
-              <p className='text-sm font-semibold text-slate-800 dark:text-slate-200 truncate'>{user?.fullName}</p>
-              <p className='text-xs text-slate-500 dark:text-slate-400 truncate'>{user?.email}</p>
+              <p className='text-sm font-semibold text-slate-800 dark:text-slate-200 truncate'>
+                {user?.fullName || 'Người dùng'}
+              </p>
+              <p className='text-xs text-slate-500 dark:text-slate-400 truncate'>
+                {user?.email || 'user@legalai.vn'}
+              </p>
             </div>
 
             <DropdownMenuItem

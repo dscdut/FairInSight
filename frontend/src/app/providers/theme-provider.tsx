@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 
+
 import {
   THEME_DARK,
   THEME_LIGHT,
@@ -9,6 +10,7 @@ import {
   ThemeProviderContext
 } from '@/components/theme/theme-constants'
 import isEqual from '@/core/configs/is-equal'
+
 
 export function ThemeProvider({
   children,
@@ -68,5 +70,3 @@ export function ThemeProvider({
     </ThemeProviderContext.Provider>
   )
 }
-
-export { useTheme } from '@/components/theme/theme-hooks'
