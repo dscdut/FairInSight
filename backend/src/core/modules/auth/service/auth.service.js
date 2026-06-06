@@ -1,70 +1,57 @@
 import crypto from 'crypto';
-import connection from 'core/database';
-import { pick, update } from 'lodash';
+import {
+    REFRESH_TOKEN_EXPIRY,
+    FORGOT_PASSWORD_TOKEN_EXPIRY,
+    PASSWORD_RESET_TOKEN_EXPIRY,
+} from 'core/env';
+import { MailerService } from 'core/common/mailer.service';
 import { JwtPayload } from 'core/modules/auth/dto/jwt-sign.dto';
-import { UserDataService } from 'core/modules/user/services/userData.service';
-import { joinUserRoles } from 'core/utils/userFilter';
+import { AuthRepository } from '../auth.repository';
 import { BcryptService } from './bcrypt.service';
 import { JwtService } from './jwt.service';
-import { UserRepository } from '../../user/user.repository';
 import { UnAuthorizedException, DuplicateException, BadRequestException } from '../../../../packages/httpException';
-import { authMiddleware, rbac } from '../middleware'
-import { MediaService } from 'core/modules/document';
-
-const REFRESH_TOKEN_EXPIRY = 24 * 60 * 60 * 1000; // 1 day
-const FORGOT_PASSWORD_TOKEN_EXPIRY = 15 * 60 * 1000; // 15 minute
-const PASSWORD_RESET_TOKEN_EXPIRY = 15 * 60 * 1000; // 15 minute
 
 class Service {
     constructor() {
-        this.userRepository = UserRepository;
+        this.repository = AuthRepository;
         this.jwtService = JwtService;
         this.bcryptService = BcryptService;
     }
 
     async register(registerDto) {
-        const existingEmail = await this.userRepository.findByEmail(registerDto.email);
+        const existingEmail = await this.repository.findActiveUserByEmail(registerDto.email);
         if (existingEmail) {
             throw new DuplicateException("Email already in use");
         }
 
         registerDto.password = await this.bcryptService.hash(registerDto.password);
 
-        let existingRole = await connection.roles.findFirst({
-            where: {name: registerDto.role},
-            select: {id: true},
-        });
-        let role_id = existingRole.id;
+        const existingRole = await this.repository.findRoleByName(registerDto.role);
+        if (!existingRole) {
+            throw new BadRequestException("Role does not exist");
+        }
 
-        const result = await connection.users.create({
-            data: {
-                role_id: role_id,
-                email: registerDto.email,
-                password_hash: registerDto.password,
-                referral_code: registerDto.referralCode,
-                full_name: registerDto.fullName,
-            },
-            select: { id: true },
+        const result = await this.repository.createUser({
+            role_id: existingRole.id,
+            email: registerDto.email,
+            password_hash: registerDto.password,
+            referral_code: registerDto.referralCode,
+            full_name: registerDto.fullName,
         });
 
-        const { token: refreshToken } = await this.#createRefreshToken(result.id);
-        const accessToken = this.jwtService.sign(JwtPayload({ id: result.id, role: [registerDto.role] }));
-        
         return {
             data: {
                 id: result.id,
-                full_name: registerDto.fullName,
+                fullName: registerDto.fullName,
                 email: registerDto.email,
-                role_id: role_id,
-                access_token: accessToken,
-                refresh_token: refreshToken,
+                roleName: existingRole.name,
             },
             message: "User registered successfully",
         };
     }
 
     async login(loginDto, userId) {
-        const user = await this.userRepository.findByEmail(loginDto.email);
+        const user = await this.repository.findActiveUserByEmail(loginDto.email);
         if (!user) {
             throw new UnAuthorizedException('Email or password is incorrect');
         }
@@ -75,35 +62,29 @@ class Service {
         }
 
         const userData = {
-            user_id: user.id,
+            userId: user.id,
             email: user.email,
             fullName: user.full_name,
+            roleName: user.roles?.name || null,
         };
 
-        const {userRole} = await connection.users.findFirst({
-            where: {id: userId},
-            select: {
-                roles: {
-                    select: { name: true }
-                },
-            }
-        })
+        const targetUserId = userId ?? user.id;
+        const roleNames = await this.#getRoleNames(targetUserId);
 
-        const { token: refreshToken } = await this.#createRefreshToken(user.id);
-        const accessToken = this.jwtService.sign(JwtPayload({ id: user.id, role: [userRole] }));
+        const { accessToken, refreshToken } = await this.#issueTokens(user.id, roleNames);
 
         return {
             data: {
                 user: userData,
-                access_token: accessToken,
-                refresh_token: refreshToken,
+                accessToken: accessToken,
+                refreshToken: refreshToken,
             },
             message: "Login successful.",
         };
     }
 
     async forgotPassword(forgotPasswordDto) {
-        const existingEmail = await this.userRepository.findByEmail(forgotPasswordDto.email);
+        const existingEmail = await this.repository.findActiveUserByEmail(forgotPasswordDto.email);
         
         if (!existingEmail) {
             throw new BadRequestException("Email does not exist");
@@ -112,13 +93,13 @@ class Service {
         const otp = crypto.randomInt(100000, 999999).toString();
         const expiresAt = new Date(Date.now() + FORGOT_PASSWORD_TOKEN_EXPIRY);
 
-        await connection.users.update({
-            where: { id: existingEmail.id },
-            data: {
-                password_reset_token: otp, // chỗ này em bỏ vào password_reset_token vì không có cái column riêng cho otp thường
-                password_reset_expiry: expiresAt, // tương tự
-                // cái này chắc ảnh hưởng bảo mật nhiều, nhưng mà em không rõ có cách nào khác. (@c quynh)
-            },
+        await this.repository.updatePasswordResetToken(existingEmail.id, otp, expiresAt);
+
+        const otpExpiryMinutes = Math.max(1, Math.floor(FORGOT_PASSWORD_TOKEN_EXPIRY / 60000));
+        await MailerService.send({
+            to: existingEmail.email,
+            subject: 'Your OTP code',
+            text: `Your OTP code is ${otp}. It expires in ${otpExpiryMinutes} minutes.`,
         });
 
         return {
@@ -127,15 +108,12 @@ class Service {
     }
 
     async verifyOtp(verifyOtpDto) {
-        const existingEmail = await this.userRepository.findByEmail(verifyOtpDto.email);
+        const existingEmail = await this.repository.findActiveUserByEmail(verifyOtpDto.email);
         if (!existingEmail) {
             throw new BadRequestException("Email does not exist");
         }
         
-        const existingOtp = await connection.users.findFirst({
-            where: { id: existingEmail.id },
-            select: { password_reset_token: true, password_reset_expiry: true }
-        });
+        const existingOtp = await this.repository.getPasswordResetData(existingEmail.id);
 
         if (existingOtp.password_reset_expiry < Date.now()) {
             throw new UnAuthorizedException("OTP has expired");
@@ -155,21 +133,14 @@ class Service {
     }
 
     async resetPassword(resetPasswordDto) {
-        const user = await connection.users.findFirst({
-            where: { password_reset_token: resetPasswordDto.token },
-            select: { id: true },
-        })
+        const user = await this.repository.findUserByResetToken(resetPasswordDto.token);
         if (!user) {
             throw new UnAuthorizedException("Invalid or expired token");
         }
 
         resetPasswordDto.newPassword = await this.bcryptService.hash(resetPasswordDto.newPassword);
 
-        await connection.users.update({
-            where: { id: user.id },
-            data: { password_hash: resetPasswordDto.newPassword },
-            select: { id: true },
-        });
+        await this.repository.updatePasswordHash(user.id, resetPasswordDto.newPassword);
 
         return {
             message: "Password has been reset successfully",
@@ -177,78 +148,39 @@ class Service {
     }
 
     async getMyProfile(userId) {
-        return await connection.users.findFirst({
-            where: { id: userId },
-            select: { id: true, avatar_url: true, full_name: true, email: true, phone: true, date_of_birth: true, location: true }
-        });
+        const user = await this.repository.getProfile(userId);
+
+        return user ? this.#mapProfile(user) : null;
     }
 
     async updateMyProfile(updateMyProfileDto, userId) {
-        const result = await connection.users.update({
-            where: {
-                id: userId,
-            },
-            data: {
-                avatar_url: updateMyProfileDto.avatar_url,
-                full_name: updateMyProfileDto.full_name,
-                phone: updateMyProfileDto.phone,
-                date_of_birth: updateMyProfileDto.date_of_birth 
-                    ? new Date(updateMyProfileDto.date_of_birth).toISOString() 
-                    : null,
-                location: updateMyProfileDto.location,
-            },
-            select: {
-                id: true,
-                avatar_url: true,
-                full_name: true,
-                email: true,
-                phone: true,
-                date_of_birth: true,
-                location: true,
-                subscriptions: {
-                    select: { plan_name: true }
-                },
-                created_at: true,
-            }
+        const dateOfBirth = updateMyProfileDto.dateOfBirth
+            ? new Date(updateMyProfileDto.dateOfBirth).toISOString()
+            : null;
+
+        const result = await this.repository.updateProfile(userId, {
+            avatar_url: updateMyProfileDto.avatarUrl,
+            full_name: updateMyProfileDto.fullName,
+            phone: updateMyProfileDto.phone,
+            date_of_birth: dateOfBirth,
+            location: updateMyProfileDto.location,
         });
         return {
-            data: result,
+            data: this.#mapProfile(result),
         }
     }
 
     async refreshToken(refreshTokenDto, userId) {
-        const result = await connection.refresh_tokens.findFirst({
-            where: { token: refreshTokenDto.refresh_token },
-            select: { expires_at: true }
-        });
+        const result = await this.repository.findRefreshToken(refreshTokenDto.refresh_token);
         if (!result) {
             throw new UnAuthorizedException("Invalid or expired refresh token");
         }
-        if (result.expires_at < Date.now()) {
+        if (result.expires_at < Date.now() || result.is_revoked) {
             throw new UnAuthorizedException("Invalid or expired refresh token");
         }
 
-        const { token: refreshToken } = await this.#createRefreshToken(userId);
-
-        await connection.refresh_tokens.update({
-            where: {user_id: userId},
-            data: {
-                token: refreshTokenDto.refresh_token,
-                expires_at: new Date(Date.now() + REFRESH_TOKEN_EXPIRY)
-            },
-            select: { token: true }
-        });
-
-        const {userRole} = await connection.users.findFirst({
-            where: {id: userId},
-            select: {
-                roles: {
-                    select: { name: true }
-                },
-            }
-        })
-
-        const accessToken = this.jwtService.sign(JwtPayload({ id: userId, role: [userRole] }));
+        const roleNames = await this.#getRoleNames(userId);
+        const { accessToken, refreshToken } = await this.#issueTokens(userId, roleNames);
 
         return {
             data: {
@@ -258,34 +190,80 @@ class Service {
         }
     }
 
+    async logout(logoutDto) {
+        const existToken = await this.repository.findRefreshToken(logoutDto.refresh_token);
+        if (!existToken) {
+            throw new UnAuthorizedException("Invalid or expired refresh token");
+        }
+
+        if (existToken.expires_at < Date.now()) {
+            throw new UnAuthorizedException("Invalid or expired refresh token");
+        }
+
+        await this.repository.revokeRefreshToken(logoutDto.refresh_token);
+        return { 
+            type: "string",
+            message: "Logout successful",
+        };
+    }
+
     async #createRefreshToken(userId) {
         const token = crypto.randomBytes(32).toString('hex');
         const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY);
-        const record = await connection.refresh_tokens.upsert({
-            where: { user_id: userId },
-            update: { token, expires_at: expiresAt },
-            create: { user_id: userId, token, expires_at: expiresAt },
-            select: { user_id: true, token: true },
-        });
+        const record = await this.repository.upsertRefreshToken(userId, token, expiresAt);
         return {
-            id: record.user_id || record,
-            token: record.token || token
+            id: record.user_id,
+            token: record.token
+        };
+    }
+
+    async #issueTokens(userId, roleNames) {
+        const { token: refreshToken } = await this.#createRefreshToken(userId);
+        const accessToken = this.jwtService.sign(JwtPayload({ id: userId, role: roleNames }));
+
+        return {
+            accessToken,
+            refreshToken,
         };
     }
 
     async #createPasswordResetToken(userId) {
         const token = crypto.randomBytes(32).toString('hex');
         const expiresAt = new Date(Date.now() + PASSWORD_RESET_TOKEN_EXPIRY);
-        const record = await connection.users.update({
-            where: { id: userId },
-            data: {
-                password_reset_token: token,
-                password_reset_expiry: expiresAt,
-            },
-        });
+        await this.repository.updatePasswordResetToken(userId, token, expiresAt);
         return {
-            id: record.user_id || record,
-            token: record.token || token
+            id: userId,
+            token
+        };
+    }
+
+    async #getRoleNames(userId) {
+        const userWithRole = await this.repository.getUserRoles(userId);
+
+        if (!userWithRole || !userWithRole.roles) {
+            return [];
+        }
+
+        if (Array.isArray(userWithRole.roles)) {
+            return userWithRole.roles.map((role) => role.name);
+        }
+
+        return [userWithRole.roles.name];
+    }
+
+    #mapProfile(user) {
+        return {
+            id: user.id,
+            avatarUrl: user.avatar_url ?? null,
+            fullName: user.full_name ?? null,
+            email: user.email ?? null,
+            phone: user.phone ?? null,
+            dateOfBirth: user.date_of_birth ?? null,
+            location: user.location ?? null,
+            subscriptions: user.subscriptions
+                ? { planName: user.subscriptions.plan_name ?? null }
+                : undefined,
+            createdAt: user.created_at ?? undefined,
         };
     }
 }

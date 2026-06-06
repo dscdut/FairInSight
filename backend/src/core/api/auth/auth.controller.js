@@ -1,5 +1,5 @@
 import { AuthService } from '../../modules/auth/service/auth.service';
-import { RegisterDto, LoginDto, ForgotPasswordDto, VerifyOtpDto, ResetPasswordDto, UpdateMyProfileDto, RefreshTokenDto } from '../../modules/auth';
+import { RegisterDto, LoginDto, ForgotPasswordDto, VerifyOtpDto, ResetPasswordDto, UpdateMyProfileDto, RefreshTokenDto, LogoutDto } from '../../modules/auth';
 import { ValidHttpResponse } from '../../../packages/handler/response/validHttp.response';
 import { valid } from 'joi';
 
@@ -42,6 +42,11 @@ class Controller {
 
     refreshToken = async req => {
         const data = await this.service.refreshToken(RefreshTokenDto(req.body), req.user.payload.id);
+        return ValidHttpResponse.toOkResponse(data);
+    }
+
+    logout = async req => {
+        const data = await this.service.logout(LogoutDto(req.body));
         return ValidHttpResponse.toOkResponse(data);
     }
 }

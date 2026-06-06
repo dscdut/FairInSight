@@ -22,15 +22,6 @@ class Controller {
     };
 
     /**
-     * POST /api/v1/users
-     * Create a new user (public endpoint)
-     */
-    createOne = async req => {
-        const data = await this.service.createOne(CreateUserDto(req.body));
-        return ValidHttpResponse.toCreatedResponse(data);
-    };
-
-    /**
      * PUT /api/v1/users
      * Update authenticated user's profile
      */
