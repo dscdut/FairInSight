@@ -18,11 +18,8 @@ export const ROUTE = {
     TEMPLATE: '/template',
     LEGAL_ANALYSIS: '/legal-analysis',
     REPORT: '/report',
-    USER: '/user',
+    INFO: '/users',
     SETTING: '/setting'
-  },
-  USER: {
-    ROOT: '/',
   },
   ADMIN: {
     ROOT: '/admin',

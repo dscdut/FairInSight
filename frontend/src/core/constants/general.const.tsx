@@ -268,7 +268,7 @@ export const userSideBarLinks: TSidebarLinks[] = [
     title: 'Quản lý người dùng',
     titleKey: 'users',
     icon: <Users className='w-5 h-5' />,
-    path: ROUTE.USER.USER
+    path: ROUTE.USER.INFO
   },
   {
     title: 'Cài đặt',

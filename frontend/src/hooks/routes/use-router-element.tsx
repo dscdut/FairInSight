@@ -63,7 +63,7 @@ export default function useRoutesElements() {
                 <Route path={ROUTE.USER.TEMPLATE} element={<Template />} />
                 <Route path={ROUTE.USER.LEGAL_ANALYSIS} element={<LegalAnalysis />} />
                 <Route path={ROUTE.USER.REPORT} element={<Report />} />
-                <Route path={ROUTE.USER.USER} element={<User />} />
+                <Route path={ROUTE.USER.INFO} element={<User />} />
                 <Route path={ROUTE.USER.SETTING} element={<Setting />} />
               </Route>
             )}
