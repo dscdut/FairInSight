@@ -82,7 +82,6 @@ export const useEmailForgotPassAuth = () => {
 // VERIFY EMAIL
 export const useVerifyEmailAuth = () => {
   const navigate = useNavigate()
-  const { mutateAsync: login } = useLoginAuth()
 
   return useMutation({
     mutationKey: [MUTATION_KEYS.verifyEmail],
@@ -92,15 +91,6 @@ export const useVerifyEmailAuth = () => {
       toastifyCommon.success('Xác thực thành công!')
       if (variables.type === 'forgot_password') {
         navigate(ROUTE.AUTH.RESET_PASSWORD, { state: { email: variables.email } })
-      } else if (variables.password && variables.email) {
-        try {
-          await login({
-            email: variables.email,
-            password: variables.password
-          })
-        } catch (error) {
-          navigate(ROUTE.AUTH.LOGIN)
-        }
       } else {
         navigate(ROUTE.AUTH.LOGIN)
       }
