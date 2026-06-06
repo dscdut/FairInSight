@@ -154,10 +154,6 @@ class Repository {
             select: { user_id: true, token: true },
         });
     }
-
-    async deleteRefreshToken(token) {
-        
-    }
 }
 
 export const AuthRepository = new Repository();
