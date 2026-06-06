@@ -20,7 +20,7 @@ const Logo = ({ className = '' }) => {
           FairInsights
         </span>
       </motion.div>
-    </Link> 
+    </Link>
   )
 }
 

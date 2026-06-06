@@ -2,6 +2,7 @@ import { type JSX } from 'react'
 
 export type TSidebarLinks = {
   title: string
+  titleKey?: string
   icon?: JSX.Element
   path: string
   children?: TSidebarLinks[]

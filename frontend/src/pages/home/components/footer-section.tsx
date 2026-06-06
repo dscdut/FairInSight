@@ -19,7 +19,6 @@ export const FooterSection = () => {
     <footer className='bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 transition-colors duration-300'>
       <div className='container py-12 sm:py-16'>
         <div className='grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12'>
-          
           {/* Brand & Description Column */}
           <div className='col-span-1 md:col-span-6 space-y-6'>
             <div className='flex items-center gap-1.5'>
@@ -27,7 +26,7 @@ export const FooterSection = () => {
                 <span className='text-primary'>FairInsights</span>
               </span>
             </div>
-            
+
             <p className='text-sm text-gray-600 dark:text-gray-400 max-w-md leading-relaxed'>
               {t('home.footer.description')}
             </p>
@@ -157,7 +156,6 @@ export const FooterSection = () => {
               </li>
             </ul>
           </div>
-
         </div>
 
         {/* Bottom copyright */}
@@ -165,9 +163,7 @@ export const FooterSection = () => {
           <p className='text-xs text-gray-500 dark:text-gray-500'>
             {t('home.footer.copyright', { year: currentYear })}
           </p>
-          <div className='text-xs text-gray-400 dark:text-gray-600'>
-            Powered by advanced legal AI model
-          </div>
+          <div className='text-xs text-gray-400 dark:text-gray-600'>Powered by advanced legal AI model</div>
         </div>
       </div>
     </footer>

@@ -2,11 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 
 import { hero_img } from '@/assets/images'
-import {
-  HeroBackgroundParticles,
-  FadeUp,
-  ScrollIndicator
-} from '@/components/animated/animated-component'
+import { HeroBackgroundParticles, FadeUp, ScrollIndicator } from '@/components/animated/animated-component'
 import { Button } from '@/components/ui/button'
 
 export const HeroSection = () => {
@@ -30,18 +26,10 @@ export const HeroSection = () => {
               {t('home.hero.description')}
             </p>
             <div className='flex flex-col sm:flex-row items-start justify-start gap-4'>
-              <Button
-                variant='default'
-                size='lg'
-                onClick={() => navigate('/login')}
-              >
+              <Button variant='default' size='lg' onClick={() => navigate('/login')}>
                 {t('home.hero.getStarted')}
               </Button>
-              <Button
-                onClick={() => window.open('#', '_blank')}
-                variant='secondary'
-                size='lg'
-              >
+              <Button onClick={() => window.open('#', '_blank')} variant='secondary' size='lg'>
                 {t('home.hero.searchLaw')}
               </Button>
             </div>

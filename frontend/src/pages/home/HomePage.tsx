@@ -6,7 +6,6 @@ import { FooterSection } from '@/pages/home/components/footer-section'
 import { HeroSection } from '@/pages/home/components/hero-section'
 import { LibrarySection } from '@/pages/home/components/library-section'
 
-
 const HomePage = () => {
   return (
     <div className='min-h-screen bg-white dark:bg-gray-900'>
@@ -14,9 +13,9 @@ const HomePage = () => {
       <main>
         <HeroSection />
         <AboutSection />
-        <LibrarySection/>
-        <AISection/>
-        <ContactSection/>
+        <LibrarySection />
+        <AISection />
+        <ContactSection />
       </main>
 
       <FooterSection />

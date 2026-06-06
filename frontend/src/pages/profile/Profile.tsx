@@ -6,12 +6,13 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardTitle } from '@/components/ui/card'
 import FileUpload from '@/components/upload-file/file-upload'
-import { useAuthStore } from '@/core/store/features/auth/authStore'
+import { useUserInfo } from '@/hooks/tanstack-query/auth/use-query-auth'
 import AccountSetting from '@/pages/profile/components/account-setting'
 import RecentActivity from '@/pages/profile/components/recent-activity'
 
 export default function Profile() {
-  const { user } = useAuthStore()
+
+  const { data: user } = useUserInfo()
   const [isEditing, setIsEditing] = useState(false)
 
   const handleAvatarUpload = (files: FileList | null) => {
