@@ -47,7 +47,8 @@ const LayoutMain = ({ children }: LayoutMainProps) => {
                     'rounded-2xl border min-h-[calc(100vh-140px)] border-white/20 dark:border-slate-700/30',
                     'shadow-2xl backdrop-blur-xl bg-white/70 dark:bg-slate-800/70',
                     'h-full transition-all duration-300 hover:shadow-3xl',
-                    'mx-auto max-w-7xl px-4 lg:px-6'
+                    'mx-auto p-4 lg:p-8',
+                    'flex flex-col'
                   )}
                 >
                   {children || <Outlet />}

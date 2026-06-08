@@ -94,12 +94,14 @@ export default {
           primary: 'var(--background-primary)',
           primaryLight: 'var(--background-primary-light)',
           secondary: 'var(--background-secondary)',
-          tertiary: 'var(--background-tertiary)'
+          tertiary: 'var(--background-tertiary)',
+          description: 'var(--text-description)'
         },
         text: {
           primary: 'var(--text-primary)',
           secondary: 'var(--text-secondary)',
-          tertiary: 'var(--text-tertiary)'
+          tertiary: 'var(--text-tertiary)',
+          description: 'var(--text-description)'
         },
         border: {
           primary: 'var(--border-primary)',
@@ -126,6 +128,13 @@ export default {
           400: 'var(--blue-400)',
           500: 'var(--blue-500)',
           600: 'var(--blue-600)'
+        },
+        legal: {
+          50: 'var(--indigo-50)',
+          400: 'var(--indigo-400)',
+          500: 'var(--indigo-500)',
+          600: 'var(--indigo-600)',
+          900: 'var(--indigo-900)',
         },
         // Shadcn Defaults
         ring: 'var(--ring)',
