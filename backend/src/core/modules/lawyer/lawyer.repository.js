@@ -6,7 +6,7 @@ class Repository extends BaseRepository {
         super('users'); 
     }
 
-    async listLawyers({ page, size, filters }) {
+    async listLawyers({ page, size, filter = {} }) {
         const skip = (page - 1) * size;
         const where = {
             deleted_at: null,
@@ -18,15 +18,15 @@ class Repository extends BaseRepository {
             }
         };
 
-        if (filters.search) {
+        if (filter.search) {
             where.OR = [
-                { full_name: { contains: filters.search, mode: 'insensitive' } },
+                { full_name: { contains: filter.search, mode: 'insensitive' } },
                 {
                     lawyer_details: {
                         lawyer_specialties: {
                             some: {
                                 specialties: {
-                                    name: { contains: filters.search, mode: 'insensitive' }
+                                    name: { contains: filter.search, mode: 'insensitive' }
                                 }
                             }
                         }
@@ -35,27 +35,27 @@ class Repository extends BaseRepository {
             ];
         }
 
-        if (filters.specialization) {
+        if (filter.specialization) {
             where.lawyer_details = {
                 ...where.lawyer_details,
                 lawyer_specialties: {
                     some: {
                         specialties: {
-                            name: { contains: filters.specialization, mode: 'insensitive' }
+                            name: { contains: filter.specialization, mode: 'insensitive' }
                         }
                     }
                 }
             };
         }
 
-        if (filters.city) {
-            where.location = { contains: filters.city, mode: 'insensitive' };
+        if (filter.city) {
+            where.location = { contains: filter.city, mode: 'insensitive' };
         }
 
-        if (filters.minRating) {
+        if (filter.minRating) {
             where.lawyer_details = {
                 ...where.lawyer_details,
-                rating_avg: { gte: parseFloat(filters.minRating) }
+                rating_avg: { gte: parseFloat(filter.minRating) }
             };
         }
 

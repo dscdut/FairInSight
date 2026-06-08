@@ -5,8 +5,8 @@ class Service {
         this.repository = LawyerRepository;
     }
 
-    async listLawyers({ page, size, filters }) {
-        const { items, total } = await this.repository.listLawyers({ page, size, filters });
+    async listLawyers({ page, size, filter }) {
+        const { items, total } = await this.repository.listLawyers({ page, size, filter });
 
         const transformed = items.map(user => {
             const lawyerDetails = user.lawyer_details || {};
