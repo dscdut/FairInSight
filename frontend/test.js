@@ -1,6 +1,6 @@
 import { cva } from 'class-variance-authority';
-import { extendTailwindMerge } from 'tailwind-merge';
 import { clsx } from 'clsx';
+import { extendTailwindMerge } from 'tailwind-merge';
 
 const customTwMerge = extendTailwindMerge({
   extend: {
