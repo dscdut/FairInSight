@@ -23,6 +23,7 @@
   --grey-700: #394050;
   --grey-800: #1f2937;
   --grey-900: #111827;
+  --slate-600: #4D5461;
 
   /* Status Colors */
   --green-500: #43b75d;
@@ -36,6 +37,14 @@
   --blue-500: #3b82f6;
   --blue-600: #2563eb;
 
+  /* Indigo */
+  --indigo-50: #f5f3ff;
+  --indigo-100: #ede9fe;
+  --indigo-400: #8b5cf6;
+  --indigo-500: #7c3aed;
+  --indigo-600: #6d28d9;
+  --indigo-900: #4c1d95;
+
   /* =========================================
     2. SEMANTIC TOKENS (Light Mode)
     ========================================= */
@@ -47,6 +56,7 @@
   --text-primary: var(--grey-900);
   --text-secondary: var(--grey-600);
   --text-tertiary: var(--grey-400);
+  --text-description: var(--slate-600);
 
   --border-primary: var(--grey-200);
   --border-secondary: var(--grey-300);
@@ -83,10 +93,12 @@
   --text-primary: var(--grey-100);
   --text-secondary: var(--grey-200);
   --text-tertiary: var(--grey-300);
+  --text-description: var(--slate-600);
 
   --border-primary: var(--grey-700);
   --border-secondary: var(--grey-600);
   --border-focus: var(--grey-400);
+  
 
   /* Status colors */
   --error-primary: var(--error-500);

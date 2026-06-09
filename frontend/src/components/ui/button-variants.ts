@@ -10,14 +10,15 @@ export const buttonVariants = cva(
         outline:
           'border border-border-primary bg-background-primary text-text-primary shadow-sm hover:bg-background-secondary',
         secondary: 'bg-white text-text-primary shadow-sm hover:bg-background-tertiary',
-        ghost: 'text-text-primary hover:bg-background-secondary',
+        ghost: 'text-text-primary justify-start',
         link: 'text-primary underline-offset-4 hover:underline'
       },
       size: {
         default: 'h-10 px-4 py-2 text-btn-medium [&_svg]:size-5 ',
         sm: 'h-8 px-3 text-btn-small [&_svg]:size-4',
         lg: 'h-12 px-8 text-btn-large [&_svg]:size-6',
-        icon: 'h-10 w-10 text-btn-medium [&_svg]:size-5'
+        icon: 'h-10 w-10 text-btn-medium [&_svg]:size-5',
+        ghost: 'h-10 py-2 text-btn-medium [&_svg]:size-5'
       }
     },
     defaultVariants: {
