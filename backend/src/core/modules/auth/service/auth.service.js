@@ -246,10 +246,6 @@ class Service {
             throw new UnAuthorizedException("Invalid or expired refresh token");
         }
 
-        if (existToken.expires_at < Date.now()) {
-            throw new UnAuthorizedException("Invalid or expired refresh token");
-        }
-
         await this.repository.revokeRefreshToken(logoutDto.refresh_token);
         return { 
             type: "string",
