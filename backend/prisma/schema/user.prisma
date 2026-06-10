@@ -17,6 +17,7 @@ model lawyer_details {
   experience_years    Int?
   is_verified         Boolean               @default(false)
   rating_avg          Float?                @default(0) @db.Real
+  successful_cases    Int?                  @default(0)
   price_per_hour      Decimal?              @db.Decimal(10, 2)
   status              lawyer_status         @default(OFFLINE)
   bar_association     String?               @db.VarChar(255)
