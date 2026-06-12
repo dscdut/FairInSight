@@ -85,6 +85,50 @@ class Repository extends BaseRepository {
 
         return { items, total };
     }
+
+    async findLawyerById(id) {
+        const include = {
+            roles: true,
+            lawyer_details: {
+                include: {
+                    lawyer_specialties: {
+                        include: {
+                            specialties: true
+                        }
+                    },
+                    lawyer_experiences: {
+                        where: { deleted_at: null },
+                        orderBy: { start_date: 'desc' }
+                    },
+                    lawyer_certificates: {
+                        where: { deleted_at: null }
+                    },
+                    ratings: {
+                        where: { deleted_at: null },
+                        include: {
+                            users: true
+                        },
+                        orderBy: { created_at: 'desc' }
+                    }
+                }
+            }
+        };
+
+        return prisma.users.findFirst({
+            where: {
+                id,
+                deleted_at: null,
+                roles: {
+                    name: 'LAWYER'
+                },
+                lawyer_details: {
+                    is_verified: true
+                }
+            },
+            include
+        });
+    }
 }
+
 
 export const LawyerRepository = new Repository();
