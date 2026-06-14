@@ -225,7 +225,7 @@ class Service {
         if (!result) {
             throw new UnAuthorizedException("Invalid or expired refresh token");
         }
-        if (result.expires_at < Date.now()) {
+        if (result.expires_at < Date.now() || result.is_revoked) {
             throw new UnAuthorizedException("Invalid or expired refresh token");
         }
 
@@ -238,6 +238,19 @@ class Service {
                 refreshToken: refreshToken,
             },
         }
+    }
+
+    async logout(logoutDto) {
+        const existToken = await this.repository.findRefreshToken(logoutDto.refresh_token);
+        if (!existToken) {
+            throw new UnAuthorizedException("Invalid or expired refresh token");
+        }
+
+        await this.repository.revokeRefreshToken(logoutDto.refresh_token);
+        return { 
+            type: "string",
+            message: "Logout successful",
+        };
     }
 
     async #createRefreshToken(userId) {

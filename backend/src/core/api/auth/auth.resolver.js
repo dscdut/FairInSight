@@ -7,6 +7,7 @@ import {
     VerifyOtpInterceptor,
     ResetPasswordInterceptor,
     RefreshTokenInterceptor,
+    LogoutInterceptor
 } from 'core/modules/auth';
 import { Module } from 'packages/handler/Module';
 import { AuthController } from './auth.controller';
@@ -80,6 +81,15 @@ export const AuthResolver = Module.builder()
             middleware: [authMiddleware],
             body: 'RefreshTokenDto',
             controller: AuthController.refreshToken,
+            preAuthorization: true,
+        },
+        {
+            route: '/logout',
+            method: 'post',
+            interceptors: [LogoutInterceptor],
+            middleware: [authMiddleware],
+            body: 'LogoutDto',
+            controller: AuthController.logout,
             preAuthorization: true,
         },
     ]);
