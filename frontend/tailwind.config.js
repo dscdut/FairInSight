@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: ['class'],
+  darkMode: ['class','[data-theme="dark"]'],
   content: ['./index.html', './pages/**/*.{ts,tsx}', './components/**/*.{ts,tsx}', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     // 1. Configure the Container for the Grid System
@@ -100,6 +100,7 @@ export default {
         text: {
           primary: 'var(--text-primary)',
           secondary: 'var(--text-secondary)',
+          main: 'var(--text-main)',
           tertiary: 'var(--text-tertiary)',
           description: 'var(--text-description)'
         },

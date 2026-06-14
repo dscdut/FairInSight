@@ -19,7 +19,6 @@ const VerifyAcountEmail = lazy(() => import('@/pages/verify-account-email/Verify
 const ForgotPassword = lazy(() => import('@/pages/forgot-password/ForgotPassword'))
 const ResetPassword = lazy(() => import('@/pages/reset-password/ResetPassword'))
 const Dashboard = lazy(() => import('@/pages/admin/dashboard'))
-// const UserDashboard = lazy(() => import('@/pages/users/dashboard/Dashboard'))
 const Users = lazy(() => import('@/pages/admin/users'))
 const PageNotFound = lazy(() => import('@/pages/404/PageNotFound'))
 const Profile = lazy(() => import('@/pages/profile/Profile'))
