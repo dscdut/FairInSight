@@ -20,6 +20,7 @@ export const QueryCriteriaDocument = {
         paramsIn: 'query',
         required: false,
         type: 'array',
+        model: 'string',
         description: desc
     }),
     filter: desc => SwaggerDocument.ApiParams({
@@ -27,6 +28,7 @@ export const QueryCriteriaDocument = {
         paramsIn: 'query',
         required: false,
         type: 'array',
+        model: 'string',
         description: desc
     }),
     search: desc => SwaggerDocument.ApiParams({
