@@ -1,4 +1,6 @@
 import { LawyerRepository } from '../lawyer.repository';
+import { NotFoundException } from 'packages/httpException';
+import { mapLawyerListItem, mapLawyerDetail } from './lawyer.mapper';
 
 class Service {
     constructor() {
@@ -8,34 +10,9 @@ class Service {
     async listLawyers({ page, size, filter }) {
         const { items, total } = await this.repository.listLawyers({ page, size, filter });
 
-        const transformed = items.map(user => {
-            const lawyerDetails = user.lawyer_details || {};
-            
-            // Extract specializations
-            const specializations = (lawyerDetails.lawyer_specialties || []).map(ls => ls.specialties.name);
-            
-            // Extract a bio / careerHistory
-            const bio = lawyerDetails.bio || '';
-            const experiences = lawyerDetails.lawyer_experiences || [];
-            const latestExperience = experiences.length > 0 ? experiences[0].description : '';
-            const careerHistory = latestExperience || bio;
-
-            return {
-                id: user.id,
-                fullName: user.full_name,
-                avatar: user.avatar_url,
-                careerHistory: careerHistory,
-                bio: bio,
-                averageRating: lawyerDetails.rating_avg || 0,
-                successfulCases: lawyerDetails.successful_cases || 0,
-                specializations: specializations,
-                city: user.location || '',
-            };
-        });
-
         return {
             data: {
-                items: transformed,
+                items: items.map(mapLawyerListItem),
                 pagination: {
                     page,
                     size,
@@ -45,6 +22,16 @@ class Service {
             },
         };
     }
+
+    async getLawyerById(id) {
+        const user = await this.repository.findLawyerById(id);
+        if (!user) {
+            throw new NotFoundException('Lawyer not found');
+        }
+
+        return mapLawyerDetail(user);
+    }
 }
+
 
 export const LawyerService = new Service();

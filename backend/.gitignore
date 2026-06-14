@@ -54,3 +54,7 @@ jspm_packages/
 .idea/
 
 /src/generated/prisma
+
+# AI Agents configuration and rulesets
+.agents/
+
