@@ -76,6 +76,14 @@ export default function useRoutesElements() {
         <Route path={ROUTE.AUTH.VERIFY_ACCOUNT_EMAIL} element={<VerifyAcountEmail />} />
         <Route path={ROUTE.AUTH.RESET_PASSWORD} element={<ResetPassword />} />
 
+        {/* Client protected routes */}
+        <Route element={<ProtectedRoute redirectPath={ROUTE.AUTH.LOGIN} />}>
+          <Route path={ROUTE.PROFILE.ROOT} element={<LayoutClient />}>
+            <Route index element={<Profile />} />
+            <Route path='edit' element={<ProfileEdit />} />
+          </Route>
+        </Route>
+
         {/* Admin protected routes */}
         <Route element={<ProtectedRoute redirectPath={ROUTE.AUTH.LOGIN} />}>
           <Route path={ROUTE.ADMIN.ROOT} element={<LayoutMain />}>
