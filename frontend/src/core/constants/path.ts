@@ -21,6 +21,7 @@ export const ROUTE = {
     INFO: '/users',
     SETTING: '/setting'
   },
+  FORM_LIBRARY: '/form-library',
   ADMIN: {
     ROOT: '/admin',
     DASHBOARD: 'dashboard',
