@@ -134,7 +134,15 @@ class Repository {
     async findRefreshToken(token) {
         return connection.refresh_tokens.findFirst({
             where: { token },
-            select: { user_id: true, expires_at: true },
+            select: { user_id: true, expires_at: true, is_revoked: true },
+        });
+    }
+
+    async revokeRefreshToken(token) {
+        return connection.refresh_tokens.update({
+            where: { token },
+            data: { is_revoked: true },
+            select: { user_id: true }
         });
     }
 
