@@ -21,7 +21,7 @@ export const UserResolver = Module.builder()
     .register([
         // Get list of users with pagination (admin only)
         {
-            route: '/',
+            route: '',
             method: 'get',
             params: DefaultQueryCriteriaDocument,
             guards: [hasAdminRole],
@@ -30,7 +30,7 @@ export const UserResolver = Module.builder()
         },
         // Update user profile (authenticated)
         {
-            route: '/',
+            route: '',
             method: 'put',
             interceptors: [UpdateUserInterceptor],
             body: 'UpdateUserDto',

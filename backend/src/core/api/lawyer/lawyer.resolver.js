@@ -12,7 +12,7 @@ export const LawyerResolver = Module.builder()
     })
     .register([
         {
-            route: '/',
+            route: '',
             method: 'get',
             params: DefaultQueryCriteriaDocument,
             controller: LawyerController.listLawyers,
