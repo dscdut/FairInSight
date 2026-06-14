@@ -35,8 +35,8 @@ export default function Template() {
       {/* Header */}
       <motion.div variants={headerVariants} initial='hidden' animate='visible' className='space-y-6'>
         <div>
-          <h1 className='text-4xl font-bold text-slate-900 dark:text-white'>Thư viện biểu mẫu</h1>
-          <p className='mt-2 text-slate-600 dark:text-slate-400'>
+          <h1 className='text-h1 font-semibold text-text-main'>Thư viện biểu mẫu</h1>
+          <p className='mt-2 text-p text-text-secondary'>
             Khám phá hàng trăm biểu mẫu pháp lý được tạo bởi các chuyên gia
           </p>
         </div>
@@ -45,19 +45,12 @@ export default function Template() {
         <div className='flex flex-col sm:flex-row sm:items-center gap-4'>
           {/* Search Bar */}
           <div className='relative flex-1'>
-            <Search
-              className='absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 dark:text-slate-500'
-              size={20}
-            />
+            <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-text-tertiary' size={20} />
             <Input
               placeholder='Tìm kiếm biểu mẫu, luật pháp hoặc từ khóa...'
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className={cn(
-                'pl-10 w-full',
-                'border-slate-200 dark:border-slate-700',
-                'placeholder:text-slate-400 dark:placeholder:text-slate-500'
-              )}
+              className={cn('pl-10 w-full', 'border-border-primary', 'placeholder:text-text-tertiary')}
             />
           </div>
 
@@ -66,9 +59,8 @@ export default function Template() {
         </div>
 
         {/* Results count */}
-        <div className='text-sm text-slate-600 dark:text-slate-400'>
-          Tìm thấy <span className='font-semibold text-slate-900 dark:text-white'>{filteredTemplates.length}</span> biểu
-          mẫu
+        <div className='text-small text-text-secondary'>
+          Tìm thấy <span className='font-semibold text-text-main'>{filteredTemplates.length}</span> biểu mẫu
         </div>
       </motion.div>
 
