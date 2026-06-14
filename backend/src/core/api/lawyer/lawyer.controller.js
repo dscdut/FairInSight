@@ -19,6 +19,16 @@ class Controller {
         const data = await this.service.listLawyers({ page, size, filter });
         return ValidHttpResponse.toOkResponse(data);
     };
+
+    /**
+     * GET /api/v1/lawyers/{id}
+     * Get lawyer details by ID
+     */
+    findById = async req => {
+        const data = await this.service.getLawyerById(req.params.id);
+        return ValidHttpResponse.toOkResponse(data);
+    };
 }
+
 
 export const LawyerController = new Controller();
