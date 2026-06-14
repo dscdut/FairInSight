@@ -34,7 +34,6 @@ export const UserResolver = Module.builder()
             method: 'put',
             interceptors: [UpdateUserInterceptor],
             body: 'UpdateUserDto',
-            guards: [hasAdminRole],
             controller: UserController.updateOne,
             preAuthorization: true,
         },

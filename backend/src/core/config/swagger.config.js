@@ -3,7 +3,7 @@ import { SwaggerBuilder } from '../../packages/swagger';
 
 const servers = [
     {
-        url: `${HOST}/api`,
+        url: `${HOST}/api/v1`,
         description: 'Server',
         variables: {
             env: {
@@ -15,7 +15,7 @@ const servers = [
                 default: PORT,
             },
             basePath: {
-                default: 'api',
+                default: 'api/v1',
             },
         },
     },
@@ -23,7 +23,7 @@ const servers = [
 
 if (NODE_ENV !== 'production') {
     servers.push({
-        url: `http://localhost:${PORT}/api`,
+        url: `http://localhost:${PORT}/api/v1`,
         description: 'Dev Env',
     });
 }
@@ -41,7 +41,7 @@ const options = {
         },
     },
     servers,
-    basePath: '/api',
+    basePath: '/api/v1',
     auth: true,
 };
 
