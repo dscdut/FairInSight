@@ -27,7 +27,7 @@ export const ContactSection = () => {
           </div>
 
           {/* Heading */}
-          <h2 className='text-h3 sm:text-h2 font-semibold text-black dark:text-white mb-6 leading-tight max-w-3xl mx-auto'>
+          <h2 className='text-h3 sm:text-h2 font-semibold text-main dark:text-white mb-6 leading-tight max-w-3xl mx-auto'>
             {t('home.contacts.ctaTitle')}
           </h2>
 

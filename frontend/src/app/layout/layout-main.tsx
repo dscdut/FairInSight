@@ -5,7 +5,6 @@ import { Outlet } from 'react-router-dom'
 import SideBar from '@/components/side-bar/side-bar'
 import TopBar from '@/components/top-bar/top-bar'
 import { cn } from '@/core/lib/utils'
-import { useUserInfo } from '@/hooks/tanstack-query/auth/use-query-auth'
 import { FooterSection } from '@/pages/home/components/footer-section'
 
 interface LayoutMainProps {
@@ -13,18 +12,15 @@ interface LayoutMainProps {
 }
 
 const LayoutMain = ({ children }: LayoutMainProps) => {
-  useUserInfo()
   return (
     <div>
-      <div className='flex min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900'>
+      <div className='flex min-h-screen'>
         <SideBar />
-        <div className='flex flex-col flex-1 min-h-0'>
+        <div className='flex flex-col flex-1 min-h-0 bg-background-secondary'>
           <TopBar />
           <main
             className={cn(
               'relative flex-1 transition-all duration-300',
-              'bg-gradient-to-br from-slate-50/50 via-white/80 to-slate-100/50',
-              'dark:from-slate-900/50 dark:via-slate-800/80 dark:to-slate-900/50',
               'backdrop-blur-sm'
             )}
           >
@@ -44,8 +40,8 @@ const LayoutMain = ({ children }: LayoutMainProps) => {
               <div className='mx-auto max-w-none h-full'>
                 <div
                   className={cn(
-                    'rounded-2xl border min-h-[calc(100vh-140px)] border-white/20 dark:border-slate-700/30',
-                    'shadow-2xl backdrop-blur-xl bg-white/70 dark:bg-slate-800/70',
+                    'rounded-2xl border min-h-[calc(100vh-140px)] border-border-secondary',
+                    'shadow-2xl backdrop-blur-xl bg-background-primary',
                     'h-full transition-all duration-300 hover:shadow-3xl',
                     'mx-auto p-4 lg:p-8',
                     'flex flex-col'

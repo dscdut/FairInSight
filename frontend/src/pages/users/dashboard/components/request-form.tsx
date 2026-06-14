@@ -25,7 +25,7 @@ export default function RequestForm() {
           <ArrowLeft className="w-4 h-4" /> Trở về trang chủ
         </Button>
         <div className='flex justify-between'>
-          <h1 className="text-h4 flex items-center tracking-tight text-black gap-2">
+          <h1 className="text-h4 flex items-center tracking-tight text-main gap-2">
             Khởi tạo vụ việc pháp lý mới
           </h1>
           {/* <Button 
