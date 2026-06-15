@@ -24,10 +24,6 @@ export default function RequestForm() {
         >
           <ArrowLeft className="w-4 h-4" /> Trở về trang chủ
         </Button>
-        <div className='flex justify-between'>
-          <h1 className="text-h4 flex items-center tracking-tight text-main gap-2">
-            Khởi tạo vụ việc pháp lý mới
-          </h1>
           {/* <Button 
             variant="outline"
             onClick={setDefault}
@@ -35,7 +31,6 @@ export default function RequestForm() {
           >
             <ArrowLeft className="w-4 h-4" /> Trở về trang chủ
           </Button> */}
-        </div>
         <p className="text-p text-text-description">Mô tả chi tiết vấn đề của bạn để Trợ lý AI bóc tách cấu trúc dữ liệu luật liên quan.</p>
       </div>
 

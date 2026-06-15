@@ -1,9 +1,10 @@
 import { type ReactNode } from 'react'
 
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 
 import SideBar from '@/components/side-bar/side-bar'
 import TopBar from '@/components/top-bar/top-bar'
+import { ROUTE } from '@/core/constants/path'
 import { cn } from '@/core/lib/utils'
 import { FooterSection } from '@/pages/home/components/footer-section'
 
@@ -12,6 +13,9 @@ interface LayoutMainProps {
 }
 
 const LayoutMain = ({ children }: LayoutMainProps) => {
+  const location = useLocation()
+  const isChatAiPage = location.pathname === ROUTE.USER.CHAT_AI
+
   return (
     <div>
       <div className='flex min-h-screen'>
@@ -43,7 +47,7 @@ const LayoutMain = ({ children }: LayoutMainProps) => {
                     'rounded-2xl border min-h-[calc(100vh-140px)] border-border-secondary',
                     'shadow-2xl backdrop-blur-xl bg-background-primary',
                     'h-full transition-all duration-300 hover:shadow-3xl',
-                    'mx-auto p-4 lg:p-8',
+                    'mx-auto',
                     'flex flex-col'
                   )}
                 >
@@ -54,7 +58,7 @@ const LayoutMain = ({ children }: LayoutMainProps) => {
           </main>
         </div>
       </div>
-      <FooterSection />
+      {!isChatAiPage && <FooterSection />}
     </div>
   )
 }

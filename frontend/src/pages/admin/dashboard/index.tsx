@@ -23,7 +23,7 @@ export default function Dashboard() {
   const user = useAuthStore((state) => state.user)
 
   return (
-    <main>
+    <main className="p-4">
       <section>
         <FadeUp className="max-w-3xl">
           <span className='inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1 text-xs font-medium text-white backdrop-blur-sm'>
