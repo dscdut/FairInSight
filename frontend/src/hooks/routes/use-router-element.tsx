@@ -64,8 +64,11 @@ export default function useRoutesElements() {
                 <Route path={ROUTE.USER.CHAT_AI} element={<AIChat />} />
                 <Route path={ROUTE.USER.TEMPLATE} element={<Template />} />
                 <Route path={ROUTE.USER.LEGAL} element={<LegalAnalysis />} />
+<<<<<<< HEAD
                 <Route path={ROUTE.USER.LAWYER} element={<LawyerList />} />
                 <Route path={ROUTE.USER.LAWYER_DETAIL} element={<LawyerProfile />} />
+=======
+>>>>>>> 80a32bd (fix/(document): fix conflict template page)
                 <Route path={ROUTE.USER.REPORT} element={<Report />} />
                 <Route path={ROUTE.USER.INFO} element={<User />} />
                 <Route path={ROUTE.USER.SETTING} element={<Setting />} />

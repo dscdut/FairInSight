@@ -1,4 +1,28 @@
+<<<<<<< HEAD
 import { type Template } from '@/models/types/form-library'
+=======
+export type Template = {
+  id: string
+  title: string
+  description: string
+  category: string
+  usageCount: number
+  isNew: boolean
+  isVip: boolean
+  fields: {
+    section: string
+    inputs: {
+      key: string
+      label: string
+      type: string
+      placeholder?: string
+      required?: boolean
+      disabled?: boolean
+      defaultValue?: string
+    }[]
+  }[]
+}
+>>>>>>> 80a32bd (fix/(document): fix conflict template page)
 
 export const mockTemplates: Template[] = [
   {
@@ -9,8 +33,11 @@ export const mockTemplates: Template[] = [
     usageCount: 1450,
     isNew: true,
     isVip: false,
+<<<<<<< HEAD
     fileUrl: '/templates/hop_dong_nhuong_quyen.html',
     thumbnail: '/thumbnails/franchise_agreement.png',
+=======
+>>>>>>> 80a32bd (fix/(document): fix conflict template page)
     fields: [
       {
         section: 'Thông tin cá nhân',
@@ -48,8 +75,11 @@ export const mockTemplates: Template[] = [
     usageCount: 980,
     isNew: false,
     isVip: false,
+<<<<<<< HEAD
     fileUrl: '/templates/dang_ky_doanh_nghiep.html',
     thumbnail: '/thumbnails/business_registration.png',
+=======
+>>>>>>> 80a32bd (fix/(document): fix conflict template page)
     fields: [
       {
         section: 'Thông tin chủ doanh nghiệp',
@@ -65,7 +95,11 @@ export const mockTemplates: Template[] = [
         inputs: [
           { key: 'businessName', label: 'Tên doanh nghiệp viết bằng tiếng Việt', type: 'text', defaultValue: 'DOANH NGHIỆP TƯ NHÂN THƯƠNG MẠI A', required: true },
           { key: 'officeAddress', label: 'Địa chỉ trụ sở chính', type: 'text', defaultValue: '123 Nguyễn Hữu Thọ, Hải Châu, Đà Nẵng', required: true },
+<<<<<<< HEAD
           { key: 'capital', label: 'Vốn đầu tư (VND)', type: 'text', defaultValue: '500000000', required: true }
+=======
+          { key: 'capital', label: 'Vốn đầu tư (VND)', type: 'text', defaultValue: '500,000,000', required: true }
+>>>>>>> 80a32bd (fix/(document): fix conflict template page)
         ]
       }
     ]
@@ -78,8 +112,11 @@ export const mockTemplates: Template[] = [
     usageCount: 2100,
     isNew: false,
     isVip: true,
+<<<<<<< HEAD
     fileUrl: '/templates/hop_dong_thue_van_phong.html',
     thumbnail: '/thumbnails/office_lease.png',
+=======
+>>>>>>> 80a32bd (fix/(document): fix conflict template page)
     fields: [
       {
         section: 'Thông tin bên cho thuê (Bên A)',
@@ -92,11 +129,16 @@ export const mockTemplates: Template[] = [
         section: 'Thông tin thuê văn phòng',
         inputs: [
           { key: 'area', label: 'Diện tích thuê (m2)', type: 'text', defaultValue: '150', required: true },
+<<<<<<< HEAD
           { key: 'price', label: 'Giá thuê hàng tháng (VND)', type: 'text', defaultValue: '30000000', required: true },
+=======
+          { key: 'price', label: 'Giá thuê hàng tháng (VND)', type: 'text', defaultValue: '30,000,000', required: true },
+>>>>>>> 80a32bd (fix/(document): fix conflict template page)
           { key: 'rentPeriod', label: 'Thời hạn thuê (Tháng)', type: 'text', defaultValue: '24', required: true }
         ]
       }
     ]
+<<<<<<< HEAD
   },
   {
     id: '4',
@@ -167,5 +209,7 @@ export const mockTemplates: Template[] = [
         ]
       }
     ]
+=======
+>>>>>>> 80a32bd (fix/(document): fix conflict template page)
   }
 ]

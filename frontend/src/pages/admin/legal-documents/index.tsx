@@ -43,13 +43,21 @@ export default function LegalDocumentsPage() {
   const fetchLaws = useCallback(async () => {
     try {
       setIsLoading(true)
+<<<<<<< HEAD
       const res = await lawApi.listLaws({
+=======
+      const res = (await lawApi.listLaws({
+>>>>>>> 80a32bd (fix/(document): fix conflict template page)
         page: currentPage,
         size: itemsPerPage,
         search: searchQuery || undefined,
         status: statusFilter || undefined,
         issuedDate: issuedDateFilter || undefined
+<<<<<<< HEAD
       })
+=======
+      })) as any
+>>>>>>> 80a32bd (fix/(document): fix conflict template page)
       setLaws(res.items)
       setTotalPages(res.pagination.totalPages)
       setTotalCount(res.pagination.total)
@@ -77,7 +85,11 @@ export default function LegalDocumentsPage() {
 
   const handleViewClick = async (law: Law) => {
     try {
+<<<<<<< HEAD
       const res = await lawApi.getLawById(law.id)
+=======
+      const res = (await lawApi.getLawById(law.id)) as any
+>>>>>>> 80a32bd (fix/(document): fix conflict template page)
       setActiveLawForDetail(res)
       setIsDetailOpen(true)
     } catch (error) {
@@ -147,7 +159,11 @@ export default function LegalDocumentsPage() {
       
       // Update details drawer if open
       if (activeLawForDetail && activeLawForDetail.id === law.id) {
+<<<<<<< HEAD
         const detailRes = await lawApi.getLawById(law.id)
+=======
+        const detailRes = (await lawApi.getLawById(law.id)) as any
+>>>>>>> 80a32bd (fix/(document): fix conflict template page)
         setActiveLawForDetail(detailRes)
       }
     } catch (error) {
@@ -165,7 +181,11 @@ export default function LegalDocumentsPage() {
 
       // Refresh detail modal
       if (activeLawForDetail && activeLawForDetail.id === version.lawId) {
+<<<<<<< HEAD
         const detailRes = await lawApi.getLawById(version.lawId)
+=======
+        const detailRes = (await lawApi.getLawById(version.lawId)) as any
+>>>>>>> 80a32bd (fix/(document): fix conflict template page)
         setActiveLawForDetail(detailRes)
       }
     } catch (error) {
@@ -191,7 +211,11 @@ export default function LegalDocumentsPage() {
       fetchLaws()
 
       // Refresh details drawer
+<<<<<<< HEAD
       const detailRes = await lawApi.getLawById(lawId)
+=======
+      const detailRes = (await lawApi.getLawById(lawId)) as any
+>>>>>>> 80a32bd (fix/(document): fix conflict template page)
       setActiveLawForDetail(detailRes)
     } catch (error) {
       console.error('Lỗi khi lưu phiên bản mới:', error)

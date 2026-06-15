@@ -34,13 +34,21 @@ export default function LegalAnalysis() {
   const fetchLaws = useCallback(async () => {
     try {
       setIsLoading(true)
+<<<<<<< HEAD
       const res = await lawApi.listLaws({
+=======
+      const res = (await lawApi.listLaws({
+>>>>>>> 80a32bd (fix/(document): fix conflict template page)
         page: currentPage,
         size: itemsPerPage,
         search: searchQuery || undefined,
         status: statusFilter || undefined,
         issuedDate: issuedDateFilter || undefined
+<<<<<<< HEAD
       })
+=======
+      })) as any
+>>>>>>> 80a32bd (fix/(document): fix conflict template page)
       setLaws(res.items)
       setTotalPages(res.pagination.totalPages)
       setTotalCount(res.pagination.total)
@@ -57,7 +65,11 @@ export default function LegalAnalysis() {
 
   const handleViewClick = async (law: Law) => {
     try {
+<<<<<<< HEAD
       const res = await lawApi.getLawById(law.id)
+=======
+      const res = (await lawApi.getLawById(law.id)) as any
+>>>>>>> 80a32bd (fix/(document): fix conflict template page)
       setActiveLawForDetail(res)
       setIsDetailOpen(true)
     } catch (error) {
@@ -66,7 +78,11 @@ export default function LegalAnalysis() {
   }
 
   return (
+<<<<<<< HEAD
     <main className='p-4 space-y-6 flex-1 flex flex-col'>
+=======
+    <main className='space-y-6 flex-1 flex flex-col'>
+>>>>>>> 80a32bd (fix/(document): fix conflict template page)
       {/* Title section */}
       <section>
         <FadeUp>

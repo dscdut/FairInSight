@@ -264,12 +264,15 @@ export const userSideBarLinks: TSidebarLinks[] = [
     titleKey: 'legal',
     icon: <Scale className='w-5 h-5' />,
     path: ROUTE.USER.LEGAL
+<<<<<<< HEAD
   },
   {
     title: 'Danh sách luật sư',
     titleKey: 'find_lawyer',
     icon: <UserCheck className='w-5 h-5' />,
     path: ROUTE.USER.LAWYER
+=======
+>>>>>>> 80a32bd (fix/(document): fix conflict template page)
   },
   {
     title: 'Quản lý báo cáo',

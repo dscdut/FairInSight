@@ -23,7 +23,11 @@ interface StepConfig {
   key: StepKey
   label: string
   desc: string
+<<<<<<< HEAD
   icon: React.ComponentType<{ className?: string }>
+=======
+  icon: React.ComponentType<any>
+>>>>>>> 80a32bd (fix/(document): fix conflict template page)
 }
 
 const STEPS: StepConfig[] = [

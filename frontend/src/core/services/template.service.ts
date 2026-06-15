@@ -8,6 +8,7 @@ export interface BackendTemplate {
   name: string
   description: string | null
   file_url: string
+<<<<<<< HEAD
   fields: Array<{
     section: string
     inputs: Array<{
@@ -20,11 +21,18 @@ export interface BackendTemplate {
       defaultValue?: string
     }>
   }> | null
+=======
+  fields: any
+>>>>>>> 80a32bd (fix/(document): fix conflict template page)
   created_at: string
   updated_at: string
 }
 
+<<<<<<< HEAD
 function mapTemplateFromBackend(t: BackendTemplate): Template {
+=======
+function mapTemplateFromBackend(t: any): Template {
+>>>>>>> 80a32bd (fix/(document): fix conflict template page)
   return {
     id: t.id,
     title: t.name,
@@ -40,11 +48,19 @@ function mapTemplateFromBackend(t: BackendTemplate): Template {
 
 export const createTemplateApi = (client: AxiosInstance) => ({
   async listTemplates() {
+<<<<<<< HEAD
     const res = (await client.get('/templates')) as BackendTemplate[]
     return (res || []).map(mapTemplateFromBackend) as Template[]
   },
   async getTemplateById(id: string) {
     const res = (await client.get(`/templates/${id}`)) as BackendTemplate
+=======
+    const res = (await client.get('/templates')) as any
+    return (res || []).map(mapTemplateFromBackend) as Template[]
+  },
+  async getTemplateById(id: string) {
+    const res = (await client.get(`/templates/${id}`)) as any
+>>>>>>> 80a32bd (fix/(document): fix conflict template page)
     return mapTemplateFromBackend(res)
   }
 })

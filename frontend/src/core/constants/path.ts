@@ -17,8 +17,11 @@ export const ROUTE = {
     CHAT_AI: '/chat-ai',
     TEMPLATE: '/template',
     LEGAL: '/legal',
+<<<<<<< HEAD
     LAWYER: '/lawyers',
     LAWYER_DETAIL: '/lawyers/:id',
+=======
+>>>>>>> 80a32bd (fix/(document): fix conflict template page)
     REPORT: '/report',
     INFO: '/users',
     SETTING: '/setting',

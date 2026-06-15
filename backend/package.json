@@ -46,7 +46,11 @@
         "multer": "^1.4.3",
         "pg": "^8.7.1",
         "prettier": "^2.3.0",
+<<<<<<< HEAD
         "puppeteer": "^22.0.0",
+=======
+        "puppeteer": "^25.1.0",
+>>>>>>> 80a32bd (fix/(document): fix conflict template page)
         "resend": "^3.5.0",
         "swagger-ui-express": "^4.1.6",
         "winston": "^3.3.3"
