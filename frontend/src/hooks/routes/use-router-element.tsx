@@ -19,7 +19,6 @@ const VerifyAcountEmail = lazy(() => import('@/pages/verify-account-email/Verify
 const ForgotPassword = lazy(() => import('@/pages/forgot-password/ForgotPassword'))
 const ResetPassword = lazy(() => import('@/pages/reset-password/ResetPassword'))
 const Dashboard = lazy(() => import('@/pages/admin/dashboard'))
-// const UserDashboard = lazy(() => import('@/pages/users/dashboard/Dashboard'))
 const Users = lazy(() => import('@/pages/admin/users'))
 const PageNotFound = lazy(() => import('@/pages/404/PageNotFound'))
 const Profile = lazy(() => import('@/pages/profile/Profile'))
@@ -76,6 +75,14 @@ export default function useRoutesElements() {
         <Route path={ROUTE.AUTH.FORGOT_PASSWORD} element={<ForgotPassword />} />
         <Route path={ROUTE.AUTH.VERIFY_ACCOUNT_EMAIL} element={<VerifyAcountEmail />} />
         <Route path={ROUTE.AUTH.RESET_PASSWORD} element={<ResetPassword />} />
+
+        {/* Client protected routes */}
+        <Route element={<ProtectedRoute redirectPath={ROUTE.AUTH.LOGIN} />}>
+          <Route path={ROUTE.PROFILE.ROOT} element={<LayoutClient />}>
+            <Route index element={<Profile />} />
+            <Route path='edit' element={<ProfileEdit />} />
+          </Route>
+        </Route>
 
         {/* Admin protected routes */}
         <Route element={<ProtectedRoute redirectPath={ROUTE.AUTH.LOGIN} />}>

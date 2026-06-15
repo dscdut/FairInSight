@@ -18,7 +18,7 @@ export const HeroSection = () => {
       <div className='container grid grid-cols-1 md:grid-cols-2 items-center gap-12 relative z-10'>
         <div className='flex justify-center md:justify-start'>
           <FadeUp className='text-start'>
-            <h1 className='text-h1 sm:text-h1 md:text-h1 font-semibold mb-6 text-black dark:text-white'>
+            <h1 className='text-h1 sm:text-h1 md:text-h1 font-semibold mb-6 text-main dark:text-white'>
               <span className='text-primary'>{t('home.hero.logo')}</span>
               {t('home.hero.title')}
             </h1>

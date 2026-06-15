@@ -41,7 +41,7 @@ export default function AdminSideBar() {
   return (
     <aside
       className={cn(
-        'flex relative flex-col h-full bg-white border-r border-gray-200 shadow-xl transition-all duration-500 md:flex dark:bg-gray-900 dark:border-gray-700',
+        'flex relative flex-col h-full bg-background-primary border-r border-border-secondary shadow-xl transition-all duration-500 md:flex ',
         sidebarOpen ? 'w-72' : 'w-20'
       )}
       aria-label='Admin Sidebar navigation'
@@ -49,7 +49,7 @@ export default function AdminSideBar() {
       {/* Header */}
       <div
         className={cn(
-          'flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700',
+          'flex items-center justify-between p-4 border-b border-border-secondary',
           !sidebarOpen && 'justify-center'
         )}
       >
@@ -59,8 +59,8 @@ export default function AdminSideBar() {
               <Crown className='w-6 h-6 text-white' />
             </div>
             <div className='flex flex-col'>
-              <h1 className='text-lg font-bold text-gray-900 dark:text-white'>AdminPanel</h1>
-              <p className='text-xs text-gray-500 dark:text-gray-400'>Management System</p>
+              <h1 className='text-lg font-bold text-primary'>AdminPanel</h1>
+              <p className='text-xs text-text-description'>Management System</p>
             </div>
           </div>
         )}
@@ -68,15 +68,15 @@ export default function AdminSideBar() {
         <button
           onClick={toggleSidebar}
           className={cn(
-            'flex items-center justify-center w-8 h-8 transition-all duration-300 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 hover:border-gray-400 group dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:hover:border-gray-500',
+            'flex items-center justify-center w-8 h-8 transition-all duration-300 bg-background-secondary border border-border-secondary rounded-lg hover:bg-background-third hover:border-border-primary group',
             !sidebarOpen && 'w-10 h-10'
           )}
           aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
         >
           {sidebarOpen ? (
-            <ChevronLeft className='w-4 h-4 text-gray-600 transition-colors group-hover:text-gray-800 dark:text-gray-300 dark:group-hover:text-white' />
+            <ChevronLeft className='w-4 h-4 text-main transition-colors group-hover:text-main' />
           ) : (
-            <ChevronRight className='w-5 h-5 text-gray-600 transition-colors group-hover:text-gray-800 dark:text-gray-300 dark:group-hover:text-white' />
+            <ChevronRight className='w-5 h-5 text-main transition-colors group-hover:text-main' />
           )}
         </button>
       </div>
@@ -104,8 +104,8 @@ export default function AdminSideBar() {
                     'w-full flex items-center gap-4 rounded-xl text-small font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/50 group relative overflow-hidden',
                     sidebarOpen ? 'px-4 py-3' : 'px-3 py-3 justify-center',
                     isLinkActive
-                      ? 'bg-gradient-to-r from-primary to-primary-400 text-white shadow-lg shadow-primary/25 transform scale-[1.02]'
-                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100 hover:shadow-lg hover:transform hover:scale-[1.02] dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700'
+                      ? 'bg-gradient-to-r from-primary to-primary-400 text-white font-bold shadow-lg shadow-primary/25 transform scale-[1.02]'
+                      : 'text-text-description hover:text-text hover:bg-background-third hover:shadow-lg hover:transform hover:scale-[1.02]'
                   )}
                   title={!sidebarOpen ? menuText : undefined}
                   style={{ animationDelay: `${index * 50}ms` }}
@@ -120,7 +120,7 @@ export default function AdminSideBar() {
                       sidebarOpen ? 'w-5 h-5' : 'w-6 h-6',
                       isLinkActive
                         ? 'text-white'
-                        : 'text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-white'
+                        : 'text-text-description group-hover:text-text'
                     )}
                   >
                     {link.icon}
@@ -133,7 +133,7 @@ export default function AdminSideBar() {
                           'flex-1 text-left transition-all duration-300 relative z-10 truncate',
                           isLinkActive
                             ? 'text-white'
-                            : 'text-gray-600 group-hover:text-gray-800 dark:text-gray-300 dark:group-hover:text-white'
+                            : 'text-text-description group-hover:text-text'
                         )}
                       >
                         {menuText}
@@ -141,7 +141,7 @@ export default function AdminSideBar() {
                       <span
                         className={cn(
                           'transition-all duration-300 relative z-10',
-                          isLinkActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-white'
+                          isLinkActive ? 'text-white' : 'text-text-description group-hover:text-text'
                         )}
                       >
                         {isExpanded ? <ChevronUp className='w-4 h-4' /> : <ChevronDown className='w-4 h-4' />}

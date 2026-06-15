@@ -47,12 +47,12 @@ export default function AnalysisResponse() {
           <Card className="border-secondary shadow-sm bg-white rounded-2xl">
             <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-4">
               <Scale className="w-6 h-6 text-success-primary" />
-              <CardTitle className="text-h5 text-black">Cơ sở pháp lý cốt lõi liên quan</CardTitle>
+              <CardTitle className="text-h5 text-main">Cơ sở pháp lý cốt lõi liên quan</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {analysisData.laws.map((law, i) => (
                 <FadeUp key={law.id} delay={(i + 1) * 0.1} className="p-4 rounded-xl border border-slate-100 hover:border-emerald-200 transition-all bg-white shadow-2xs">
-                  <h4 className="font-semibold text-black text-small flex items-center gap-2">
+                  <h4 className="font-semibold text-main text-small flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-success-primary"></span>
                     {law.title}
                   </h4>
@@ -70,7 +70,7 @@ export default function AnalysisResponse() {
           <Card className="border-slate-200/60 shadow-sm bg-white rounded-2xl h-full">
             <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-3">
               <UserCheck className="w-6 h-6 text-legal-500" />
-              <CardTitle className="text-h5 text-black">Luật sư gợi ý riêng cho bạn</CardTitle>
+              <CardTitle className="text-h5 text-main">Luật sư gợi ý riêng cho bạn</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {analysisData.lawyers.map((lawyer) => (
@@ -84,7 +84,7 @@ export default function AnalysisResponse() {
                     className="w-12 h-12 rounded-full bg-secondary border border-secondary group-hover:scale-105 transition-transform" 
                   />
                   <div className="space-y-0.5">
-                    <h4 className="font-bold text-sm text-black group-hover:text-legal-500 transition-colors">
+                    <h4 className="font-bold text-sm text-main group-hover:text-legal-500 transition-colors">
                       {lawyer.name}
                     </h4>
                     <p className="text-xs text-text-description font-medium">{lawyer.specialty}</p>

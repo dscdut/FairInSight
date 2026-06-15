@@ -10,7 +10,8 @@ export class UserDetail {
   }
 
   toRoles() {
-      this.roles = this.payload?.roles ?? [];
+      const roles = this.payload?.roles ?? this.payload?.role ?? [];
+      this.roles = Array.isArray(roles) ? roles : [roles];
   }
 
   toPermissions() {

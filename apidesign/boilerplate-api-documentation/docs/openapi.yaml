@@ -3188,6 +3188,146 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+# Template
+  /api/v1/templates:
+    get:
+      tags: [template]
+      summary: Get list of legal templates
+      operationId: listTemplates
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number (starts from 1)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Number of items per page (max 100)
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by template name or category
+        - name: category
+          in: query
+          schema:
+            type: string
+          description: Filter by category (e.g. "Hợp đồng", "Đơn từ")
+        - name: isNew
+          in: query
+          schema:
+            type: boolean
+          description: Filter newly added templates
+        - name: isPremium
+          in: query
+          schema:
+            type: boolean
+          description: Filter by premium-only templates
+      responses:
+        "200":
+          description: List of templates retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                              example: "t1a2b3c4-d5e6-7890-abcd-ef1234567890"
+                            title:
+                              type: string
+                              example: "Biểu mẫu hợp đồng"
+                            description:
+                              type: string
+                              example: "Tìm và chọn một mẫu văn bản pháp lý để bắt đầu soạn thảo."
+                            category:
+                              type: string
+                              example: "Hợp đồng"
+                            isPremium:
+                              type: boolean
+                              description: Whether the template requires a premium account.
+                              example: true
+                            isNew:
+                              type: boolean
+                              description: Whether the template is newly added.
+                              example: true
+                            totalUsers:
+                              type: integer
+                              description: Number of users who have used this template.
+                              example: 3200
+                      pagination:
+                        type: object
+                        properties:
+                          page:
+                            type: integer
+                            example: 1
+                          limit:
+                            type: integer
+                            example: 20
+                          total:
+                            type: integer
+                            example: 8
+                          totalPages:
+                            type: integer
+                            example: 1
+              example:
+                data:
+                  items:
+                    - id: "t1a2b3c4-d5e6-7890-abcd-ef1234567890"
+                      title: "Biểu mẫu hợp đồng"
+                      description: "Tìm và chọn một mẫu văn bản pháp lý để bắt đầu soạn thảo."
+                      category: "Hợp đồng"
+                      isPremium: true
+                      isNew: true
+                      totalUsers: 3200
+                    - id: "t2b3c4d5-e6f7-8901-bcde-f12345678901"
+                      title: "Biểu mẫu hợp đồng"
+                      description: "Tìm và chọn một mẫu văn bản pháp lý để bắt đầu soạn thảo."
+                      category: "Hợp đồng"
+                      isPremium: true
+                      isNew: true
+                      totalUsers: 3200
+                  pagination:
+                    page: 1
+                    limit: 20
+                    total: 8
+                    totalPages: 1
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+              example:
+                message: Unauthorized or insufficient permissions
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+              example:
+                message: Internal server error
 
 # ─────────────────────────────────────────────
 # COMPONENTS

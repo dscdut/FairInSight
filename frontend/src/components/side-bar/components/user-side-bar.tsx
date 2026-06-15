@@ -53,7 +53,7 @@ export default function UserSideBar() {
   return (
     <aside
       className={cn(
-        'flex relative flex-col h-full bg-white border-r border-gray-200 shadow-xl transition-all duration-500 md:flex dark:bg-gray-800 dark:border-gray-700',
+        'flex relative flex-col h-full bg-background-primary border-r border-border-secondary shadow-xl transition-all duration-500 md:flex',
         sidebarOpen ? 'w-72' : 'w-20'
       )}
       aria-label='User Sidebar navigation'
@@ -61,7 +61,7 @@ export default function UserSideBar() {
       {/* Header */}
       <div
         className={cn(
-          'flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700',
+          'flex items-center justify-between h-16 px-4 border-b border-border-secondary',
           !sidebarOpen && 'justify-center'
         )}
       >
@@ -76,15 +76,15 @@ export default function UserSideBar() {
         <button
           onClick={toggleSidebar}
           className={cn(
-            'flex items-center justify-center w-8 h-8 transition-all duration-300 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 hover:border-gray-400 group dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 dark:hover:border-gray-500',
+            'flex items-center justify-center w-8 h-8 transition-all duration-300 bg-background-secondary rounded-lg  border-border-secondary hover:bg-background-tertiary  group ',
             !sidebarOpen && 'w-10 h-10'
           )}
           aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
         >
           {sidebarOpen ? (
-            <ChevronLeft className='w-4 h-4 text-gray-600 transition-colors group-hover:text-gray-800 dark:text-gray-300 dark:group-hover:text-white' />
+            <ChevronLeft className='w-4 h-4 text-text-description transition-colors group-hover:text-gray-800' />
           ) : (
-            <ChevronRight className='w-5 h-5 text-gray-600 transition-colors group-hover:text-gray-800 dark:text-gray-300 dark:group-hover:text-white' />
+            <ChevronRight className='w-5 h-5 text-text-description transition-colors group-hover:text-gray-800' />
           )}
         </button>
       </div>
@@ -110,7 +110,7 @@ export default function UserSideBar() {
                   sidebarOpen ? 'px-4 py-3' : 'px-3 py-3 justify-center',
                   isLinkActive
                     ? 'bg-gradient-to-r from-primary to-primary-400 text-white shadow-lg shadow-primary/25 transform scale-[1.02]'
-                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100 hover:shadow-lg hover:transform hover:scale-[1.02] dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700'
+                    : 'text-text-description hover:text-text-main hover:bg-background-secondary hover:shadow-lg hover:transform hover:scale-[1.02]'
                 )}
                 title={!sidebarOpen ? linkText : undefined}
                 style={{ animationDelay: `${index * 50}ms` }}
@@ -127,7 +127,7 @@ export default function UserSideBar() {
                     sidebarOpen ? 'w-5 h-5' : 'w-6 h-6',
                     isLinkActive
                       ? 'text-white'
-                      : 'text-tertiary group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-white'
+                      : 'text-tertiary group-hover:text-text-main'
                   )}
                 >
                   {link.icon}
@@ -140,7 +140,7 @@ export default function UserSideBar() {
                       'transition-all duration-300 relative z-10 truncate',
                       isLinkActive
                         ? 'text-white'
-                        : 'text-tertiary group-hover:text-gray-800 dark:text-gray-300 dark:group-hover:text-white'
+                        : 'text-tertiary group-hover:text-main'
                     )}
                   >
                     {linkText}
@@ -157,9 +157,9 @@ export default function UserSideBar() {
 
                 {/* Tooltip for collapsed state */}
                 {!sidebarOpen && (
-                  <div className='absolute left-full invisible z-50 px-3 py-2 ml-3 text-sm text-white whitespace-nowrap bg-gray-800 rounded-lg border border-gray-600 shadow-xl opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:visible dark:bg-gray-700 dark:border-gray-600'>
+                  <div className='absolute left-full invisible z-50 px-3 py-2 ml-3 text-sm text-main whitespace-nowrap bg-background-primary rounded-lg border border-border-secondary shadow-xl opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:visible'>
                     {linkText}
-                    <div className='absolute left-0 top-1/2 w-2 h-2 bg-gray-800 border-b border-l border-primary transform rotate-45 -translate-x-1 -translate-y-1/2 dark:bg-gray-700 dark:border-primary'></div>
+                    <div className='absolute left-0 top-1/2 w-2 h-2 bg-background-primary border-b border-l border-primary transform rotate-45 -translate-x-1 -translate-y-1/2'></div>
                   </div>
                 )}
               </Link>
@@ -171,7 +171,7 @@ export default function UserSideBar() {
       {/* User Information Footer */}
       <div
         className={cn(
-          'border-t border-gray-200 transition-all duration-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50',
+          'border-t border-border-secondary transition-all duration-300 bg-background-primary',
           sidebarOpen ? 'p-4' : 'p-3'
         )}
       >
@@ -179,7 +179,7 @@ export default function UserSideBar() {
           <DropdownMenuTrigger asChild>
             <button
               className={cn(
-                'w-full flex items-center gap-3 p-2 rounded-xl transition-all duration-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 text-left focus:outline-none focus:ring-2 focus:ring-primary/50 group relative',
+                'w-full flex items-center gap-3 p-2 rounded-xl transition-all duration-300 hover:bg-secondary text-left focus:outline-none focus:ring-2 focus:ring-primary/50 group relative',
                 !sidebarOpen && 'justify-center p-1.5'
               )}
               aria-label='User options'
@@ -197,15 +197,15 @@ export default function UserSideBar() {
                     {getInitials(user?.fullName || '')}
                   </AvatarFallback>
                 </Avatar>
-                <div className='absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white dark:border-slate-800 rounded-full'></div>
+                <div className='absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-success-primary border-2 border-border-primary rounded-full'></div>
               </div>
 
               {sidebarOpen && (
                 <div className='flex-1 min-w-0 animate-in fade-in duration-300'>
-                  <p className='text-sm font-semibold text-slate-800 dark:text-slate-200 truncate leading-none mb-1'>
+                  <p className='text-sm font-semibold text-main truncate leading-none mb-1'>
                     {user?.fullName || 'Người dùng'}
                   </p>
-                  <p className='text-xs text-slate-500 dark:text-slate-400 truncate leading-none'>
+                  <p className='text-xs text-text-description truncate leading-none'>
                     {user?.email || 'user@legalai.vn'}
                   </p>
                 </div>
@@ -217,42 +217,42 @@ export default function UserSideBar() {
             align={sidebarOpen ? 'end' : 'center'}
             side={sidebarOpen ? 'top' : 'right'}
             sideOffset={12}
-            className='w-56 p-2 rounded-2xl border shadow-2xl backdrop-blur-xl border-slate-200/50 dark:border-slate-700/50 bg-white/95 dark:bg-slate-900/95 duration-200'
+            className='w-56 p-2 rounded-2xl border shadow-2xl backdrop-blur-xl border-border-secondary duration-200 bg-background-primary'
           >
             {/* Header info in dropdown for quick view */}
-            <div className='px-3 py-2.5 mb-2 bg-gradient-to-br rounded-xl border-b border-slate-100 dark:border-slate-800 from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50'>
-              <p className='text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1'>
+            <div className='px-3 py-2.5 mb-2'>
+              <p className='text-xs font-medium text-text-description uppercase tracking-wider mb-1'>
                 {t('account')}
               </p>
-              <p className='text-sm font-semibold text-slate-800 dark:text-slate-200 truncate'>
+              <p className='text-sm font-semibold text-main truncate leading-none mb-1 text-text-main'>
                 {user?.fullName || 'Người dùng'}
               </p>
-              <p className='text-xs text-slate-500 dark:text-slate-400 truncate'>
+              <p className='text-xs text-text-description truncate leading-none'>
                 {user?.email || 'user@legalai.vn'}
               </p>
             </div>
 
             <DropdownMenuItem
               onClick={() => navigate(ROUTE.PROFILE.ROOT)}
-              className='flex items-center px-3 py-2 rounded-lg cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-sm font-medium text-slate-700 dark:text-slate-300'
+              className='flex items-center px-3 py-2 rounded-lg cursor-pointer hover:bg-secondary/50 transition-colors text-sm font-medium text-text-main'
             >
-              <User className='mr-3 w-4 h-4 text-slate-500' />
+              <User className='mr-3 w-4 h-4 text-main' />
               <span>{t('profile')}</span>
             </DropdownMenuItem>
 
             <DropdownMenuItem
               onClick={() => navigate(ROUTE.PROFILE.EDIT)}
-              className='flex items-center px-3 py-2 rounded-lg cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-sm font-medium text-slate-700 dark:text-slate-300'
+              className='flex items-center px-3 py-2 rounded-lg cursor-pointer hover:bg-secondary/50 transition-colors text-sm font-medium text-main text-text-main'
             >
-              <Settings className='mr-3 w-4 h-4 text-slate-500' />
+              <Settings className='mr-3 w-4 h-4 text-text-description' />
               <span>{t('edit_profile')}</span>
             </DropdownMenuItem>
 
-            <DropdownMenuSeparator className='my-2 bg-slate-200 dark:bg-slate-700' />
+            <DropdownMenuSeparator className='my-2 bg-border-secondary' />
 
             <DropdownMenuItem
               onClick={handleLogout}
-              className='flex items-center px-3 py-2 rounded-lg cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-sm font-medium'
+              className='flex items-center px-3 py-2 rounded-lg cursor-pointer text-main hover:text-main hover:bg-secondary/50 transition-colors text-sm font-medium text-primary'
             >
               <LogOut className='mr-3 w-4 h-4' />
               <span>{t('logout')}</span>

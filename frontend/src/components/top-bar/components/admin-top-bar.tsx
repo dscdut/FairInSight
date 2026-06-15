@@ -8,7 +8,7 @@ import UserInfo from './user-info'
 
 export default function AdminTopBar() {
   return (
-    <header className='flex sticky top-0 z-30 justify-between items-center px-4 h-16 border-b shadow-lg backdrop-blur-xl border-slate-200/50 bg-white/80 dark:bg-gray-800 dark:border-gray-700'>
+    <header className='flex sticky top-0 z-30 justify-between items-center px-4 h-16 border-b shadow-lg backdrop-blur-xl border-border-secondary bg-background-primary'>
       {/* Left Section */}
       <div className='flex gap-6 items-center'>
         <SearchBar />

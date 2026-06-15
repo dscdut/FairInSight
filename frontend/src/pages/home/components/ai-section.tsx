@@ -60,7 +60,7 @@ export const AISection = () => {
         <div className='grid grid-cols-1 lg:grid-cols-12 gap-12 items-center'>
           <div className='lg:col-span-6 space-y-8'>
             <div className='space-y-4'>
-              <h2 className='text-h3 sm:text-h2 text-black dark:text-white leading-tight'>
+              <h2 className='text-h3 sm:text-h2 text-main dark:text-white leading-tight'>
                 {t('home.AI_assistance.sectionTitle')}
               </h2>
               <p className='text-p text-gray-600 dark:text-gray-300 max-w-xl'>{t('home.AI_assistance.description')}</p>
@@ -80,7 +80,7 @@ export const AISection = () => {
                     <feat.icon className={`w-5 h-5 ${feat.color}`} />
                   </div>
                   <div>
-                    <h4 className='font-bold text-black dark:text-white'>
+                    <h4 className='font-bold text-main dark:text-white'>
                       {t(`home.AI_assistance.features.${feat.key}.title`)}
                     </h4>
                     <p className='text-md text-gray-600 dark:text-gray-400 mt-1'>

@@ -56,10 +56,11 @@
   --text-primary: var(--grey-900);
   --text-secondary: var(--grey-600);
   --text-tertiary: var(--grey-400);
+  --text-main: var(--black);
   --text-description: var(--slate-600);
 
-  --border-primary: var(--grey-200);
-  --border-secondary: var(--grey-300);
+  --border-primary: var(--grey-100);
+  --border-secondary: var(--grey-200);
   --border-focus: var(--grey-500);
 
   /* Status colors */
@@ -85,18 +86,20 @@
 /* =========================================
   3. SEMANTIC TOKENS (Dark Mode)
   ========================================= */
-[data-theme='dark'] {
+.dark {
   --background-primary: var(--grey-900);
+  --background-primary-light: var(--primary-50);
   --background-secondary: var(--grey-800);
   --background-tertiary: var(--grey-700);
 
   --text-primary: var(--grey-100);
+  --text-main: var(--white);
   --text-secondary: var(--grey-200);
   --text-tertiary: var(--grey-300);
-  --text-description: var(--slate-600);
+  --text-description: var(--grey-400);
 
   --border-primary: var(--grey-700);
-  --border-secondary: var(--grey-600);
+  --border-secondary: var(--grey-400);
   --border-focus: var(--grey-400);
   
 
