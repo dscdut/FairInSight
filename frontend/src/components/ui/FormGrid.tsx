@@ -6,9 +6,10 @@ import FormCard from './FormCard'
 interface FormGridProps {
   templates: Template[]
   viewMode: ViewMode
+  onSelect?: (template: Template) => void
 }
 
-export default function FormGrid({ templates, viewMode }: FormGridProps) {
+export default function FormGrid({ templates, viewMode, onSelect }: FormGridProps) {
   const gridClasses = cn(
     'w-full gap-6',
     viewMode === 'grid' ? 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'flex flex-col gap-4'
@@ -25,7 +26,7 @@ export default function FormGrid({ templates, viewMode }: FormGridProps) {
   return (
     <div className={gridClasses}>
       {templates.map((template, index) => (
-        <FormCard key={template.id} template={template} viewMode={viewMode} index={index} />
+        <FormCard key={template.id} template={template} viewMode={viewMode} index={index} onSelect={onSelect} />
       ))}
     </div>
   )

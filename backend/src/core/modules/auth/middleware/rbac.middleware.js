@@ -1,10 +1,8 @@
-import { UnAuthorizedException } from "packages/httpException";
+import { UnAuthorizedException } from 'packages/httpException';
 
-export const rbac = (guard) => {
-    return (req) => {
-        if (!guard.canActive(req)) {
-            throw new UnAuthorizedException("Unauthorized or insufficient permissions");
-        }
-        return true;
-    };
+export const rbac = guard => req => {
+    if (!guard.canActive(req)) {
+        throw new UnAuthorizedException('Unauthorized or insufficient permissions');
+    }
+    return true;
 };

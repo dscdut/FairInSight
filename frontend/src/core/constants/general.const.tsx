@@ -25,6 +25,12 @@ export const adminSidebarLinks: TSidebarLinks[] = [
     path: ROUTE.ADMIN.DASHBOARD
   },
   {
+    title: 'Văn bản pháp luật',
+    titleKey: 'Legal Document',
+    icon: <Scale className='w-5 h-5' />,
+    path: ROUTE.ADMIN.LEGAL_DOCUMENTS
+  },
+  {
     title: 'Phân tích',
     titleKey: 'analytics',
     icon: <PieChart className='w-5 h-5' />,
@@ -253,10 +259,10 @@ export const userSideBarLinks: TSidebarLinks[] = [
     path: ROUTE.USER.TEMPLATE
   },
   {
-    title: 'Phân tích pháp lý',
-    titleKey: 'legal_analysis',
+    title: 'Văn bản pháp luật',
+    titleKey: 'legal',
     icon: <Scale className='w-5 h-5' />,
-    path: ROUTE.USER.LEGAL_ANALYSIS
+    path: ROUTE.USER.LEGAL
   },
   {
     title: 'Quản lý báo cáo',

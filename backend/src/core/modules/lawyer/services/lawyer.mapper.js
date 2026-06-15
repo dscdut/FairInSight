@@ -3,7 +3,7 @@
  * @param {Date|string|null} date
  * @returns {string|null}
  */
-const formatDate = (date) => {
+const formatDate = date => {
     if (!date) return null;
     const d = new Date(date);
     const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -16,7 +16,7 @@ const formatDate = (date) => {
  * @param {object} r
  * @returns {object}
  */
-const mapReview = (r) => ({
+const mapReview = r => ({
     comment: r.comment || '',
     createdAt: r.created_at?.toISOString() || null,
     rating: r.rating || 0,
@@ -30,7 +30,7 @@ const mapReview = (r) => ({
  * @param {object} exp
  * @returns {object}
  */
-const mapCareerMilestone = (exp) => ({
+const mapCareerMilestone = exp => ({
     description: exp.description || '',
     endDate: formatDate(exp.end_date) || 'Present',
     startDate: formatDate(exp.start_date) || '',
@@ -43,14 +43,14 @@ const mapCareerMilestone = (exp) => ({
  * @returns {string[]}
  */
 const mapSpecializations = (lawyerSpecialties = []) =>
-    lawyerSpecialties.map((ls) => ls.specialties.name);
+    lawyerSpecialties.map(ls => ls.specialties.name);
 
 /**
  * Maps a lawyer list item to a summary card object.
  * @param {object} user
  * @returns {object}
  */
-export const mapLawyerListItem = (user) => {
+export const mapLawyerListItem = user => {
     const lawyerDetails = user.lawyer_details || {};
     const specializations = mapSpecializations(lawyerDetails.lawyer_specialties);
     const bio = lawyerDetails.bio || '';
@@ -76,7 +76,7 @@ export const mapLawyerListItem = (user) => {
  * @param {object} user
  * @returns {object}
  */
-export const mapLawyerDetail = (user) => {
+export const mapLawyerDetail = user => {
     const lawyerDetails = user.lawyer_details || {};
     const ratings = lawyerDetails.ratings || [];
     const experiences = lawyerDetails.lawyer_experiences || [];
