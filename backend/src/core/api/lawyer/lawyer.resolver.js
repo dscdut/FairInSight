@@ -1,8 +1,8 @@
 import { Module } from 'packages/handler/Module';
+import { RecordIdInterceptor } from 'core/modules/interceptor/recordId/record-id.interceptor';
 import { LawyerController } from './lawyer.controller';
 import { DefaultQueryCriteriaDocument } from '../../common/swagger/filter';
 import { RecordId } from '../../common/swagger/record-id';
-import { RecordIdInterceptor } from 'core/modules/interceptor/recordId/record-id.interceptor';
 
 export const LawyerResolver = Module.builder()
     .addPrefix({

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Hợp đồng nhượng quyền thương mại</title>
+  <style>
+    body {
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 13pt;
+      line-height: 1.5;
+      color: #000;
+      padding: 30px;
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: #fff;
+    }
+    .header-section {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+    .header-title-main {
+      font-weight: bold;
+      font-size: 13pt;
+      text-transform: uppercase;
+      margin: 0 0 5px 0;
+    }
+    .header-motto {
+      font-weight: bold;
+      font-size: 13pt;
+      border-bottom: 1.5px solid #000;
+      display: inline-block;
+      padding-bottom: 3px;
+      margin: 0;
+    }
+    .document-title {
+      text-align: center;
+      margin-top: 30px;
+      margin-bottom: 30px;
+      text-transform: uppercase;
+    }
+    .document-title h1 {
+      font-size: 14pt;
+      font-weight: bold;
+      margin: 0;
+    }
+    .field-row {
+      margin-bottom: 10px;
+      text-align: justify;
+    }
+    .field-label {
+      font-weight: normal;
+    }
+    .field-value {
+      font-weight: bold;
+      border-bottom: 1px dotted #000;
+      padding-left: 5px;
+      padding-right: 5px;
+    }
+    .section-title {
+      font-weight: bold;
+      margin-top: 20px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+    .signature-section {
+      margin-top: 50px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .signature-block {
+      text-align: center;
+      width: 250px;
+    }
+    .signature-title {
+      font-weight: bold;
+      text-transform: uppercase;
+      margin-bottom: 60px;
+    }
+    .signature-name {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="header-section">
+    <p class="header-title-main">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
+    <p class="header-motto">Độc lập - Tự do - Hạnh phúc</p>
+  </div>
+
+  <div class="document-title">
+    <h1>HỢP ĐỒNG NHƯỢNG QUYỀN THƯƠNG MẠI</h1>
+  </div>
+
+  <div class="field-row" style="text-align: center; font-style: italic;">
+    Số: {{ contractNumber }} | Ký tại: {{ signLocation }} | Ngày: {{ signDate }}
+  </div>
+
+  <div class="section-title">BÊN NHƯỢNG QUYỀN (BÊN A):</div>
+  <div class="field-row">
+    <span class="field-label">Công ty:</span>
+    <span class="field-value">IKEA</span>
+  </div>
+  <div class="field-row">
+    <span class="field-label">Địa chỉ trụ sở chính:</span>
+    <span class="field-value">Älmhult, Thụy Điển</span>
+  </div>
+
+  <div class="section-title">BÊN NHẬN QUYỀN (BÊN B):</div>
+  <div class="field-row">
+    <span class="field-label">Họ và Tên:</span>
+    <span class="field-value">{{ fullName }}</span>
+  </div>
+  <div class="field-row">
+    <span class="field-label">Số điện thoại:</span>
+    <span class="field-value">{{ phone }}</span>
+    <span class="field-label" style="margin-left: 20px;">Ngày sinh:</span>
+    <span class="field-value">{{ dob }}</span>
+  </div>
+  <div class="field-row">
+    <span class="field-label">Số CCCD:</span>
+    <span class="field-value">{{ idNumber }}</span>
+    <span class="field-label" style="margin-left: 20px;">Ngày cấp, nơi cấp:</span>
+    <span class="field-value">{{ idIssueInfo }}</span>
+  </div>
+  <div class="field-row">
+    <span class="field-label">Địa chỉ thường trú:</span>
+    <span class="field-value">{{ permanentAddress }}</span>
+  </div>
+
+  <div class="section-title">ĐIỀU 1: PHẠM VI NHƯỢNG QUYỀN</div>
+  <div class="field-row">
+    Bên A cấp quyền cho Bên B sử dụng nhãn hiệu thương mại "IKEA", hệ thống nhận diện thương hiệu, cùng toàn bộ công thức và mô hình vận hành cửa hàng đồ nội thất nhượng quyền trên lãnh thổ Việt Nam.
+  </div>
+
+  <div class="section-title">ĐIỀU 2: PHÍ NHƯỢNG QUYỀN & THANH TOÁN</div>
+  <div class="field-row">
+    Tổng giá trị nhượng quyền thỏa thuận là: <span class="field-value">{{ contractValue }} VND</span>. Bên B cam kết thanh toán đầy đủ và đúng thời hạn phí nhượng quyền ban đầu cùng phí duy trì định kỳ theo thỏa thuận.
+  </div>
+
+  <div class="signature-section">
+    <div class="signature-block">
+      <div class="signature-title">ĐẠI DIỆN BÊN A</div>
+      <div class="signature-name">IKEA Inc.</div>
+    </div>
+    <div class="signature-block">
+      <div class="signature-title">ĐẠI DIỆN BÊN B</div>
+      <div class="signature-name">{{ fullName }}</div>
+    </div>
+  </div>
+</body>
+</html>

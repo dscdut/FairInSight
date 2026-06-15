@@ -11,6 +11,12 @@ export const MediaResolver = Module.builder()
     })
     .register([
         {
+            route: '/presign',
+            method: 'get',
+            controller: MediaController.getCloudinarySignature,
+            preAuthorization: true
+        },
+        {
             route: '/images',
             method: 'post',
             params: [uploadMediaSwagger],

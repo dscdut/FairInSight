@@ -11,6 +11,6 @@ export class UnionRoleGuard {
         const user = getUserContext(req);
         const roles = user?.payload?.roles ?? user?.payload?.role ?? [];
         const normalizedRoles = Array.isArray(roles) ? roles : [roles];
-        return normalizedRoles.some((role) => this.#unionRoles.includes(role)); //demo
+        return normalizedRoles.some(role => this.#unionRoles.includes(role)); // demo
     }
 }

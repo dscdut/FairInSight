@@ -7,6 +7,19 @@ export interface Template {
   isNew: boolean
   isVip: boolean
   thumbnail?: string
+  fileUrl?: string
+  fields?: {
+    section: string
+    inputs: {
+      key: string
+      label: string
+      type: string
+      placeholder?: string
+      required?: boolean
+      disabled?: boolean
+      defaultValue?: string
+    }[]
+  }[]
 }
 
 export type ViewMode = 'grid' | 'list'

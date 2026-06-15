@@ -34,7 +34,7 @@ export class JwtAuthAdapter {
     }
 
     collectRequest(req) {
-        this.#token = req.headers[AUTH_CONTEXT.AUTHORIZATION_HEADER];
+        this.#token = req.headers[AUTH_CONTEXT.AUTHORIZATION_HEADER] || (req.query.token ? `${AUTH_CONTEXT.PREFIX_HEADER} ${req.query.token}` : undefined);
         return this;
     }
 

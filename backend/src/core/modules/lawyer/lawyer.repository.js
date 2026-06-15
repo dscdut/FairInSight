@@ -3,7 +3,7 @@ import { BaseRepository } from '../../common/base.repository';
 
 class Repository extends BaseRepository {
     constructor() {
-        super('users'); 
+        super('users');
     }
 
     async listLawyers({ page, size, filter = {} }) {
@@ -14,7 +14,7 @@ class Repository extends BaseRepository {
                 name: 'LAWYER'
             },
             lawyer_details: {
-                is_verified: true 
+                is_verified: true
             }
         };
 
@@ -78,7 +78,7 @@ class Repository extends BaseRepository {
                 include,
                 skip,
                 take: size,
-                orderBy: { created_at: 'desc' } 
+                orderBy: { created_at: 'desc' }
             }),
             prisma.users.count({ where })
         ]);

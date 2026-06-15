@@ -16,7 +16,7 @@ export const ROUTE = {
     BLOG: '/blog',
     CHAT_AI: '/chat-ai',
     TEMPLATE: '/template',
-    LEGAL_ANALYSIS: '/legal-analysis',
+    LEGAL: '/legal',
     REPORT: '/report',
     INFO: '/users',
     SETTING: '/setting'
@@ -26,6 +26,7 @@ export const ROUTE = {
     ROOT: '/admin',
     DASHBOARD: 'dashboard',
     USERS: 'users',
+    LEGAL_DOCUMENTS: 'legal-documents',
     ANALYTICS: {
       ROOT: 'analytics',
       OVERVIEW: 'analytics/overview',
