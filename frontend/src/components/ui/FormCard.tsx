@@ -11,6 +11,7 @@ interface FormCardProps {
   template: Template
   viewMode: ViewMode
   index: number
+  onSelect?: (template: Template) => void
 }
 
 export default function FormCard({ template, viewMode, index }: FormCardProps) {

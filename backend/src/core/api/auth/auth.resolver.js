@@ -10,10 +10,10 @@ import {
     LogoutInterceptor
 } from 'core/modules/auth';
 import { Module } from 'packages/handler/Module';
-import { AuthController } from './auth.controller';
 import { authMiddleware } from 'core/modules/auth/middleware/auth.middleware';
 import { uploadMediaSwagger } from 'core/common/swagger';
 import { MediaInterceptor } from 'core/modules/document';
+import { AuthController } from './auth.controller';
 
 export const AuthResolver = Module.builder()
     .addPrefix({

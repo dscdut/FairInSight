@@ -1,14 +1,47 @@
 model laws {
-  id              String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id              String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   title           String
   content         String
-  document_number String    @db.VarChar(255)
-  issued_date     DateTime  @db.Date
-  effective_date  DateTime  @db.Date
+  document_number String            @db.VarChar(255)
+  issued_date     DateTime          @db.Date
+  effective_date  DateTime          @db.Date
   source_url      String
-  user_id         String    @db.Uuid
-  created_at      DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at      DateTime? @default(now()) @db.Timestamptz(6)
-  deleted_at      DateTime? @db.Timestamptz(6)
-  users           users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "laws_user_id_foreign")
+  official_url    String            @default("") @db.Text
+  status          String            @default("ACTIVE") @db.VarChar(50) // ACTIVE | INACTIVE
+  user_id         String            @db.Uuid
+  created_at      DateTime?         @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime?         @default(now()) @db.Timestamptz(6)
+  deleted_at      DateTime?         @db.Timestamptz(6)
+  users           users             @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "laws_user_id_foreign")
+  law_versions    law_versions[]
+  law_status_logs law_status_logs[]
+}
+
+model law_versions {
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  law_id          String   @db.Uuid
+  version         String   @db.VarChar(50) // e.g., v1, v2, v3
+  title           String   @db.Text
+  content         String   @db.Text
+  document_number String   @db.VarChar(255)
+  issued_date     DateTime @db.Date
+  effective_date  DateTime @db.Date
+  source_url      String   @db.Text
+  official_url    String?  @db.Text
+  change_note     String?  @db.Text
+  user_id         String   @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  laws            laws     @relation(fields: [law_id], references: [id], onDelete: Cascade)
+  users           users    @relation(fields: [user_id], references: [id], onDelete: NoAction)
+}
+
+model law_status_logs {
+  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  law_id     String   @db.Uuid
+  status     String   @db.VarChar(50) // ACTIVE | INACTIVE
+  reason     String?  @db.Text
+  user_id    String   @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  laws       laws     @relation(fields: [law_id], references: [id], onDelete: Cascade)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: NoAction)
 }

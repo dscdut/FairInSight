@@ -1,5 +1,5 @@
-import { ApiDocument } from "core/config/swagger.config";
-import { SwaggerDocument } from "packages/swagger";
+import { ApiDocument } from 'core/config/swagger.config';
+import { SwaggerDocument } from 'packages/swagger';
 
 ApiDocument.addModel('RegisterDto', {
     role: SwaggerDocument.ApiProperty({type: 'string'}),

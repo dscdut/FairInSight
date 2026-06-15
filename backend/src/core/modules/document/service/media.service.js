@@ -1,5 +1,6 @@
 import { unlink } from 'fs';
 import { v2 as cloudinary } from 'cloudinary';
+import { CLOUDINARY_TYPE } from 'core/env';
 import { InternalServerException, NotFoundException } from 'packages/httpException';
 import { logger } from 'packages/logger';
 import { cloudinaryUploader } from '../../../config/cloudinary.config';
@@ -11,7 +12,11 @@ class Service {
 
     async uploadOne(file, folderName = '') {
         try {
-            const response = await cloudinaryUploader.upload(file.path, { folder: folderName, resource_type: 'auto' });
+            const response = await cloudinaryUploader.upload(file.path, {
+                folder: folderName,
+                resource_type: 'auto',
+                type: CLOUDINARY_TYPE || 'upload'
+            });
             return {
                 originalName: response.original_filename,
                 url: response.secure_url,

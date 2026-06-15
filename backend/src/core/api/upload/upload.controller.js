@@ -8,7 +8,8 @@ class Controller {
 
     upload = async req => {
         const files = req.files || (req.file ? [req.file] : []);
-        const data = await this.service.uploadMany(files);
+        const folder = req.query.folder || 'laws';
+        const data = await this.service.uploadMany(files, folder);
         return ValidHttpResponse.toOkResponse(data);
     };
 

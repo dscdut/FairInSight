@@ -94,6 +94,8 @@ model users {
   conversations            conversations[]
   documents                documents[]
   laws                     laws[]
+  law_versions             law_versions[]
+  law_status_logs          law_status_logs[]
   lawyer_details           lawyer_details?
   messages                 messages[]
   ratings                  ratings[]

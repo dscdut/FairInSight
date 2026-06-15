@@ -1,5 +1,4 @@
-import { uploadFileSwagger } from 'core/common/swagger';
-import { RecordId } from 'core/common/swagger';
+import { uploadFileSwagger , RecordId } from 'core/common/swagger';
 import { UploadInterceptor } from 'core/modules/document';
 import { Module } from 'packages/handler/Module';
 import { UploadController } from './upload.controller';
