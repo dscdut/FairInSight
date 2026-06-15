@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 
 import { DASHBOARD_ACTIVITY, DASHBOARD_DATA, DASHBOARD_SERVICES } from '@/_mocks/data-dashboard'
 import { FadeUp } from '@/components/animated/animated-component'
-import { Button, Dialog, DialogContent, DialogTrigger } from '@/components/ui'
+import { Button, Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '@/components/ui'
 import { useAuthStore } from '@/core/store/features/auth/authStore'
 
 import RequestForm from './request-form'
@@ -70,7 +70,7 @@ export default function MainMenu() {
                 <div className='mt-4'>
                   {action.link.startsWith('#') ? (
                     <Dialog>
-                      <DialogTrigger>
+                      <DialogTrigger asChild>
                         <Button
                           size={'ghost'}
                           variant={"ghost"}
@@ -83,6 +83,14 @@ export default function MainMenu() {
                       <DialogContent
                         className='bg-white dark:bg-slate-800'
                       >
+                        <DialogTitle>          
+                          <span className="text-h4 flex items-center tracking-tight text-main gap-2">
+                              Khởi tạo vụ việc pháp lý mới
+                          </span>
+                        </DialogTitle>
+                        <DialogDescription className="sr-only">
+                          Mô tả chi tiết vấn đề của bạn để Trợ lý AI bóc tách cấu trúc dữ liệu luật liên quan.
+                        </DialogDescription>
                         <RequestForm/>
                       </DialogContent>
                     </Dialog>

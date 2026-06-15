@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { userSideBarLinks } from '@/core/constants/general.const'
 import { ROUTE } from '@/core/constants/path'
+import { getInitials } from '@/core/helpers/get-initials'
 import { cn } from '@/core/lib/utils'
 import { useAuthStore } from '@/core/store/features/auth/authStore'
 import useToggleSideBar from '@/core/store/features/sidebar'
@@ -35,15 +36,6 @@ export default function UserSideBar() {
     }
     return currentPath === linkPath || currentPath.startsWith(`${linkPath}/`)
   }, [location.pathname])
-
-  const getInitials = useCallback((name: string) => {
-    if (!name) return 'U'
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-  }, [])
 
   const handleLogout = useCallback(() => {
     logout()

@@ -7,7 +7,7 @@ import MainMenu from './components/main-menu'
 export default function UserDashboard() {
   const status = useRequestStore((status) => status.status)
   return (
-    <div className='flex-1 flex flex-col'>
+    <div className='p-4 lg:p-6 flex-1 flex flex-col'>
       {status === "" && (
         <MainMenu/>
       )}

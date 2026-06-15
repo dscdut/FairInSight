@@ -13,13 +13,20 @@ import { type ViewMode } from '@/models/types/form-library'
 export default function Template() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [searchQuery, setSearchQuery] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState<string>('Tất cả')
 
-  const filteredTemplates = mockTemplates.filter(
-    (template) =>
+  const categories = ['Tất cả', ...Array.from(new Set(mockTemplates.map((t) => t.category)))]
+
+  const filteredTemplates = mockTemplates.filter((template) => {
+    const matchesSearch =
       template.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       template.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       template.category.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+
+    const matchesCategory = selectedCategory === 'Tất cả' || template.category === selectedCategory
+
+    return matchesSearch && matchesCategory
+  })
 
   const headerVariants = {
     hidden: { opacity: 0, y: -20 },
@@ -31,32 +38,39 @@ export default function Template() {
   }
 
   return (
-    <div className='w-full space-y-8'>
+    <div className='w-full space-y-8 p-2 lg:p-4'>
       {/* Header */}
-      <motion.div variants={headerVariants} initial='hidden' animate='visible' className='space-y-6'>
+      <motion.div variants={headerVariants} initial='hidden' animate='visible' className='space-y-4'>
         <div>
-          <h1 className='text-4xl font-bold text-slate-900 dark:text-white'>Thư viện biểu mẫu</h1>
-          <p className='mt-2 text-slate-600 dark:text-slate-400'>
+          <h1 className='text-h2 text-main tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-info'>
+            Thư viện biểu mẫu
+          </h1>
+          <p className='text-small text-text-description mt-2'>
             Khám phá hàng trăm biểu mẫu pháp lý được tạo bởi các chuyên gia
           </p>
         </div>
 
         {/* Search & Controls */}
-        <div className='flex flex-col sm:flex-row sm:items-center gap-4'>
+        <div className='flex flex-col gap-4 sm:flex-row sm:items-center'>
           {/* Search Bar */}
           <div className='relative flex-1'>
             <Search
-              className='absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 dark:text-slate-500'
+              className='absolute left-2 top-1/2 transform -translate-y-1/2 text-text-description'
               size={20}
+              aria-hidden='true'
             />
             <Input
-              placeholder='Tìm kiếm biểu mẫu, luật pháp hoặc từ khóa...'
+              id='search-input'
+              name='search'
+              autoComplete='off'
+              aria-label='Tìm kiếm biểu mẫu pháp lý'
+              placeholder='Tìm kiếm biểu mẫu, luật pháp hoặc từ khóa…'
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className={cn(
-                'pl-10 w-full',
-                'border-slate-200 dark:border-slate-700',
-                'placeholder:text-slate-400 dark:placeholder:text-slate-500'
+                'pl-3 py-3 w-full rounded-xl h-11',
+                'border-border-secondary bg-background-secondary text-main',
+                'placeholder:text-text-description'
               )}
             />
           </div>
@@ -65,10 +79,31 @@ export default function Template() {
           <LayoutSwitcher viewMode={viewMode} onViewModeChange={setViewMode} />
         </div>
 
+        {/* Categories Filter Pills */}
+        <div className='flex flex-wrap items-center gap-2 pt-2'>
+          {categories.map((category) => {
+            const isSelected = category === selectedCategory
+            return (
+              <button
+                key={category}
+                type='button'
+                onClick={() => setSelectedCategory(category)}
+                className={cn(
+                  'px-4 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer focus-visible:ring-1 focus-visible:ring-primary focus-visible:outline-none',
+                  isSelected
+                    ? 'bg-primary border-primary text-white shadow-sm'
+                    : 'bg-background-primary border-border-secondary text-text-description hover:bg-background-secondary hover:text-main'
+                )}
+              >
+                {category}
+              </button>
+            )
+          })}
+        </div>
+
         {/* Results count */}
-        <div className='text-sm text-slate-600 dark:text-slate-400'>
-          Tìm thấy <span className='font-semibold text-slate-900 dark:text-white'>{filteredTemplates.length}</span> biểu
-          mẫu
+        <div className='text-small text-text-description'>
+          Tìm thấy <span className='font-semibold text-main'>{filteredTemplates.length}</span> biểu mẫu
         </div>
       </motion.div>
 
