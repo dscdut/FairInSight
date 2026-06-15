@@ -12,33 +12,37 @@ interface LayoutSwitcherProps {
 
 export default function LayoutSwitcher({ viewMode, onViewModeChange }: LayoutSwitcherProps) {
   return (
-    <div className='flex gap-2 rounded-lg border border-border-primary bg-background-secondary p-1'>
+    <div className='gap-1 rounded-xl border border-border-secondary bg-background-secondary p-1 shrink-0 relative hidden sm:flex h-11'>
       <Button
         type='button'
+        variant='ghost'
         onClick={() => onViewModeChange('grid')}
+        aria-label='Xem dạng lưới'
         className={cn(
-          'flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
+          'flex px-2 items-center justify-center rounded-lg bg-background-secondary transition-all duration-200 focus-visible:ring-1 focus-visible:ring-primary focus-visible:outline-none border-0 text-xs font-semibold h-auto',
           viewMode === 'grid'
-            ? 'bg-background-primary text-text-main shadow-sm'
-            : 'text-text-secondary hover:bg-background-primary hover:text-text-main'
+            ? 'text-main bg-background-primary scale-100'
+            : 'text-main hover:text-main'
         )}
-        title='Grid view'
+        title='Xem dạng lưới'
       >
-        <Grid3X3 size={20} />
+        <Grid3X3 size={12} aria-hidden='true' />
       </Button>
 
       <Button
         type='button'
+        variant='ghost'
         onClick={() => onViewModeChange('list')}
+        aria-label='Xem dạng danh sách'
         className={cn(
-          'flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
+          'flex px-2 items-center justify-center rounded-lg transition-all duration-200  gap-1.5 text-xs font-semibold h-auto',
           viewMode === 'list'
-            ? 'bg-background-primary text-text-main shadow-sm'
-            : 'text-text-secondary hover:bg-background-primary hover:text-text-main'
+            ? 'bg-background-primary text-main scale-100'
+            : 'text-main bg-transparent'
         )}
-        title='List view'
+        title='Xem dạng danh sách'
       >
-        <List size={20} />
+        <List size={12} aria-hidden='true' />
       </Button>
     </div>
   )
