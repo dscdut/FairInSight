@@ -75,11 +75,20 @@ export default function HistorySidebar({
           sessions.map((session) => {
             const isActive = session.id === activeSessionId
             return (
-              <button
+              <div
                 key={session.id}
+                role='button'
+                tabIndex={0}
                 onClick={() => {
                   setActiveSessionId(session.id)
                   if (onCloseMobile) onCloseMobile()
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    setActiveSessionId(session.id)
+                    if (onCloseMobile) onCloseMobile()
+                  }
                 }}
                 className={cn(
                   'group relative p-2 rounded-xl cursor-pointer transition-all text-left flex items-start gap-2.5 w-full border-0 focus-visible:ring-1 focus-visible:ring-info focus-visible:outline-none',
@@ -92,8 +101,8 @@ export default function HistorySidebar({
                   <h4 className={cn(
                     'text-sm font-semibold truncate transition-colors',
                     isActive
-                      ? 'text-main'
-                      : 'text-text-description group-hover:text-main'
+                       ? 'text-main'
+                       : 'text-text-description group-hover:text-main'
                   )}>
                     {session.title}
                   </h4>
@@ -108,7 +117,7 @@ export default function HistorySidebar({
                 >
                   <Trash2 className='w-3.5 h-3.5' aria-hidden='true' />
                 </button>
-              </button>
+              </div>
             )
           })
         )}

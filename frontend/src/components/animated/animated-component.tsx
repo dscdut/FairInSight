@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react'
+import { type ReactNode, type CSSProperties } from 'react'
 
 import { motion } from 'framer-motion'
 
@@ -46,15 +46,17 @@ interface FadeUpProps {
   className?: string
   delay?: number
   duration?: number
+  style?: CSSProperties
 }
 
-export const FadeUp = ({ children, className = '', delay = 0, duration = 0.5 }: FadeUpProps) => {
+export const FadeUp = ({ children, className = '', delay = 0, duration = 0.5, style }: FadeUpProps) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration, delay, ease: 'easeOut' }}
       className={className}
+      style={style}
     >
       {children}
     </motion.div>

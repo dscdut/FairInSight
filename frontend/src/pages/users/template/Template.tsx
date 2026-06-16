@@ -8,12 +8,15 @@ import FormGrid from '@/components/ui/FormGrid'
 import { Input } from '@/components/ui/input'
 import LayoutSwitcher from '@/components/ui/LayoutSwitcher'
 import { cn } from '@/core/lib/utils'
-import { type ViewMode } from '@/models/types/form-library'
+import { type ViewMode, type Template as TTemplate } from '@/models/types/form-library'
+
+import TemplateEditor from './TemplateEditor'
 
 export default function Template() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('Tất cả')
+  const [selectedTemplate, setSelectedTemplate] = useState<TTemplate | null>(null)
 
   const categories = ['Tất cả', ...Array.from(new Set(mockTemplates.map((t) => t.category)))]
 
@@ -35,6 +38,17 @@ export default function Template() {
       y: 0,
       transition: { duration: 0.5 }
     }
+  }
+
+  if (selectedTemplate) {
+    return (
+      <div className='w-full p-2 lg:p-4'>
+        <TemplateEditor 
+          template={selectedTemplate} 
+          onBack={() => setSelectedTemplate(null)} 
+        />
+      </div>
+    )
   }
 
   return (
@@ -108,7 +122,7 @@ export default function Template() {
       </motion.div>
 
       {/* Template Grid */}
-      <FormGrid templates={filteredTemplates} viewMode={viewMode} />
+      <FormGrid templates={filteredTemplates} viewMode={viewMode} onSelect={setSelectedTemplate} />
     </div>
   )
 }

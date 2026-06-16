@@ -32,6 +32,7 @@ const Report = lazy(() => import('@/pages/users/report/Report'))
 const Setting = lazy(() => import('@/pages/users/setting/Setting'))
 const Template = lazy(() => import('@/pages/users/template/Template'))
 const User = lazy(() => import('@/pages/users/user/User'))
+const FindLawyer = lazy(() => import('@/pages/users/find-lawyer/FindLawyer'))
 
 export default function useRoutesElements() {
   const location = useLocation()
@@ -57,11 +58,12 @@ export default function useRoutesElements() {
             ) : (
               <Route path={ROUTE.USER.ROOT} element={<LayoutMain />}>
                 <Route index element={<UserDashboard />} />
-                <Route path={ROUTE.PROFILE.ROOT} element={<Profile />} />
-                <Route path={ROUTE.PROFILE.EDIT} element={<ProfileEdit />} />
+                <Route path={ROUTE.USER.PROFILE} element={<Profile />} />
+                <Route path={ROUTE.USER.EDIT} element={<ProfileEdit />} />
                 <Route path={ROUTE.USER.CHAT_AI} element={<AIChat />} />
                 <Route path={ROUTE.USER.TEMPLATE} element={<Template />} />
                 <Route path={ROUTE.USER.LEGAL} element={<LegalAnalysis />} />
+                <Route path={ROUTE.USER.FIND_LAWYER} element={<FindLawyer />} />
                 <Route path={ROUTE.USER.REPORT} element={<Report />} />
                 <Route path={ROUTE.USER.INFO} element={<User />} />
                 <Route path={ROUTE.USER.SETTING} element={<Setting />} />
