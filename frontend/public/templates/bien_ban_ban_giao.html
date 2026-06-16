@@ -1,0 +1,67 @@
+{% import 'self' as c %}
+{{ c.style() }}
+{% call c.page() %}
+  <div class="header">
+    <div class="republic">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+    <div class="motto">Độc lập - Tự do - Hạnh phúc</div>
+    <div class="italic text-right" style="font-size: 13pt; margin-top: 10px; text-align: right">
+      ......, ngày ...... tháng ...... năm ......
+    </div>
+  </div>
+
+  <div class="title" style="margin-top: 25px; margin-bottom: 25px;">
+    <h1>BIÊN BẢN BÀN GIAO TÀI SẢN</h1>
+    <div class="bold" style="font-size: 12pt; margin-top: 6px;">Số: ....../BBBG</div>
+  </div>
+
+  <div class="line text-justify" style="text-indent: 20px;">
+    Hôm nay, ngày {{ format_date(handoverDate) if handoverDate else '...... tháng ...... năm ......' }}, tại {{ handoverLocation|default('......................................................', true) }}, chúng tôi gồm các bên tiến hành bàn giao tài sản như sau:
+  </div>
+
+  <div class="section">BÊN GIAO (BÊN A):</div>
+  <div class="line indent-1"><span class="bold">Họ và tên:</span> {{ senderName|default('........................................................................', true) }}</div>
+  <div class="line indent-1"><span class="bold">Chức vụ:</span> {{ senderPosition|default('........................................................................', true) }}</div>
+
+  <div class="section">BÊN NHẬN (BÊN B):</div>
+  <div class="line indent-1"><span class="bold">Họ và tên:</span> {{ receiverName|default('........................................................................', true) }}</div>
+  <div class="line indent-1"><span class="bold">Chức vụ:</span> {{ receiverPosition|default('........................................................................', true) }}</div>
+
+  <div class="section">NỘI DUNG BÀN GIAO:</div>
+  <div class="line text-justify">
+    Bên A bàn giao cho Bên B, và Bên B đồng ý nhận bàn giao các tài sản có thông tin chi tiết dưới đây:
+  </div>
+
+  <table class="tbl" style="margin-top: 10px; margin-bottom: 15px;">
+    <thead>
+      <tr>
+        <th style="width: 10%;">STT</th>
+        <th style="width: 60%;">Tên tài sản bàn giao</th>
+        <th style="width: 30%;">Tình trạng tài sản</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="center">1</td>
+        <td>{{ assetName|default('........................................................................', true) }}</td>
+        <td>{{ assetStatus|default('........................................', true) }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="line text-justify" style="text-indent: 20px;">
+    Biên bản được lập thành 02 bản có giá trị pháp lý như nhau, mỗi bên giữ 01 bản làm căn cứ đối chiếu. Hai bên đã đọc, hiểu rõ và ký xác nhận dưới đây.
+  </div>
+
+  <div class="signature" style="margin-top: 55px;">
+    <div class="signature-left" style="text-align: center; width: 48%;">
+      <div class="bold uppercase">ĐẠI DIỆN BÊN GIAO</div>
+      <div class="italic text-sm text-gray-500">(Ký và ghi rõ họ tên)</div>
+      <div class="bold" style="margin-top: 70px;">{{ senderName|default('...................................', true) }}</div>
+    </div>
+    <div class="signature-right" style="text-align: center; width: 48%;">
+      <div class="bold uppercase">ĐẠI DIỆN BÊN NHẬN</div>
+      <div class="italic text-sm text-gray-500">(Ký và ghi rõ họ tên)</div>
+      <div class="bold" style="margin-top: 70px;">{{ receiverName|default('...................................', true) }}</div>
+    </div>
+  </div>
+{% endcall %}

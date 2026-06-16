@@ -66,7 +66,7 @@ export default function LegalAnalysis() {
   }
 
   return (
-    <main className='space-y-6 flex-1 flex flex-col'>
+    <main className='p-4 space-y-6 flex-1 flex flex-col'>
       {/* Title section */}
       <section>
         <FadeUp>

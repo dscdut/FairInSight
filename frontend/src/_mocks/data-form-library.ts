@@ -1,24 +1,4 @@
-export type Template = {
-  id: string
-  title: string
-  description: string
-  category: string
-  usageCount: number
-  isNew: boolean
-  isVip: boolean
-  fields: {
-    section: string
-    inputs: {
-      key: string
-      label: string
-      type: string
-      placeholder?: string
-      required?: boolean
-      disabled?: boolean
-      defaultValue?: string
-    }[]
-  }[]
-}
+import { type Template } from '@/models/types/form-library'
 
 export const mockTemplates: Template[] = [
   {
@@ -29,6 +9,8 @@ export const mockTemplates: Template[] = [
     usageCount: 1450,
     isNew: true,
     isVip: false,
+    fileUrl: '/templates/hop_dong_nhuong_quyen.html',
+    thumbnail: '/thumbnails/franchise_agreement.png',
     fields: [
       {
         section: 'Thông tin cá nhân',
@@ -66,6 +48,8 @@ export const mockTemplates: Template[] = [
     usageCount: 980,
     isNew: false,
     isVip: false,
+    fileUrl: '/templates/dang_ky_doanh_nghiep.html',
+    thumbnail: '/thumbnails/business_registration.png',
     fields: [
       {
         section: 'Thông tin chủ doanh nghiệp',
@@ -81,7 +65,7 @@ export const mockTemplates: Template[] = [
         inputs: [
           { key: 'businessName', label: 'Tên doanh nghiệp viết bằng tiếng Việt', type: 'text', defaultValue: 'DOANH NGHIỆP TƯ NHÂN THƯƠNG MẠI A', required: true },
           { key: 'officeAddress', label: 'Địa chỉ trụ sở chính', type: 'text', defaultValue: '123 Nguyễn Hữu Thọ, Hải Châu, Đà Nẵng', required: true },
-          { key: 'capital', label: 'Vốn đầu tư (VND)', type: 'text', defaultValue: '500,000,000', required: true }
+          { key: 'capital', label: 'Vốn đầu tư (VND)', type: 'text', defaultValue: '500000000', required: true }
         ]
       }
     ]
@@ -94,6 +78,8 @@ export const mockTemplates: Template[] = [
     usageCount: 2100,
     isNew: false,
     isVip: true,
+    fileUrl: '/templates/hop_dong_thue_van_phong.html',
+    thumbnail: '/thumbnails/office_lease.png',
     fields: [
       {
         section: 'Thông tin bên cho thuê (Bên A)',
@@ -106,8 +92,78 @@ export const mockTemplates: Template[] = [
         section: 'Thông tin thuê văn phòng',
         inputs: [
           { key: 'area', label: 'Diện tích thuê (m2)', type: 'text', defaultValue: '150', required: true },
-          { key: 'price', label: 'Giá thuê hàng tháng (VND)', type: 'text', defaultValue: '30,000,000', required: true },
+          { key: 'price', label: 'Giá thuê hàng tháng (VND)', type: 'text', defaultValue: '30000000', required: true },
           { key: 'rentPeriod', label: 'Thời hạn thuê (Tháng)', type: 'text', defaultValue: '24', required: true }
+        ]
+      }
+    ]
+  },
+  {
+    id: '4',
+    title: 'Đơn xin nghỉ phép',
+    description: 'Đơn xin nghỉ phép chuẩn dành cho nhân viên văn phòng, cán bộ công chức theo đúng quy định hành chính.',
+    category: 'Hành chính',
+    usageCount: 520,
+    isNew: true,
+    isVip: false,
+    fileUrl: '/templates/don_xin_nghi_phep.html',
+    thumbnail: '/thumbnails/leave_request.png',
+    fields: [
+      {
+        section: 'Thông tin nhân viên',
+        inputs: [
+          { key: 'fullName', label: 'Họ và tên người viết đơn', type: 'text', defaultValue: 'Nguyễn Văn C', required: true },
+          { key: 'department', label: 'Bộ phận/Phòng ban', type: 'text', defaultValue: 'Hành chính - Nhân sự', required: true },
+          { key: 'position', label: 'Chức vụ', type: 'text', defaultValue: 'Chuyên viên', required: true }
+        ]
+      },
+      {
+        section: 'Thông tin nghỉ phép',
+        inputs: [
+          { key: 'startDate', label: 'Nghỉ từ ngày', type: 'date', defaultValue: '2026-06-20', required: true },
+          { key: 'endDate', label: 'Đến hết ngày', type: 'date', defaultValue: '2026-06-22', required: true },
+          { key: 'reason', label: 'Lý do xin nghỉ', type: 'text', defaultValue: 'Giải quyết công việc gia đình', required: true }
+        ]
+      }
+    ]
+  },
+  {
+    id: '5',
+    title: 'Biên bản bàn giao tài sản',
+    description: 'Mẫu biên bản ghi nhận việc bàn giao tài sản, trang thiết bị giữa các cá nhân, bộ phận trong doanh nghiệp.',
+    category: 'Biên bản',
+    usageCount: 680,
+    isNew: false,
+    isVip: false,
+    fileUrl: '/templates/bien_ban_ban_giao.html',
+    thumbnail: '/thumbnails/asset_handover.png',
+    fields: [
+      {
+        section: 'Thông tin bàn giao',
+        inputs: [
+          { key: 'handoverDate', label: 'Ngày bàn giao', type: 'date', defaultValue: '2026-06-16', required: true },
+          { key: 'handoverLocation', label: 'Địa điểm bàn giao', type: 'text', defaultValue: 'Văn phòng Công ty, Tầng 5, Tòa nhà A', required: true }
+        ]
+      },
+      {
+        section: 'Bên bàn giao (Bên A)',
+        inputs: [
+          { key: 'senderName', label: 'Họ và tên người giao', type: 'text', defaultValue: 'Trần Văn D', required: true },
+          { key: 'senderPosition', label: 'Chức vụ bên giao', type: 'text', defaultValue: 'Trưởng bộ phận Kho', required: true }
+        ]
+      },
+      {
+        section: 'Bên nhận bàn giao (Bên B)',
+        inputs: [
+          { key: 'receiverName', label: 'Họ và tên người nhận', type: 'text', defaultValue: 'Phạm Thị E', required: true },
+          { key: 'receiverPosition', label: 'Chức vụ bên nhận', type: 'text', defaultValue: 'Nhân viên mới', required: true }
+        ]
+      },
+      {
+        section: 'Thông tin tài sản',
+        inputs: [
+          { key: 'assetName', label: 'Tên tài sản bàn giao', type: 'text', defaultValue: 'Laptop Dell Latitude 5420 kèm sạc', required: true },
+          { key: 'assetStatus', label: 'Tình trạng tài sản', type: 'text', defaultValue: 'Mới 95%, hoạt động bình thường', required: true }
         ]
       }
     ]

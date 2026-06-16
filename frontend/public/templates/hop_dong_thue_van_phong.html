@@ -1,0 +1,63 @@
+{% import 'self' as c %}
+{{ c.style() }}
+{% call c.page() %}
+  <div class="header">
+    <div class="republic">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+    <div class="motto">Độc lập - Tự do - Hạnh phúc</div>
+    <div class="italic" style="font-size: 13pt; margin-top: 10px; text-align: right;">
+      ......, ngày ...... tháng ...... năm ......
+    </div>
+  </div>
+
+  <div class="title" style="margin-top: 25px; margin-bottom: 25px;">
+    <h1>HỢP ĐỒNG THUÊ VĂN PHÒNG</h1>
+    <div class="bold" style="font-size: 12pt; margin-top: 6px;">Số: ....../HĐTVP</div>
+  </div>
+
+  <div class="line text-justify" style="text-indent: 20px;">
+    Căn cứ Bộ luật Dân sự nước Cộng hòa xã hội chủ nghĩa Việt Nam và nhu cầu thực tế của các bên, hôm nay chúng tôi gồm các bên dưới đây tiến hành ký kết hợp đồng thuê văn phòng:
+  </div>
+
+  <div class="section">BÊN CHO THUÊ (BÊN A):</div>
+  <div class="line indent-1"><span class="bold">Tên tổ chức/cá nhân:</span> {{ lessorName|default('........................................................................', true) }}</div>
+  <div class="line indent-1"><span class="bold">Địa chỉ:</span> {{ lessorAddress|default('........................................................................', true) }}</div>
+
+  <div class="section">BÊN THUÊ (BÊN B):</div>
+  <div class="line indent-1"><span class="bold">Họ và tên:</span> {{ fullName|default('........................................................................', true) }}</div>
+  <div class="line indent-1"><span class="bold">Số CCCD/CMND:</span> {{ idNumber|default('........................................', true) }}</div>
+  <div class="line indent-1"><span class="bold">Địa chỉ thường trú:</span> {{ permanentAddress|default('........................................................................', true) }}</div>
+
+  <div class="section">ĐIỀU 1: NỘI DUNG VÀ DIỆN TÍCH THUÊ</div>
+  <div class="line text-justify">
+    Bên A đồng ý cho Bên B thuê phần diện tích văn phòng thuộc quyền sở hữu/sử dụng hợp pháp của Bên A với diện tích là: <span class="bold">{{ area|default('......', true) }}</span> m².
+  </div>
+
+  <div class="section">ĐIỀU 2: GIÁ THUÊ VÀ PHƯƠNG THỨC THANH TOÁN</div>
+  <div class="line text-justify">
+    2.1. Đơn giá thuê văn phòng hàng tháng được thống nhất là: <span class="bold">{{ format_money(price) if price else '........................................' }}</span> VNĐ/tháng.
+  </div>
+  <div class="line text-justify">
+    2.2. Thời hạn thuê tối thiểu được xác định là: <span class="bold">{{ rentPeriod|default('......', true) }}</span> tháng, bắt đầu kể từ ngày bàn giao mặt bằng.
+  </div>
+
+  <div class="section">ĐIỀU 3: QUYỀN VÀ NGHĨA VỤ CỦA CÁC BÊN</div>
+  <div class="line text-justify">
+    3.1. Bên A có trách nhiệm bảo đảm tính pháp lý của mặt bằng cho thuê và bàn giao đúng tiến độ.
+  </div>
+  <div class="line text-justify">
+    3.2. Bên B cam kết thanh toán đầy đủ, đúng hạn và sử dụng mặt bằng đúng mục đích văn phòng làm việc.
+  </div>
+
+  <div class="signature" style="margin-top: 55px;">
+    <div class="signature-left" style="text-align: center; width: 48%;">
+      <div class="bold uppercase">ĐẠI DIỆN BÊN A</div>
+      <div class="italic text-sm text-gray-500">(Ký và ghi rõ họ tên)</div>
+      <div class="bold" style="margin-top: 70px;">{{ lessorName|default('...................................', true) }}</div>
+    </div>
+    <div class="signature-right" style="text-align: center; width: 48%;">
+      <div class="bold uppercase">ĐẠI DIỆN BÊN B</div>
+      <div class="italic text-sm text-gray-500">(Ký và ghi rõ họ tên)</div>
+      <div class="bold" style="margin-top: 70px;">{{ fullName|default('...................................', true) }}</div>
+    </div>
+  </div>
+{% endcall %}

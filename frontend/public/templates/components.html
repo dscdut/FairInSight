@@ -9,7 +9,7 @@
     font-family: 'BCC-Times';
     src: local('Times New Roman'),
         local('TimesNewRomanPSMT'),
-        url('file:///app/runtime/src/bcc_biz/bcc_template/templates/fonts/times.ttf') format('truetype');
+        url('/fonts/times.ttf') format('truetype');
     font-style: normal;
     font-weight: 400;
   }
@@ -18,7 +18,7 @@
     font-family: 'BCC-Times';
     src: local('Times New Roman Bold'),
         local('TimesNewRomanPS-BoldMT'),
-        url('file:///app/runtime/src/bcc_biz/bcc_template/templates/fonts/timesbd.ttf') format('truetype');
+        url('/fonts/timesbd.ttf') format('truetype');
     font-style: normal;
     font-weight: 700;
   }
@@ -27,16 +27,16 @@
     font-family: 'BCC-Times';
     src: local('Times New Roman Italic'),
         local('TimesNewRomanPS-ItalicMT'),
-        url('file:///app/runtime/src/bcc_biz/bcc_template/templates/fonts/timesi.ttf') format('truetype');
+        url('/fonts/timesi.ttf') format('truetype');
     font-style: italic;
     font-weight: 400;
-  }
+  };
 
   @font-face {
     font-family: 'BCC-Times';
     src: local('Times New Roman Bold Italic'),
         local('TimesNewRomanPS-BoldItalicMT'),
-        url('file:///app/runtime/src/bcc_biz/bcc_template/templates/fonts/timesbi.ttf') format('truetype');
+        url('/fonts/timesbi.ttf') format('truetype');
     font-style: italic;
     font-weight: 700;
   }
@@ -47,17 +47,11 @@
     
     @page {
       size: A4;
-      margin-top: 2.0cm;
-      margin-bottom: 2.0cm;
-      margin-left: 3.2cm;
-      margin-right: 1.8cm;
+      margin: 0;
     }
     @page a4 {
       size: A4;
-      margin-top: 2.0cm;
-      margin-bottom: 2.0cm;
-      margin-left: 3.2cm;
-      margin-right: 1.8cm;
+      margin: 0;
     }
     
 
@@ -67,7 +61,7 @@
       box-sizing: border-box;
       width: 21cm;
       height: 29.7cm;
-      padding: 2.2cm 1.8cm 2.2cm 3.2cm;
+      padding: 2.0cm 1.8cm 2.0cm 3.2cm;
       position: relative;
       page-break-before: always;
       page-break-after: always;
@@ -221,18 +215,25 @@
 
 
     @media print {
+      body {
+        margin: 0;
+        padding: 0;
+        background: #fff;
+      }
       page, page[size="A4"] {
         display: block;
-        width: 100%;
-        height: 25.7cm;
-        padding: 0;
-        margin: 0;
+        width: 21cm !important;
+        height: 29.7cm !important;
+        padding: 2.0cm 1.8cm 2.0cm 3.2cm !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
         position: relative;
         page-break-before: always !important;
         page-break-after: always !important;
         break-before: page !important;
         break-after: page !important;
         break-inside: avoid !important;
+        background: #fff;
       }
       .footer-notes {
         position: absolute;
@@ -311,12 +312,12 @@
 {% macro fields_inline(list_fields, indent=0, col_widths=none) %}
   {% if col_widths %}
     {% set indent_margin = '18px' if indent == 1 else ('32px' if indent == 2 else '0px') %}
-    <table style="width: calc(100% - {{ indent_margin }}); margin-left: {{ indent_margin }}; border: none; border-collapse: collapse; margin-bottom: 5px; table-layout: fixed;">
+    <table style="width: calc(100% - {{ indent_margin }}); margin-left: {{ indent_margin }}; border:none; border-collapse:collapse; margin-bottom: 5px; table-layout:fixed;">
       <tbody>
         <tr>
           {% for label, value, width, pad_left in list_fields %}
-            <td style="width: {{ col_widths[loop.index0] }}; border: none; padding: 0; vertical-align: baseline;">
-              <div class="form-line" style="margin-bottom: 0;">
+            <td style="width: {{ col_widths[loop.index0] }}; border:none; padding:0; vertical-align:baseline;">
+              <div class="form-line" style="margin-bottom:0;">
                 <span class="label"{{ (' style="padding-left: ' ~ pad_left ~ 'px;"')|safe if pad_left else '' }}>{{ label|safe }}</span>
                 <span class="value-container" style="flex-grow: 1; min-width: 0;">
                   {% if value %}
@@ -390,27 +391,35 @@
 {% endmacro %}
 
 {% macro format_date(val) -%}
-  {%- if val -%}
-    {%- set parts = val.split('-') if '-' in val else val.split('/') -%}
-    {%- if parts|length == 3 -%}
-      {{- parts[2] ~ '/' ~ parts[1] ~ '/' ~ parts[0] if '-' in val else val -}}
-    {%- else -%}
-      {{- val -}}
-    {%- endif -%}
+  {%- if format_date_js is defined -%}
+    {{- format_date_js(val) -}}
   {%- else -%}
-    ..../..../....
+    {%- if val -%}
+      {%- set parts = val.split('-') if '-' in val else val.split('/') -%}
+      {%- if parts|length == 3 -%}
+        {{- parts[2] ~ '/' ~ parts[1] ~ '/' ~ parts[0] if '-' in val else val -}}
+      {%- else -%}
+        {{- val -}}
+      {%- endif -%}
+    {%- else -%}
+      ..../..../....
+    {%- endif -%}
   {%- endif -%}
 {%- endmacro %}
 
 {% macro format_money(val) -%}
   {%- if val -%}
-    {%- set num_str = val|string|replace(',', '')|replace('.', '')|replace(' ', '') -%}
-    {%- if num_str|int > 0 or num_str == '0' -%}
-      {%- set num = num_str|int -%}
-      {%- set formatted = "{:,}".format(num)|replace(',', '.') -%}
-      {{- formatted -}}
+    {%- if format_money_js is defined -%}
+      {{- format_money_js(val) -}}
     {%- else -%}
-      {{- val -}}
+      {%- set num_str = val|string|replace(',', '')|replace('.', '')|replace(' ', '') -%}
+      {%- if num_str|int > 0 or num_str == '0' -%}
+        {%- set num = num_str|int -%}
+        {%- set formatted = "{:,}".format(num)|replace(',', '.') -%}
+        {{- formatted -}}
+      {%- else -%}
+        {{- val -}}
+      {%- endif -%}
     {%- endif -%}
   {%- else -%}
     
