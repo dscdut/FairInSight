@@ -11,7 +11,8 @@ import {
   Settings,
   ShoppingCart,
   TrendingUp,
-  Users
+  Users,
+  UserCheck
 } from 'lucide-react'
 
 import { ROUTE } from '@/core/constants/path'
@@ -263,6 +264,12 @@ export const userSideBarLinks: TSidebarLinks[] = [
     titleKey: 'legal',
     icon: <Scale className='w-5 h-5' />,
     path: ROUTE.USER.LEGAL
+  },
+  {
+    title: 'Tìm kiếm luật sư',
+    titleKey: 'find_lawyer',
+    icon: <UserCheck className='w-5 h-5' />,
+    path: ROUTE.USER.FIND_LAWYER
   },
   {
     title: 'Quản lý báo cáo',

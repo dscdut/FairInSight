@@ -17,9 +17,13 @@ export const ROUTE = {
     CHAT_AI: '/chat-ai',
     TEMPLATE: '/template',
     LEGAL: '/legal',
+    FIND_LAWYER: '/find-lawyer',
     REPORT: '/report',
     INFO: '/users',
-    SETTING: '/setting'
+    SETTING: '/setting',
+    PROFILE: '/profile',
+    EDIT: '/profile/edit'
+
   },
   FORM_LIBRARY: '/form-library',
   ADMIN: {

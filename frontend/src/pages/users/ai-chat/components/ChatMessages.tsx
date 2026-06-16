@@ -2,6 +2,7 @@ import * as React from 'react'
 
 import { Bot, FileText } from 'lucide-react'
 
+import logo from '@/assets/images/logo.png'
 import { Avatar, AvatarFallback, AvatarImage, Button } from '@/components/ui'
 import { getInitials } from '@/core/helpers/get-initials'
 import { cn } from '@/core/lib/utils'
@@ -56,7 +57,7 @@ export default function ChatMessages({
       {messages.length === 0 ? (
         // Starter
         <div className='h-full flex flex-col items-center justify-center text-center p-4 max-w-lg mx-auto space-y-4 animate-in fade-in-50 duration-500'>
-          <img src="src/assets/images/logo.png" className='w-20 h-20 object-contain' alt="LegalAI Logo" />
+          <img src={logo} className='w-20 h-20 object-contain' alt="LegalAI Logo" />
           <h3 className='text-h3 text-main font-semibold'>Chào mừng đến với Trợ lý Pháp lý AI</h3>
           <p className='text-small text-text-description leading-relaxed'>
             Hãy nhập nội dung tình huống pháp lý của bạn ở khung chat bên dưới. Bạn có thể đính kèm các hình ảnh hiện trường, biên bản, hợp đồng liên quan để AI phân tích chi tiết.

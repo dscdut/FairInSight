@@ -14,7 +14,7 @@ interface FormCardProps {
   onSelect?: (template: Template) => void
 }
 
-export default function FormCard({ template, viewMode, index }: FormCardProps) {
+export default function FormCard({ template, viewMode, index, onSelect }: FormCardProps) {
   const cardVariant = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -32,13 +32,23 @@ export default function FormCard({ template, viewMode, index }: FormCardProps) {
     return (
       <motion.div variants={cardVariant} initial='hidden' animate='visible'>
         <Card className='group border border-border-secondary bg-background-primary transition-all duration-300 hover:shadow-md hover:scale-[1.01] hover:-translate-y-0.5 rounded-2xl overflow-hidden p-4 flex flex-col sm:flex-row sm:items-center gap-4 w-full'>
-          {/* Left: Icon Squircle */}
-          <div className='w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/15 shadow-sm transition-transform duration-300 group-hover:scale-105'>
-            <FileText className='w-4 h-4' />
+          {/* Left Thumbnail (List View) */}
+          <div className='w-full sm:w-28 h-20 shrink-0 rounded-xl bg-background-secondary border border-border-secondary/60 overflow-hidden flex items-center justify-center relative group/thumbnail'>
+            {template.thumbnail ? (
+              <img 
+                src={template.thumbnail} 
+                alt={template.title} 
+                className='w-full h-full object-cover transition-transform duration-500 group-hover/thumbnail:scale-105'
+              />
+            ) : (
+              <div className='w-full h-full flex items-center justify-center text-primary bg-primary/10'>
+                <FileText className='w-6 h-6' />
+              </div>
+            )}
           </div>
 
           {/* Center: Info */}
-          <div className='flex-1 min-w-0 flex flex-col gap-2'>
+          <div className='flex-1 min-w-0 flex flex-col gap-1.5'>
             <div className='flex flex-wrap items-center gap-2'>
               <h3 className='text-h5 font-bold text-main truncate transition-colors duration-200 group-hover:text-primary'>
                 {template.title}
@@ -46,19 +56,19 @@ export default function FormCard({ template, viewMode, index }: FormCardProps) {
               
               <div className='flex gap-1 shrink-0'>
                 {template.isVip && (
-                  <Badge variant='secondary' className='bg-warning-primary/10 text-warning-primary border-0 rounded-full text-[10px] font-bold px-2 py-1 uppercase tracking-wider'>
+                  <Badge variant='secondary' className='bg-warning-primary/10 text-warning-primary border-0 rounded-full text-xs font-semibold px-2 py-1 uppercase tracking-wider'>
                     VIP
                   </Badge>
                 )}
                 {template.isNew && (
-                  <Badge variant='destructive' className='bg-error-primary/10 text-error-primary border-0 rounded-full text-[10px] font-bold px-2 py-1 uppercase tracking-wider animate-pulse'>
+                  <Badge variant='destructive' className='bg-error-primary/10 text-error-primary border-0 rounded-full text-xs font-semibold px-2 py-1 uppercase tracking-wider animate-pulse'>
                     Mới
                   </Badge>
                 )}
               </div>
             </div>
 
-            <p className='text-small text-text-description line-clamp-1 leading-relaxed'>
+            <p className='text-sm text-text-description line-clamp-1 leading-relaxed'>
               {template.description}
             </p>
 
@@ -83,6 +93,7 @@ export default function FormCard({ template, viewMode, index }: FormCardProps) {
             <Button
               variant='default'
               size='sm'
+              onClick={() => onSelect?.(template)}
               className='w-full rounded-xl text-xs font-semibold text-white bg-primary hover:bg-primary/90 hover:shadow-md active:scale-95 transition-all h-8 cursor-pointer justify-center'
             >
               Sử dụng
@@ -109,39 +120,48 @@ export default function FormCard({ template, viewMode, index }: FormCardProps) {
   return (
     <motion.div variants={cardVariant} initial='hidden' animate='visible'>
       <Card className={cardClasses}>
-        <CardContent className={contentClasses}>
-          <div className='flex flex-col gap-4'>
-            {/* Document Icon Squircle & Badges */}
-            <div className='flex items-start justify-between gap-4'>
-              <div className='w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/15 shadow-sm transition-transform duration-300 group-hover:scale-105'>
-                <FileText className='w-4 h-4' />
-              </div>
-              
-              <div className='flex flex-wrap gap-1 justify-end'>
-                {template.isVip && (
-                  <Badge variant='secondary' className='bg-warning-primary/10 text-warning-primary border-0 rounded-full text-[10px] font-bold px-2 py-1 uppercase tracking-wider'>
-                    VIP
-                  </Badge>
-                )}
-                {template.isNew && (
-                  <Badge variant='destructive' className='bg-error-primary/10 text-error-primary border-0 rounded-full text-[10px] font-bold px-2 py-1 uppercase tracking-wider animate-pulse'>
-                    Mới
-                  </Badge>
-                )}
-              </div>
+        {/* Top Thumbnail Image Banner */}
+        <div className='relative w-full aspect-[1.8] bg-background-secondary border-b border-border-secondary/60 overflow-hidden flex items-center justify-center group/thumbnail shrink-0'>
+          {template.thumbnail ? (
+            <img 
+              src={template.thumbnail} 
+              alt={template.title} 
+              className='w-full h-full object-cover transition-transform duration-500 group-hover/thumbnail:scale-105'
+            />
+          ) : (
+            <div className='w-full h-full flex items-center justify-center text-primary bg-primary/10'>
+              <FileText className='w-8 h-8' />
             </div>
+          )}
+          
+          {/* Badges positioned absolutely over thumbnail */}
+          <div className='absolute top-3 right-3 flex flex-wrap gap-1 justify-end'>
+            {template.isVip && (
+              <Badge variant='secondary' className='text-warning-primary bg-background-primary/80 backdrop-blur-xs border-0 rounded-full text-xs font-semibold px-2.5 py-0.5 uppercase tracking-wider shadow-sm'>
+                VIP
+              </Badge>
+            )}
+            {template.isNew && (
+              <Badge variant='destructive' className='bg-error-primary text-white border-0 rounded-full text-xs font-semibold px-2.5 py-0.5 uppercase tracking-wider animate-pulse shadow-sm'>
+                Mới
+              </Badge>
+            )}
+          </div>
+        </div>
 
-            <div className='space-y-2 mt-2'>
-              <h3 className='text-h5 font-bold text-main line-clamp-2 transition-colors duration-200 group-hover:text-primary'>
+        <CardContent className={contentClasses}>
+          <div className='flex flex-col gap-3'>
+            <div className='space-y-1.5'>
+              <h3 className='text-h5 font-bold text-main line-clamp-2 transition-colors duration-200 group-hover:text-primary leading-snug'>
                 {template.title}
               </h3>
-              <p className='text-small text-text-description line-clamp-2 leading-relaxed min-h-[40px]'>
+              <p className='text-sm text-text-description line-clamp-2 leading-relaxed min-h-[40px]'>
                 {template.description}
               </p>
             </div>
 
-            <div className='flex items-center justify-between border-t border-border-secondary/60 pt-4 mt-2'>
-              <span className='inline-flex items-center rounded-xl bg-background-secondary px-2 py-1 text-xs font-semibold text-text-description'>
+            <div className='flex items-center justify-between border-t border-border-secondary/60 pt-3 mt-1'>
+              <span className='inline-flex items-center rounded-xl bg-background-secondary px-2 py-0.5 text-xs font-semibold text-text-description'>
                 {template.category}
               </span>
 
@@ -163,6 +183,7 @@ export default function FormCard({ template, viewMode, index }: FormCardProps) {
           <Button
             variant='default'
             size='sm'
+            onClick={() => onSelect?.(template)}
             className='w-full sm:w-auto rounded-xl text-xs font-semibold text-white bg-primary hover:bg-primary/90 hover:shadow-md active:scale-95 transition-all h-8 cursor-pointer'
           >
             Sử dụng
