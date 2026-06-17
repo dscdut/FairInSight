@@ -56,7 +56,7 @@ class Service {
                 id: result.id,
                 fullName: registerDto.fullName,
                 email: registerDto.email,
-                roleName: existingRole.name,
+                roleName: existingRole.name.toUpperCase(),
             },
             message: 'User registered successfully',
         };
@@ -81,7 +81,7 @@ class Service {
             userId: user.id,
             email: user.email,
             fullName: user.full_name,
-            roleName: user.roles?.name || null,
+            roleName: user.roles?.name ? user.roles.name.toUpperCase() : null,
         };
 
         const targetUserId = userId ?? user.id;

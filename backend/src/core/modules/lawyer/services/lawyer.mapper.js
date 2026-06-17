@@ -93,7 +93,6 @@ export const mapLawyerDetail = user => {
 
     return {
         data: {
-            items: reviews,
             summary: {
                 averageRating: lawyerDetails.rating_avg || 0,
                 careerHistory,
@@ -109,7 +108,7 @@ export const mapLawyerDetail = user => {
                     licenseNumber: lawyerDetails.license_number || '',
                 },
                 name: user.full_name,
-                role: user.roles?.name?.toLowerCase() || 'lawyer',
+                roleName: (user.roles?.name || 'lawyer').toUpperCase(),
                 specializations,
             },
         },

@@ -60,7 +60,7 @@ class Service {
    * Includes code, role, status, and available actions
    */
     toUserListItem(user) {
-        const role = (user.roles?.name || Role.USER).toLowerCase();
+        const roleName = (user.roles?.name || Role.USER).toUpperCase();
         const status = user.banned_by ? UserStatus.BANNED : UserStatus.ACTIVE;
         return {
             id: user.id,
@@ -68,10 +68,10 @@ class Service {
             avatar: user.avatar_url,
             fullName: user.full_name,
             email: user.email,
-            role,
+            roleName,
             status,
             actions: {
-                type: status === UserStatus.BANNED && role === Role.LAWYER.toLowerCase() ? UserActionType.PENDING_LAWYER : UserActionType.DEFAULT,
+                type: status === UserStatus.BANNED && roleName === Role.LAWYER ? UserActionType.PENDING_LAWYER : UserActionType.DEFAULT,
             },
         };
     }
@@ -248,7 +248,7 @@ class Service {
                 fullName: updatedUser.full_name,
                 email: updatedUser.email,
                 avatar: updatedUser.avatar_url,
-                role,
+                roleName: role.toUpperCase(),
                 licenseInfo: role === Role.LAWYER.toLowerCase()
                     ? {
                         licenseNumber: payload.licenseNumber,
