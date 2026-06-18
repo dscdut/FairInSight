@@ -2,15 +2,13 @@ from __future__ import annotations
 
 from app.graphs.state import GraphState
 from app.utils.text_utils import expand_abbreviation, normalize_text
+from app.llm import router
 
 
 KEYWORD_HINTS = {
     "hop dong lao dong": "cham dut don phuong thoi han",
     "nghi viec": "bao truoc tro cap",
 }
-
-
-from app.llm import router
 
 async def run(state: GraphState) -> GraphState:
     question = state.get("question") or ""

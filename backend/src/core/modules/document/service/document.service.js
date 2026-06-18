@@ -4,22 +4,20 @@ import puppeteer from 'puppeteer';
 import { v2 as cloudinary } from 'cloudinary';
 import { CLOUDINARY_TYPE } from 'core/env';
 
-const uploadPdfBuffer = (buffer, options) => {
-    return new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(options, (error, result) => {
-            if (error) return reject(error);
-            resolve(result);
-        });
-        stream.write(buffer);
-        stream.end();
+const uploadPdfBuffer = (buffer, options) => new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(options, (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
     });
-};
+    stream.write(buffer);
+    stream.end();
+});
 
 class Service {
     async createOrUpdateDocument(userId, { templateId, content, fileUrl, isDraft, documentId, html }) {
         try {
             let pdfUrl = fileUrl || null;
-            
+
             if (!isDraft && html) {
                 try {
                     const browser = await puppeteer.launch({
@@ -69,17 +67,17 @@ class Service {
                         updated_at: new Date()
                     }
                 });
-            } else {
-                return await prisma.documents.create({
-                    data: {
-                        user_id: userId,
-                        template_id: templateId,
-                        content,
-                        file_url: pdfUrl,
-                        is_draft: isDraft
-                    }
-                });
             }
+            return await prisma.documents.create({
+                data: {
+                    user_id: userId,
+                    template_id: templateId,
+                    content,
+                    file_url: pdfUrl,
+                    is_draft: isDraft
+                }
+            });
+
         } catch (error) {
             if (error instanceof NotFoundException) throw error;
             throw new InternalServerException(error.message);

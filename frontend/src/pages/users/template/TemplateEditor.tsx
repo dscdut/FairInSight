@@ -5,7 +5,7 @@ import nunjucks from 'nunjucks'
 
 import { Button } from '@/components/ui/button'
 import { printDocument } from '@/core/helpers/print-document'
-import { documentApi } from '@/core/services/document.service'
+import { documentApi, type UserDocument } from '@/core/services/document.service'
 import { type Template } from '@/models/types/form-library'
 
 import ExportLoadingOverlay from './components/ExportLoadingOverlay'
@@ -16,7 +16,7 @@ import TemplatePreview from './components/TemplatePreview'
 // Configure nunjucks for clientside without HTML escaping
 const defaultEnv = nunjucks.configure({ autoescape: false })
 
-const formatMoneyJs = (val: any) => {
+const formatMoneyJs = (val: string | number | unknown) => {
   if (!val) return ''
   const numStr = String(val).replace(/,/g, '').replace(/\./g, '').replace(/ /g, '')
   const num = parseInt(numStr, 10)
@@ -144,7 +144,7 @@ export default function TemplateEditor({ template, onBack, documentId, initialVa
         }
         return val
       },
-      format_money: (val: any) => {
+      format_money: (val: string | number | unknown) => {
         if (!val) return ''
         const numStr = String(val).replace(/,/g, '').replace(/\./g, '').replace(/ /g, '')
         const num = parseInt(numStr, 10)
@@ -230,7 +230,7 @@ export default function TemplateEditor({ template, onBack, documentId, initialVa
         documentId: activeDocumentId
       }).catch((err) => {
         console.warn('Save draft API failed, mocking response locally:', err)
-        return { id: activeDocumentId || 'mock-draft-id', file_url: null } as any
+        return { id: activeDocumentId || 'mock-draft-id', file_url: null } as unknown as UserDocument
       })
       if (doc && doc.id) {
         setActiveDocumentId(doc.id)
@@ -254,7 +254,7 @@ export default function TemplateEditor({ template, onBack, documentId, initialVa
         html: compileHtml(htmlContent, formValues)
       }).catch((err) => {
         console.warn('Save document API failed, continuing with client-side export flow:', err)
-        return { id: activeDocumentId || 'mock-doc-id', file_url: null } as any
+        return { id: activeDocumentId || 'mock-doc-id', file_url: null } as unknown as UserDocument
       })
       if (doc && doc.id) {
         setActiveDocumentId(doc.id)
