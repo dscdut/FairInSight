@@ -14,6 +14,7 @@ import {
   type Message
 } from '@/_mocks/chat-data-mock'
 import { MOCK_LAWYERS_BY_CATEGORY } from '@/_mocks/lawyer.mock'
+import { LAW_MAJORS } from '@/core/constants/law-major'
 import { formatTime } from '@/core/helpers/date-time'
 
 import ChatInput from './components/ChatInput'
@@ -23,24 +24,24 @@ import HistorySidebar from './components/HistorySidebar'
 const detectCategoryFromSession = (session: ChatSession, currentMessage: string): string => {
   const textToAnalyze = (session.title + ' ' + currentMessage + ' ' + session.messages.map(m => m.content).join(' ')).toLowerCase()
   if (textToAnalyze.includes('đất') || textToAnalyze.includes('ranh giới') || textToAnalyze.includes('sổ đỏ')) {
-    return 'Đất đai'
+    return LAW_MAJORS.LAND
   }
   if (textToAnalyze.includes('hôn nhân') || textToAnalyze.includes('ly hôn') || textToAnalyze.includes('gia đình') || textToAnalyze.includes('con cái')) {
-    return 'Hôn nhân và gia đình'
+    return LAW_MAJORS.FAMILY_LONG
   }
   if (textToAnalyze.includes('hình sự') || textToAnalyze.includes('tội') || textToAnalyze.includes('bị cáo') || textToAnalyze.includes('bào chữa')) {
-    return 'Hình sự'
+    return LAW_MAJORS.CRIMINAL
   }
   if (textToAnalyze.includes('dân sự') || textToAnalyze.includes('thừa kế') || textToAnalyze.includes('đại diện')) {
-    return 'Dân sự'
+    return LAW_MAJORS.CIVIL
   }
   if (textToAnalyze.includes('lao động') || textToAnalyze.includes('sa thải') || textToAnalyze.includes('lương') || textToAnalyze.includes('bảo hiểm')) {
-    return 'Lao động'
+    return LAW_MAJORS.LABOR
   }
   if (textToAnalyze.includes('doanh nghiệp') || textToAnalyze.includes('công ty') || textToAnalyze.includes('thương mại') || textToAnalyze.includes('m&a')) {
-    return 'Doanh nghiệp'
+    return LAW_MAJORS.BUSINESS
   }
-  return 'Tôi không chắc lĩnh vực'
+  return LAW_MAJORS.UNKNOWN
 }
 
 export default function AIChat() {
@@ -238,7 +239,13 @@ export default function AIChat() {
       if (isRequestingLawyers) {
         const category = detectCategoryFromSession(activeSession, userMessageContent)
         aiContent = `Dưới đây là danh sách các luật sư uy tín hàng đầu trong lĩnh vực **${category}** mà tôi tìm thấy cho bạn:`
-        recommendedLawyers = MOCK_LAWYERS_BY_CATEGORY[category] || MOCK_LAWYERS_BY_CATEGORY['Tôi không chắc lĩnh vực']
+        const rawLawyers = MOCK_LAWYERS_BY_CATEGORY[category] || MOCK_LAWYERS_BY_CATEGORY['Tôi không chắc lĩnh vực']
+        recommendedLawyers = rawLawyers.map((l) => ({
+          id: l.id,
+          name: l.fullName,
+          avatar: l.avatar || '',
+          specialty: l.specializations.join(', ')
+        }))
       } else {
         if (lowerInput.includes('đất') || lowerInput.includes('ranh giới') || lowerInput.includes('sổ đỏ')) {
           aiContent = LAND_LEGAL_CONTEXT

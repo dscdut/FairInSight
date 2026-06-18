@@ -4,6 +4,7 @@ import { Bot, FileText } from 'lucide-react'
 
 import logo from '@/assets/images/logo.png'
 import { Avatar, AvatarFallback, AvatarImage, Button } from '@/components/ui'
+import { CHAT_STARTER_CATEGORIES } from '@/core/constants/law-major'
 import { getInitials } from '@/core/helpers/get-initials'
 import { cn } from '@/core/lib/utils'
 import { useAuthStore } from '@/core/store/features/auth/authStore'
@@ -33,15 +34,7 @@ interface ChatMessagesProps {
   onSelectCategory?: (category: string) => void
 }
 
-const STARTER_CATEGORIES = [
-  'Hôn nhân và gia đình',
-  'Đất đai',
-  'Hình sự',
-  'Dân sự',
-  'Lao động',
-  'Doanh nghiệp',
-  'Tôi không chắc lĩnh vực'
-]
+const STARTER_CATEGORIES = [...CHAT_STARTER_CATEGORIES]
 
 export default function ChatMessages({
   messages,

@@ -266,10 +266,10 @@ export const userSideBarLinks: TSidebarLinks[] = [
     path: ROUTE.USER.LEGAL
   },
   {
-    title: 'Tìm kiếm luật sư',
+    title: 'Danh sách luật sư',
     titleKey: 'find_lawyer',
     icon: <UserCheck className='w-5 h-5' />,
-    path: ROUTE.USER.FIND_LAWYER
+    path: ROUTE.USER.LAWYER
   },
   {
     title: 'Quản lý báo cáo',
