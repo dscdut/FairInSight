@@ -12,9 +12,9 @@ import {
 } from '@/_mocks/chat-data-mock'
 import { MOCK_LAWYERS_BY_CATEGORY } from '@/_mocks/lawyer.mock'
 import { requestAssistantReply } from '@/api/workspaceApi'
-import { cn } from '@/core/lib/utils'
 import { LAW_MAJORS } from '@/core/constants/law-major'
 import { formatTime } from '@/core/helpers/date-time'
+import { cn } from '@/core/lib/utils'
 
 import ChatInput from './components/ChatInput'
 import ChatMessages from './components/ChatMessages'
