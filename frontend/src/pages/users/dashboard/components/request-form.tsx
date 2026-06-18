@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 
 import { Button, Card, CardContent } from '@/components/ui'
+import { REQUEST_FORM_CATEGORIES } from '@/core/constants/law-major';
 import { type AnalysisRequest } from '@/core/store/features/analyze-request/type';
 import { useRequestStore } from '@/core/store/features/analyze-request/useRequestStore';
 
@@ -40,15 +41,11 @@ export default function RequestForm() {
                     className="flex min-h-11 w-full rounded-xl border-0 bg-background-secondary px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-ring appearance-none transition-all pr-8"
                   >
                     <option value="">Chọn lĩnh vực</option>
-                    <option value="Dân sự">Dân sự</option>
-                    <option value="Hình sự">Hình sự</option>
-                    <option value="Đất đai">Đất đai</option>
-                    <option value="Hợp đồng">Hợp đồng</option>
-                    <option value="Lao động">Lao động</option>
-                    <option value="Doanh nghiệp">Doanh nghiệp</option>
-                    <option value="Hôn nhân & Gia đình">Hôn nhân & Gia đình</option>
-                    <option value="Hành chính">Hành chính</option>
-                    <option value="Tài chính & Thuế">Tài chính & Thuế</option>
+                    {REQUEST_FORM_CATEGORIES.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-text-secondary">
                     <ChevronDown className="h-4 w-4 opacity-50" />

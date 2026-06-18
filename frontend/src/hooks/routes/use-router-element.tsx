@@ -32,7 +32,8 @@ const Report = lazy(() => import('@/pages/users/report/Report'))
 const Setting = lazy(() => import('@/pages/users/setting/Setting'))
 const Template = lazy(() => import('@/pages/users/template/Template'))
 const User = lazy(() => import('@/pages/users/user/User'))
-const FindLawyer = lazy(() => import('@/pages/users/find-lawyer/FindLawyer'))
+const LawyerList = lazy(() => import('@/pages/users/lawyer/LawyerList'))
+const LawyerProfile = lazy(() => import('@/pages/users/lawyer/LawyerProfile'))
 
 export default function useRoutesElements() {
   const location = useLocation()
@@ -63,7 +64,8 @@ export default function useRoutesElements() {
                 <Route path={ROUTE.USER.CHAT_AI} element={<AIChat />} />
                 <Route path={ROUTE.USER.TEMPLATE} element={<Template />} />
                 <Route path={ROUTE.USER.LEGAL} element={<LegalAnalysis />} />
-                <Route path={ROUTE.USER.FIND_LAWYER} element={<FindLawyer />} />
+                <Route path={ROUTE.USER.LAWYER} element={<LawyerList />} />
+                <Route path={ROUTE.USER.LAWYER_DETAIL} element={<LawyerProfile />} />
                 <Route path={ROUTE.USER.REPORT} element={<Report />} />
                 <Route path={ROUTE.USER.INFO} element={<User />} />
                 <Route path={ROUTE.USER.SETTING} element={<Setting />} />

@@ -111,19 +111,27 @@ export default {
         },
         error: {
           primary: 'var(--error-primary)',
-          secondary: 'var(--error-secondary)'
+          secondary: 'var(--error-secondary)',
+          background: 'var(--error-background)',
+          bg: 'var(--error-bg)'
         },
         success: {
           primary: 'var(--success-primary)',
-          secondary: 'var(--success-secondary)'
+          secondary: 'var(--success-secondary)',
+          background: 'var(--success-background)',
+          bg: 'var(--success-bg)'
         },
         warning: {
           primary: 'var(--warning-primary)',
-          secondary: 'var(--warning-secondary)'
+          secondary: 'var(--warning-secondary)',
+          background: 'var(--warning-background)',
+          bg: 'var(--warning-bg)'
         },
         info: {
           primary: 'var(--info-primary)',
           secondary: 'var(--info-secondary)',
+          background: 'var(--info-background)',
+          bg: 'var(--info-bg)',
           DEFAULT: 'var(--info-primary)',
           50: 'var(--blue-50)',
           400: 'var(--blue-400)',
