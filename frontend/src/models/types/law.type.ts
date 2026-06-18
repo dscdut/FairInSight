@@ -40,8 +40,4 @@ export interface Law {
   updatedAt: string
   authorName: string
   versions?: LawVersion[]
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 80a32bd (fix/(document): fix conflict template page)

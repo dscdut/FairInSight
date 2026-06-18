@@ -1,6 +1,6 @@
 import * as React from 'react'
 
-import { Bot, FileText } from 'lucide-react'
+import { Bot, FileText, Scale, AlertTriangle } from 'lucide-react'
 
 import logo from '@/assets/images/logo.png'
 import { Avatar, AvatarFallback, AvatarImage, Button } from '@/components/ui'
@@ -35,6 +35,74 @@ interface ChatMessagesProps {
 }
 
 const STARTER_CATEGORIES = [...CHAT_STARTER_CATEGORIES]
+
+const renderStructuredMessage = (content: string) => {
+  const tomTatRegex = /\[TÓM TẮT\]:?([\s\S]*?)(?=\[(?:CĂN CỨ|LƯU Ý)\]|$)/i
+  const canCuRegex = /\[CĂN CỨ\]:?([\s\S]*?)(?=\[(?:TÓM TẮT|LƯU Ý)\]|$)/i
+  const luuYRegex = /\[LƯU Ý\]:?([\s\S]*?)(?=\[(?:TÓM TẮT|CĂN CỨ)\]|$)/i
+
+  const hasTomTat = tomTatRegex.test(content)
+  const hasCanCu = canCuRegex.test(content)
+  const hasLuuY = luuYRegex.test(content)
+
+  if (!hasTomTat && !hasCanCu && !hasLuuY) {
+    return <span className='whitespace-pre-line'>{content}</span>
+  }
+
+  const firstSectionIdx = Math.min(
+    ...[
+      content.search(/\[TÓM TẮT\]/i),
+      content.search(/\[CĂN CỨ\]/i),
+      content.search(/\[LƯU Ý\]/i)
+    ].filter((idx) => idx >= 0)
+  )
+
+  const prefix = firstSectionIdx > 0 ? content.slice(0, firstSectionIdx).trim() : ''
+
+  const tomTatMatch = content.match(tomTatRegex)
+  const canCuMatch = content.match(canCuRegex)
+  const luuYMatch = content.match(luuYRegex)
+
+  const tomTatText = tomTatMatch ? tomTatMatch[1].trim() : ''
+  const canCuText = canCuMatch ? canCuMatch[1].trim() : ''
+  const luuYText = luuYMatch ? luuYMatch[1].trim() : ''
+
+  return (
+    <div className='space-y-4 w-full'>
+      {prefix && <div className='whitespace-pre-line text-main pb-2'>{prefix}</div>}
+      
+      {tomTatText && (
+        <div className='p-4 rounded-xl border border-teal-500/30 bg-teal-50/40 dark:bg-teal-950/10 shadow-sm space-y-2 animate-in fade-in duration-300'>
+          <div className='flex items-center gap-2 text-teal-600 dark:text-teal-400 font-bold text-xs uppercase tracking-wider'>
+            <FileText className='w-4 h-4 text-teal-500' />
+            <span>Tóm tắt</span>
+          </div>
+          <div className='text-small text-main leading-relaxed whitespace-pre-line'>{tomTatText}</div>
+        </div>
+      )}
+
+      {canCuText && (
+        <div className='p-4 rounded-xl border border-indigo-500/30 bg-indigo-50/40 dark:bg-indigo-950/10 shadow-sm space-y-2 animate-in fade-in duration-300'>
+          <div className='flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-xs uppercase tracking-wider'>
+            <Scale className='w-4 h-4 text-indigo-500' />
+            <span>Căn cứ pháp lý</span>
+          </div>
+          <div className='text-small text-main leading-relaxed whitespace-pre-line'>{canCuText}</div>
+        </div>
+      )}
+
+      {luuYText && (
+        <div className='p-4 rounded-xl border border-amber-500/30 bg-amber-50/40 dark:bg-amber-950/10 shadow-sm space-y-2 animate-in fade-in duration-300'>
+          <div className='flex items-center gap-2 text-amber-600 dark:text-amber-400 font-bold text-xs uppercase tracking-wider'>
+            <AlertTriangle className='w-4 h-4 text-amber-500' />
+            <span>Lưu ý</span>
+          </div>
+          <div className='text-small text-main leading-relaxed whitespace-pre-line'>{luuYText}</div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function ChatMessages({
   messages,
@@ -108,7 +176,7 @@ export default function ChatMessages({
               </Avatar>
 
               {/* Message Content Bubble */}
-              <div className='space-y-1.5 min-w-0'>
+              <div className='space-y-1.5 min-w-0 w-full'>
                 <div
                   className={cn(
                     'p-4 rounded-2xl text-small leading-relaxed text-main',
@@ -119,10 +187,10 @@ export default function ChatMessages({
                 >
                   {/* Display text contents */}
                   <div className={cn(
-                    'whitespace-pre-line text-small font-sans',
-                    !isUser && 'prose prose-slate max-w-none text-main'
+                    'text-small font-sans',
+                    isUser ? 'whitespace-pre-line' : 'prose prose-slate max-w-none text-main'
                   )}>
-                    {message.content}
+                    {isUser ? message.content : renderStructuredMessage(message.content)}
                   </div>
 
                   {/* Attachments rendering inside chat bubble */}

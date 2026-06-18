@@ -23,7 +23,6 @@ export interface CloudinaryPresignResponse {
 
 export interface ParseDocxResponse {
   text: string
-<<<<<<< HEAD
   messages: unknown[]
 }
 
@@ -78,13 +77,6 @@ interface BackendLawListResponse {
 
 // Map single version from backend model
 function mapVersionFromBackend(v: BackendLawVersion): LawVersion {
-=======
-  messages: any[]
-}
-
-// Map single version from backend model
-function mapVersionFromBackend(v: any): LawVersion {
->>>>>>> 80a32bd (fix/(document): fix conflict template page)
   return {
     id: v.id,
     lawId: v.law_id,
@@ -104,11 +96,7 @@ function mapVersionFromBackend(v: any): LawVersion {
 }
 
 // Map law model from backend
-<<<<<<< HEAD
 function mapLawFromBackend(l: BackendLaw): Law {
-=======
-function mapLawFromBackend(l: any): Law {
->>>>>>> 80a32bd (fix/(document): fix conflict template page)
   const versions = l.law_versions ? l.law_versions.map(mapVersionFromBackend) : []
   return {
     id: l.id,
@@ -130,22 +118,14 @@ function mapLawFromBackend(l: any): Law {
 
 export const createLawApi = (client: AxiosInstance) => ({
   async listLaws(params: { page?: number; size?: number; search?: string; status?: string; issuedDate?: string }) {
-<<<<<<< HEAD
     const res = (await client.get('/laws', { params })) as BackendLawListResponse
-=======
-    const res = (await client.get('/laws', { params })) as any
->>>>>>> 80a32bd (fix/(document): fix conflict template page)
     return {
       items: (res.items || []).map(mapLawFromBackend),
       pagination: res.pagination || { page: 1, size: 10, total: 0, totalPages: 1 }
     } as LawListResponse
   },
   async getLawById(id: string) {
-<<<<<<< HEAD
     const res = (await client.get(`/laws/${id}`)) as BackendLaw
-=======
-    const res = (await client.get(`/laws/${id}`)) as any
->>>>>>> 80a32bd (fix/(document): fix conflict template page)
     return mapLawFromBackend(res)
   },
   async createLaw(params: {
@@ -166,11 +146,7 @@ export const createLawApi = (client: AxiosInstance) => ({
       officialUrl: params.officialUrl,
       content: params.content
     }
-<<<<<<< HEAD
     const res = (await client.post('/laws', payload)) as BackendLaw
-=======
-    const res = (await client.post('/laws', payload)) as any
->>>>>>> 80a32bd (fix/(document): fix conflict template page)
     return mapLawFromBackend(res)
   },
   async updateLaw(
@@ -196,7 +172,6 @@ export const createLawApi = (client: AxiosInstance) => ({
       content: params.content,
       changeNote: params.changeNote
     }
-<<<<<<< HEAD
     const res = (await client.put(`/laws/${id}`, payload)) as BackendLaw
     return mapLawFromBackend(res)
   },
@@ -214,25 +189,6 @@ export const createLawApi = (client: AxiosInstance) => ({
   },
   async parseDocx(fileUrl: string) {
     const res = (await client.post('/laws/parse-docx', { fileUrl })) as ParseDocxResponse
-=======
-    const res = (await client.put(`/laws/${id}`, payload)) as any
-    return mapLawFromBackend(res)
-  },
-  async toggleStatus(id: string, params: { status: 'ACTIVE' | 'INACTIVE'; reason?: string }) {
-    const res = (await client.patch(`/laws/${id}/status`, params)) as any
-    return mapLawFromBackend(res)
-  },
-  async listVersions(id: string) {
-    const res = (await client.get(`/laws/${id}/versions`)) as any
-    return (res || []).map(mapVersionFromBackend) as LawVersion[]
-  },
-  async restoreVersion(id: string, versionId: string) {
-    const res = (await client.post(`/laws/${id}/versions/${versionId}/restore`)) as any
-    return mapLawFromBackend(res)
-  },
-  async parseDocx(fileUrl: string) {
-    const res = (await client.post('/laws/parse-docx', { fileUrl })) as any
->>>>>>> 80a32bd (fix/(document): fix conflict template page)
     return res as ParseDocxResponse
   },
   async uploadFile(file: File, folder = 'laws') {
@@ -243,11 +199,7 @@ export const createLawApi = (client: AxiosInstance) => ({
       headers: {
         'Content-Type': 'multipart/form-data'
       }
-<<<<<<< HEAD
     })) as unknown
-=======
-    })) as any
->>>>>>> 80a32bd (fix/(document): fix conflict template page)
     return (Array.isArray(res) ? res[0] : res) as { url: string; publicId: string }
   }
 })

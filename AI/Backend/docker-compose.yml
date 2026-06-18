@@ -1,5 +1,4 @@
 services:
-<<<<<<< HEAD
   api:
     build:
       context: .
@@ -28,9 +27,6 @@ services:
       start_period: 20s
       retries: 3
 
-volumes:
-  uploads_data:
-=======
   qdrant:
     image: qdrant/qdrant:v1.17.1
     container_name: govdoc-qdrant
@@ -54,6 +50,6 @@ volumes:
       - postgres_data:/var/lib/postgresql/data
 
 volumes:
+  uploads_data:
   qdrant_data:
   postgres_data:
->>>>>>> 80a32bd (fix/(document): fix conflict template page)

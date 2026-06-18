@@ -1,10 +1,6 @@
 import { getAccessTokenFromLS } from '@/core/shared/storage'
 import { useAuthStore } from '@/core/store/features/auth/authStore'
-<<<<<<< HEAD
 import  { type Message, type ReasoningLevel, type WorkspaceData, type StoredDocument, type UserProfile, type Citation } from '@/types/workspace'
-=======
-import  { type Message, type ReasoningLevel, type WorkspaceData, type StoredDocument, type UserProfile } from '@/types/workspace'
->>>>>>> 80a32bd (fix/(document): fix conflict template page)
 import { makeId } from '@/utils/id'
 
 export function getApiBase() {
@@ -131,17 +127,22 @@ export async function requestAssistantReply(
   _reasoning: ReasoningLevel,
   history: { role: 'user' | 'assistant'; content: string }[] = [],
   summary: string | null = null,
-  chatId?: string
+  chatId?: string,
+  topK: number = 5,
+  legalDomain?: string,
+  isActiveOnly: boolean = true
 ): Promise<Message> {
   const response = await fetch(`${getApiBase()}/query`, {
     method: 'POST',
     headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({
       question: prompt,
-      top_k: 5,
+      top_k: topK,
       history: history.map((m) => ({ role: m.role, content: m.content })),
-      doc_summary: summary,
-      chatId: chatId,
+      doc_summary: summary || null,
+      chatId: chatId || null,
+      legal_domain: legalDomain && legalDomain !== 'All' ? legalDomain : null,
+      is_active_only: isActiveOnly,
     }),
   })
 
@@ -150,11 +151,7 @@ export async function requestAssistantReply(
     throw new Error(`RAG query failed (${response.status}): ${errorBody}`)
   }
 
-<<<<<<< HEAD
   const data = await response.json() as { answer: string; citations: Citation[] }
-=======
-  const data = (await response.json()) as { answer: string; citations: any[] }
->>>>>>> 80a32bd (fix/(document): fix conflict template page)
 
   return {
     id: makeId('m-assistant'),

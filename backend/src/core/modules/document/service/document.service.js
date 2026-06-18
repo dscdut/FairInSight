@@ -24,10 +24,7 @@ class Service {
                 try {
                     const browser = await puppeteer.launch({
                         headless: 'new',
-<<<<<<< HEAD
                         executablePath: process.env.CHROME_BIN,
-=======
->>>>>>> 80a32bd (fix/(document): fix conflict template page)
                         args: ['--no-sandbox', '--disable-setuid-sandbox']
                     });
                     const page = await browser.newPage();
