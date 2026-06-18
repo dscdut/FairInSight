@@ -1,7 +1,7 @@
 import { type AxiosInstance } from 'axios'
 
 import axiosClient from '@/core/services/axios-client'
-import { type AuthApi } from '@/models/types/auth-api.type'
+import { type AuthApi } from '@/models/types/api/auth-api.type'
 
 const API_LOGIN_URL = '/auth/login'
 const API_REGISTER_URL = '/auth/register'

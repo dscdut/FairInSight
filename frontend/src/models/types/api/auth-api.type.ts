@@ -5,7 +5,7 @@ import {
   type RegisterReponse,
   type ResetPasswordReq,
   type SendEmailReq,
-  type VerifyOtpReq } from "../interface/auth.interface"
+  type VerifyOtpReq } from "../../interface/auth.interface"
 
 export type AuthApi = {
   login: (params: Account) => Promise<LoginApiResponse>

@@ -20,11 +20,11 @@ const LayoutMain = ({ children }: LayoutMainProps) => {
     <div>
       <div className='flex min-h-screen'>
         <SideBar />
-        <div className='flex flex-col flex-1 min-h-0 bg-background-secondary'>
+        <div className='flex flex-col flex-1 min-w-0 min-h-0 bg-background-secondary'>
           <TopBar />
           <main
             className={cn(
-              'relative flex-1 transition-all duration-300',
+              'relative flex-1 transition-all duration-300 min-w-0',
               'backdrop-blur-sm'
             )}
           >

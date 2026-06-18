@@ -66,12 +66,23 @@
   /* Status colors */
   --error-primary: var(--error-400);
   --error-secondary: var(--error-500);
+  --error-background: rgba(239, 68, 68, 0.1);
+  --error-bg: var(--error-background);
+
   --success-primary: var(--green-500);
   --success-secondary: var(--green-600);
+  --success-background: rgba(67, 183, 93, 0.1);
+  --success-bg: var(--success-background);
+
   --warning-primary: var(--yellow-400);
   --warning-secondary: var(--yellow-500);
+  --warning-background: rgba(255, 187, 51, 0.1);
+  --warning-bg: var(--warning-background);
+
   --info-primary: var(--blue-500);
   --info-secondary: var(--blue-600);
+  --info-background: rgba(59, 130, 246, 0.1);
+  --info-bg: var(--info-background);
 
   /* Shadcn Core Variables */
   --background: var(--background-primary);
@@ -106,12 +117,23 @@
   /* Status colors */
   --error-primary: var(--error-500);
   --error-secondary: var(--error-400);
+  --error-background: rgba(220, 38, 38, 0.15);
+  --error-bg: var(--error-background);
+
   --success-primary: var(--green-600);
   --success-secondary: var(--green-500);
+  --success-background: rgba(61, 167, 85, 0.15);
+  --success-bg: var(--success-background);
+
   --warning-primary: var(--yellow-500);
   --warning-secondary: var(--yellow-400);
+  --warning-background: rgba(255, 170, 0, 0.15);
+  --warning-bg: var(--warning-background);
+
   --info-primary: var(--blue-400);
   --info-secondary: var(--blue-500);
+  --info-background: rgba(96, 165, 250, 0.15);
+  --info-bg: var(--info-background);
 
   /* Shadcn Core Variables */
   --background: var(--background-primary);

@@ -6,3 +6,4 @@ export interface RoleType {
 export type RoleUser = 'USER' | 'LAWYER'
 
 export type RoleSystem = 'USER' | 'ADMIN'
+
