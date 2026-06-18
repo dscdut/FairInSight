@@ -169,7 +169,7 @@ class Service {
             throw new UnAuthorizedException('OTP has expired');
         }
 
-        if (existingOtp.password_reset_token != verifyOtpDto.otp) {
+        if (existingOtp.password_reset_token !== verifyOtpDto.otp) {
             throw new UnAuthorizedException('Invalid OTP');
         }
 

@@ -8,18 +8,18 @@ export interface LicenseInfo {
 export interface LawyerDetail {
   averageRating: number;
   careerHistory: string;
-  careerMilestones: any[];
+  careerMilestones: string[];
   consultingFee: number;
   experienceYears: number;
   licenseInfo: LicenseInfo;
   name: string;
   role: string;
-  specializations: any[];
+  specializations: string[];
 }
 
 export interface LawyerDetailResponse {
   data: {
-    items: any[];
+    items: unknown[];
     summary: LawyerDetail;
   };
 }

@@ -7,7 +7,8 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   server: {
     port: 4000,
-    open: false
+    open: false,
+    allowedHosts: ['road-sentinel.trunganh.tech']
   },
   plugins: [react()],
   resolve: {

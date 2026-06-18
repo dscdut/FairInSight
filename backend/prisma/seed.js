@@ -1,3 +1,4 @@
+/* eslint-disable */
 require('dotenv').config();
 
 const { PrismaClient } = require('@prisma/client');
@@ -150,7 +151,7 @@ async function main() {
     // =========================
     console.log('Seeding templates...');
     const templateDir = path.join(__dirname, '../../templates');
-    
+
     console.log('Uploading components.html to Cloudinary...');
     const componentsPath = path.join(templateDir, 'components.html');
     if (fs.existsSync(componentsPath)) {
