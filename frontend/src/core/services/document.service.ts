@@ -19,11 +19,11 @@ export interface UserDocument {
 
 export const createDocumentApi = (client: AxiosInstance) => ({
   async listDocuments(): Promise<UserDocument[]> {
-    const res = await client.get('/documents') as unknown
+    const res = (await client.get('/documents')) as UserDocument[]
     return res || []
   },
   async getDocumentById(id: string): Promise<UserDocument> {
-    const res = await client.get(`/documents/${id}`) as unknown
+    const res = (await client.get(`/documents/${id}`)) as UserDocument
     return res
   },
   async saveDocument(data: {
@@ -34,11 +34,11 @@ export const createDocumentApi = (client: AxiosInstance) => ({
     fileUrl?: string | null
     html?: string
   }): Promise<UserDocument> {
-    const res = await client.post('/documents', data) as unknown
+    const res = (await client.post('/documents', data)) as UserDocument
     return res
   },
   async deleteDocument(id: string): Promise<unknown> {
-    const res = await client.delete(`/documents/${id}`) as unknown
+    const res = (await client.delete(`/documents/${id}`)) as unknown
     return res
   }
 })

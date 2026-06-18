@@ -1,6 +1,6 @@
 import { getAccessTokenFromLS } from '@/core/shared/storage'
 import { useAuthStore } from '@/core/store/features/auth/authStore'
-import  { type Message, type ReasoningLevel, type WorkspaceData, type StoredDocument, type UserProfile } from '@/types/workspace'
+import  { type Message, type ReasoningLevel, type WorkspaceData, type StoredDocument, type UserProfile, type Citation } from '@/types/workspace'
 import { makeId } from '@/utils/id'
 
 export function getApiBase() {
@@ -146,7 +146,7 @@ export async function requestAssistantReply(
     throw new Error(`RAG query failed (${response.status}): ${errorBody}`)
   }
 
-  const data = await response.json() as { answer: string; citations: unknown[] }
+  const data = await response.json() as { answer: string; citations: Citation[] }
 
   return {
     id: makeId('m-assistant'),
