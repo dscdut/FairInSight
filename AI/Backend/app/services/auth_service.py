@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
-from typing import Any
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 import bcrypt
 from sqlalchemy.orm import Session

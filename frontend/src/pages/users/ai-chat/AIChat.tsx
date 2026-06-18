@@ -1,21 +1,20 @@
 import { useState, useRef, useEffect } from 'react'
 
 import dayjs from 'dayjs'
+import { Settings } from 'lucide-react'
 
 import {
   type Attachment,
   type ChatSession,
-  CONTRACT_LEGAL_CONTEXT,
   DEFAULT_SESSION,
-  INIT_MESSAGE,
   INITIAL_SESSIONS,
-  LABOR_LEGAL_CONTEXT,
-  LAND_LEGAL_CONTEXT,
   type Message
 } from '@/_mocks/chat-data-mock'
 import { MOCK_LAWYERS_BY_CATEGORY } from '@/_mocks/lawyer.mock'
+import { requestAssistantReply } from '@/api/workspaceApi'
 import { LAW_MAJORS } from '@/core/constants/law-major'
 import { formatTime } from '@/core/helpers/date-time'
+import { cn } from '@/core/lib/utils'
 
 import ChatInput from './components/ChatInput'
 import ChatMessages from './components/ChatMessages'
@@ -71,6 +70,13 @@ export default function AIChat() {
 
   // UI responsive control
   const [isHistoryOpen, setIsHistoryOpen] = useState<boolean>(false)
+
+  // AI query configurations
+  const [topK, setTopK] = useState<number>(5)
+  const [docSummary, setDocSummary] = useState<string>('')
+  const [legalDomain, setLegalDomain] = useState<string>('All')
+  const [isActiveOnly, setIsActiveOnly] = useState<boolean>(true)
+  const [isConfigOpen, setIsConfigOpen] = useState<boolean>(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -219,12 +225,27 @@ export default function AIChat() {
     setAttachments([])
     setIsLoading(true)
 
-    // Simulate AI Response based on input keywords
-    setTimeout(() => {
-      let aiContent = ''
+    // Call real RAG Assistant Query API
+    try {
+      const history = activeSession.messages.map((m) => ({
+        role: (m.sender === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
+        content: m.content
+      }))
+
+      const reply = await requestAssistantReply(
+        userMessageContent,
+        'low',
+        history,
+        docSummary || null,
+        activeSessionId,
+        topK,
+        legalDomain,
+        isActiveOnly
+      )
+
+      // Retain lawyer recommendation overlay if user explicitly asks for it
       let recommendedLawyers = undefined
       const lowerInput = userMessageContent.toLowerCase().trim()
-
       const isRequestingLawyers = 
         lowerInput === 'có' || 
         lowerInput === 'co' || 
@@ -238,7 +259,6 @@ export default function AIChat() {
 
       if (isRequestingLawyers) {
         const category = detectCategoryFromSession(activeSession, userMessageContent)
-        aiContent = `Dưới đây là danh sách các luật sư uy tín hàng đầu trong lĩnh vực **${category}** mà tôi tìm thấy cho bạn:`
         const rawLawyers = MOCK_LAWYERS_BY_CATEGORY[category] || MOCK_LAWYERS_BY_CATEGORY['Tôi không chắc lĩnh vực']
         recommendedLawyers = rawLawyers.map((l) => ({
           id: l.id,
@@ -246,23 +266,12 @@ export default function AIChat() {
           avatar: l.avatar || '',
           specialty: l.specializations.join(', ')
         }))
-      } else {
-        if (lowerInput.includes('đất') || lowerInput.includes('ranh giới') || lowerInput.includes('sổ đỏ')) {
-          aiContent = LAND_LEGAL_CONTEXT
-        } else if (lowerInput.includes('hợp đồng') || lowerInput.includes('phạt') || lowerInput.includes('thanh toán')) {
-          aiContent = CONTRACT_LEGAL_CONTEXT
-        } else if (lowerInput.includes('lao động') || lowerInput.includes('sa thải') || lowerInput.includes('lương')) {
-          aiContent = LABOR_LEGAL_CONTEXT
-        } else {
-          aiContent = INIT_MESSAGE
-        }
-        aiContent += '\n\nBạn có muốn gợi ý luật sư cho lĩnh vực liên quan không?'
       }
 
       const aiMessage: Message = {
-        id: `msg-ai-${Date.now()}`,
+        id: reply.id || `msg-ai-${Date.now()}`,
         sender: 'ai',
-        content: aiContent,
+        content: reply.content,
         timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
         lawyers: recommendedLawyers
       }
@@ -278,8 +287,28 @@ export default function AIChat() {
           return s
         })
       )
+    } catch (error) {
+      console.error('Error fetching AI response:', error)
+      const errMessage: Message = {
+        id: `msg-ai-err-${Date.now()}`,
+        sender: 'ai',
+        content: 'Có lỗi xảy ra khi kết nối tới trợ lý AI. Vui lòng kiểm tra lại kết nối mạng hoặc thử lại sau.',
+        timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+      }
+      setSessions((prev) =>
+        prev.map((s) => {
+          if (s.id === activeSessionId) {
+            return {
+              ...s,
+              messages: [...s.messages, errMessage]
+            }
+          }
+          return s
+        })
+      )
+    } finally {
       setIsLoading(false)
-    }, 1500)
+    }
   }
 
   return (
@@ -291,6 +320,98 @@ export default function AIChat() {
         
         {/* LEFT COLUMN: Main Chat Component (75% / 80%) */}
         <div className='flex flex-col flex-1 h-full min-w-0 min-h-0 bg-transparent relative z-10'>
+
+          {/* Header & AI Configuration Bar */}
+          <div className='flex items-center justify-between px-6 py-4 bg-background-primary border-b border-border-secondary shadow-sm'>
+            <div className='flex items-center gap-2'>
+              <span className='w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse' />
+              <h2 className='text-sm font-bold text-main'>{activeSession.title}</h2>
+            </div>
+            
+            <button
+              onClick={() => setIsConfigOpen(!isConfigOpen)}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border shadow-sm cursor-pointer',
+                isConfigOpen 
+                  ? 'bg-primary text-white border-primary' 
+                  : 'bg-background-secondary text-main border-border-secondary hover:bg-background-secondary/80'
+              )}
+            >
+              <Settings className='w-3.5 h-3.5' />
+              <span>Cấu hình AI</span>
+            </button>
+          </div>
+
+          {/* Collapsible Configuration Panel */}
+          {isConfigOpen && (
+            <div className='p-6 bg-background-primary border-b border-border-secondary grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-top duration-300'>
+              {/* Top K */}
+              <div className='space-y-2'>
+                <div className='flex justify-between items-center'>
+                  <label className='text-xs font-bold text-main'>Số tài liệu truy vấn (Top K)</label>
+                  <span className='text-[10px] font-bold text-primary px-2 py-0.5 bg-primary/10 rounded-md'>{topK}</span>
+                </div>
+                <input
+                  type='range'
+                  min='1'
+                  max='20'
+                  value={topK}
+                  onChange={(e) => setTopK(Number(e.target.value))}
+                  className='w-full accent-primary h-1 bg-background-secondary rounded-lg appearance-none cursor-pointer'
+                />
+                <p className='text-[10px] text-text-description'>Số đoạn văn bản pháp quy liên quan nhất được trích xuất.</p>
+              </div>
+
+              {/* Legal Domain */}
+              <div className='space-y-2'>
+                <label className='text-xs font-bold text-main block'>Lĩnh vực pháp lý</label>
+                <select
+                  value={legalDomain}
+                  onChange={(e) => setLegalDomain(e.target.value)}
+                  className='w-full px-3 py-2 text-xs rounded-xl bg-background-secondary border border-border-secondary font-semibold text-main outline-none focus:border-primary transition-all'
+                >
+                  <option value='All'>Tất cả lĩnh vực</option>
+                  <option value='lao_dong'>Luật Lao Động</option>
+                  <option value='dan_su'>Luật Dân Sự</option>
+                  <option value='hinh_su'>Luật Hình Sự</option>
+                  <option value='hanh_chinh'>Luật Hành Chính</option>
+                </select>
+                <p className='text-[10px] text-text-description'>Giới hạn phạm vi tìm kiếm luật của trợ lý AI.</p>
+              </div>
+
+              {/* Is Active Only */}
+              <div className='space-y-2 flex flex-col justify-between h-[52px]'>
+                <div className='flex items-center justify-between pt-1'>
+                  <label className='text-xs font-bold text-main cursor-pointer' htmlFor='active-only-toggle'>
+                    Chỉ văn bản còn hiệu lực
+                  </label>
+                  <input
+                    id='active-only-toggle'
+                    type='checkbox'
+                    checked={isActiveOnly}
+                    onChange={(e) => setIsActiveOnly(e.target.checked)}
+                    className='w-4 h-4 rounded text-primary border-border-secondary focus:ring-primary accent-primary cursor-pointer'
+                  />
+                </div>
+                <p className='text-[10px] text-text-description'>
+                  Bỏ qua các văn bản, thông tư pháp lý đã hết hiệu lực thi hành.
+                </p>
+              </div>
+
+              {/* Document Summary (doc_summary) */}
+              <div className='space-y-2 md:col-span-3'>
+                <label className='text-xs font-bold text-main block'>Tóm tắt bối cảnh văn bản (doc_summary)</label>
+                <textarea
+                  value={docSummary}
+                  onChange={(e) => setDocSummary(e.target.value)}
+                  placeholder='Nhập tóm tắt văn bản pháp lý hoặc bối cảnh hợp đồng (nếu có) để AI tham chiếu bổ sung...'
+                  rows={2}
+                  className='w-full p-3 text-xs rounded-xl bg-background-secondary border border-border-secondary font-medium text-main outline-none focus:border-primary transition-all resize-none placeholder-text-tertiary'
+                />
+                <p className='text-[10px] text-text-description'>Thông tin này sẽ được đính kèm vào truy vấn RAG để tăng độ chính xác của ngữ cảnh.</p>
+              </div>
+            </div>
+          )}
 
           {/* Messages Scrollable Container */}
           <ChatMessages

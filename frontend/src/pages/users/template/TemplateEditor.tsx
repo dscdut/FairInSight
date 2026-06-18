@@ -5,7 +5,7 @@ import nunjucks from 'nunjucks'
 
 import { Button } from '@/components/ui/button'
 import { printDocument } from '@/core/helpers/print-document'
-import { documentApi } from '@/core/services/document.service'
+import { documentApi, type UserDocument } from '@/core/services/document.service'
 import { type Template } from '@/models/types/form-library'
 
 import ExportLoadingOverlay from './components/ExportLoadingOverlay'
@@ -16,7 +16,7 @@ import TemplatePreview from './components/TemplatePreview'
 // Configure nunjucks for clientside without HTML escaping
 const defaultEnv = nunjucks.configure({ autoescape: false })
 
-const formatMoneyJs = (val: any) => {
+const formatMoneyJs = (val: string | number | unknown) => {
   if (!val) return ''
   const numStr = String(val).replace(/,/g, '').replace(/\./g, '').replace(/ /g, '')
   const num = parseInt(numStr, 10)
@@ -144,7 +144,7 @@ export default function TemplateEditor({ template, onBack, documentId, initialVa
         }
         return val
       },
-      format_money: (val: any) => {
+      format_money: (val: string | number | unknown) => {
         if (!val) return ''
         const numStr = String(val).replace(/,/g, '').replace(/\./g, '').replace(/ /g, '')
         const num = parseInt(numStr, 10)
@@ -230,7 +230,7 @@ export default function TemplateEditor({ template, onBack, documentId, initialVa
         documentId: activeDocumentId
       }).catch((err) => {
         console.warn('Save draft API failed, mocking response locally:', err)
-        return { id: activeDocumentId || 'mock-draft-id', file_url: null } as any
+        return { id: activeDocumentId || 'mock-draft-id', file_url: null } as unknown as UserDocument
       })
       if (doc && doc.id) {
         setActiveDocumentId(doc.id)
@@ -254,7 +254,7 @@ export default function TemplateEditor({ template, onBack, documentId, initialVa
         html: compileHtml(htmlContent, formValues)
       }).catch((err) => {
         console.warn('Save document API failed, continuing with client-side export flow:', err)
-        return { id: activeDocumentId || 'mock-doc-id', file_url: null } as any
+        return { id: activeDocumentId || 'mock-doc-id', file_url: null } as unknown as UserDocument
       })
       if (doc && doc.id) {
         setActiveDocumentId(doc.id)
@@ -291,51 +291,54 @@ export default function TemplateEditor({ template, onBack, documentId, initialVa
   return (
     <div className='w-full flex flex-col gap-6'>
       {/* Header action bar */}
-      <div className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
+      <div className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white dark:bg-background-secondary p-5 rounded-2xl border border-border-secondary shadow-sm'>
         <div className='flex items-center gap-3.5'>
           <Button
             variant='outline'
             size='icon'
             onClick={onBack}
-            className='h-11 w-11 rounded-md border-border-primary text-text-secondary hover:text-text-primary cursor-pointer'
+            className='h-9 w-9 rounded-xl border-border-primary text-text-secondary hover:text-text-primary cursor-pointer'
           >
-            <ArrowLeft className='w-5 h-5' />
+            <ArrowLeft className='w-4.5 h-4.5' />
           </Button>
-          <h2 className='text-h5 font-bold text-text-primary uppercase tracking-wide text-left'>{template.title}</h2>
+          <div className='text-left'>
+            <h2 className='text-lg font-bold text-text-primary uppercase tracking-wide'>{template.title}</h2>
+            <p className='text-xs text-text-description font-semibold'>Điền thông tin hợp đồng ở cột bên trái để cập nhật bản xem trước</p>
+          </div>
         </div>
 
-        <div className='flex flex-wrap items-center gap-2'>
+        <div className='flex items-center gap-2.5'>
           <Button
             variant='outline'
             size='sm'
             onClick={handleSaveDraft}
-            className='text-btn-medium border-border-primary text-text-secondary transition-all flex items-center gap-1.5'
+            className='h-9 text-xs font-bold rounded-xl border-border-primary text-text-secondary hover:bg-background-secondary transition-all px-4 flex items-center gap-1.5 cursor-pointer'
           >
-            <Save className='w-4 h-4' />
+            <Save className='w-3.5 h-3.5' />
             Lưu nháp
           </Button>
           <Button
             variant='outline'
             size='sm'
             onClick={() => alert('Đang tạo bản xem trước...')}
-            className='text-btn-medium border-border-primary text-text-secondary hover:bg-background-secondary transition-all flex items-center gap-1.5'
+            className='h-9 text-xs font-bold rounded-xl border-border-primary text-text-secondary hover:bg-background-secondary transition-all px-4 flex items-center gap-1.5 cursor-pointer'
           >
-            <Eye className='w-4 h-4' />
+            <Eye className='w-3.5 h-3.5' />
             Xem trước
           </Button>
           <Button
             size='sm'
             onClick={handleExport}
-            className=' text-btn-medium border-none shadow-[0_4px_12px_rgba(184,29,36,0.2)] hover:shadow-[0_6px_18px_rgba(244,63,94,0.35)] hover:scale-[1.02] active:scale-95 transition-all px-4 flex items-center gap-1.5 cursor-pointer'
+            className='h-9 text-xs font-bold rounded-xl bg-primary hover:opacity-90 text-white border-none shadow-md px-4.5 flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer'
           >
-            <FileDown className='w-4 h-4' />
+            <FileDown className='w-3.5 h-3.5' />
             Hoàn tất & Xuất File
           </Button>
         </div>
       </div>
 
       {/* Main editor area */}
-      <div className='w-full grid grid-cols-1 lg:grid-cols-12 gap-2 items-start'>
+      <div className='w-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-start'>
         {/* Left Form column */}
         <TemplateForm 
           template={template} 

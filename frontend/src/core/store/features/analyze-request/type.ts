@@ -6,7 +6,7 @@ export interface AnalysisRequest {
   category?: string
   role?: string
   requirement?: string
-  attachments?: any
+  attachments?: FileList | null
 }
 
 export interface AnalysisResponse {

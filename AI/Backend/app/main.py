@@ -1,3 +1,4 @@
+# ruff: noqa: E402
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
@@ -14,7 +15,6 @@ from app.api.routers.query import router as query_router
 from app.api.routers.auth import router as auth_router
 from app.utils.settings import get_settings
 from app.db.session import Base, engine
-from app.db import models
 
 Base.metadata.create_all(bind=engine)
 

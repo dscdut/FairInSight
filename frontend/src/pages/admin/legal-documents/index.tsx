@@ -43,13 +43,13 @@ export default function LegalDocumentsPage() {
   const fetchLaws = useCallback(async () => {
     try {
       setIsLoading(true)
-      const res = (await lawApi.listLaws({
+      const res = await lawApi.listLaws({
         page: currentPage,
         size: itemsPerPage,
         search: searchQuery || undefined,
         status: statusFilter || undefined,
         issuedDate: issuedDateFilter || undefined
-      })) as any
+      })
       setLaws(res.items)
       setTotalPages(res.pagination.totalPages)
       setTotalCount(res.pagination.total)
@@ -77,7 +77,7 @@ export default function LegalDocumentsPage() {
 
   const handleViewClick = async (law: Law) => {
     try {
-      const res = (await lawApi.getLawById(law.id)) as any
+      const res = await lawApi.getLawById(law.id)
       setActiveLawForDetail(res)
       setIsDetailOpen(true)
     } catch (error) {
@@ -147,7 +147,7 @@ export default function LegalDocumentsPage() {
       
       // Update details drawer if open
       if (activeLawForDetail && activeLawForDetail.id === law.id) {
-        const detailRes = (await lawApi.getLawById(law.id)) as any
+        const detailRes = await lawApi.getLawById(law.id)
         setActiveLawForDetail(detailRes)
       }
     } catch (error) {
@@ -165,7 +165,7 @@ export default function LegalDocumentsPage() {
 
       // Refresh detail modal
       if (activeLawForDetail && activeLawForDetail.id === version.lawId) {
-        const detailRes = (await lawApi.getLawById(version.lawId)) as any
+        const detailRes = await lawApi.getLawById(version.lawId)
         setActiveLawForDetail(detailRes)
       }
     } catch (error) {
@@ -191,7 +191,7 @@ export default function LegalDocumentsPage() {
       fetchLaws()
 
       // Refresh details drawer
-      const detailRes = (await lawApi.getLawById(lawId)) as any
+      const detailRes = await lawApi.getLawById(lawId)
       setActiveLawForDetail(detailRes)
     } catch (error) {
       console.error('Lỗi khi lưu phiên bản mới:', error)

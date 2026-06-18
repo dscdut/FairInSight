@@ -1,4 +1,3 @@
-import asyncio
 from typing import cast, overload
 import httpx
 from fastapi import HTTPException

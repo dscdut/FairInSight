@@ -93,6 +93,7 @@ export const mapLawyerDetail = user => {
 
     return {
         data: {
+            items: reviews,
             summary: {
                 averageRating: lawyerDetails.rating_avg || 0,
                 careerHistory,

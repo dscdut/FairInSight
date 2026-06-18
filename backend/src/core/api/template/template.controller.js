@@ -6,7 +6,7 @@ class Controller {
         this.service = TemplateService;
     }
 
-    listTemplates = async req => {
+    listTemplates = async () => {
         const data = await this.service.listTemplates();
         return ValidHttpResponse.toOkResponse(data);
     };

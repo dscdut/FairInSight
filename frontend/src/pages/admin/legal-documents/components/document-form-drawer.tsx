@@ -191,9 +191,9 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
         })
         setContent(text)
         setSourceUrl(secureUrl)
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Lỗi tải file PDF:', error)
-        const errorMsg = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Có lỗi xảy ra khi xử lý file PDF.'
+        const errorMsg = (error as { response?: { data?: { error?: { message?: string }; message?: string } }; message?: string }).response?.data?.error?.message || (error as { response?: { data?: { message?: string } } }).response?.data?.message || (error as { message?: string }).message || 'Có lỗi xảy ra khi xử lý file PDF.'
         alert(errorMsg)
       } finally {
         socket.close()
@@ -206,7 +206,7 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
         const secureUrl = uploadRes.url
 
         // 3. Parse docx text content using backend Mammoth integration
-        const parseRes = (await lawApi.parseDocx(secureUrl)) as any
+        const parseRes = await lawApi.parseDocx(secureUrl)
 
         setUploadedFile({
           name: file.name,
@@ -214,9 +214,9 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
         })
         setContent(parseRes.text)
         setSourceUrl(secureUrl)
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Lỗi tải file:', error)
-        const errorMsg = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Có lỗi xảy ra khi upload hoặc trích xuất văn bản.'
+        const errorMsg = (error as { response?: { data?: { error?: { message?: string }; message?: string } }; message?: string }).response?.data?.error?.message || (error as { response?: { data?: { message?: string } } }).response?.data?.message || (error as { message?: string }).message || 'Có lỗi xảy ra khi upload hoặc trích xuất văn bản.'
         alert(errorMsg)
       } finally {
         setIsUploading(false)
