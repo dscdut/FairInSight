@@ -146,7 +146,7 @@ export async function requestAssistantReply(
     throw new Error(`RAG query failed (${response.status}): ${errorBody}`)
   }
 
-  const data = (await response.json()) as { answer: string; citations: any[] }
+  const data = await response.json() as { answer: string; citations: unknown[] }
 
   return {
     id: makeId('m-assistant'),

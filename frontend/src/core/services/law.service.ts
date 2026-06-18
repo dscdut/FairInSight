@@ -23,11 +23,11 @@ export interface CloudinaryPresignResponse {
 
 export interface ParseDocxResponse {
   text: string
-  messages: any[]
+  messages: unknown[]
 }
 
 // Map single version from backend model
-function mapVersionFromBackend(v: any): LawVersion {
+function mapVersionFromBackend(v: Record<string, unknown>): LawVersion {
   return {
     id: v.id,
     lawId: v.law_id,
@@ -47,7 +47,7 @@ function mapVersionFromBackend(v: any): LawVersion {
 }
 
 // Map law model from backend
-function mapLawFromBackend(l: any): Law {
+function mapLawFromBackend(l: Record<string, unknown>): Law {
   const versions = l.law_versions ? l.law_versions.map(mapVersionFromBackend) : []
   return {
     id: l.id,
@@ -69,14 +69,14 @@ function mapLawFromBackend(l: any): Law {
 
 export const createLawApi = (client: AxiosInstance) => ({
   async listLaws(params: { page?: number; size?: number; search?: string; status?: string; issuedDate?: string }) {
-    const res = (await client.get('/laws', { params })) as any
+    const res = (await client.get('/laws', { params })) as Record<string, unknown>
     return {
       items: (res.items || []).map(mapLawFromBackend),
       pagination: res.pagination || { page: 1, size: 10, total: 0, totalPages: 1 }
     } as LawListResponse
   },
   async getLawById(id: string) {
-    const res = (await client.get(`/laws/${id}`)) as any
+    const res = (await client.get(`/laws/${id}`)) as Record<string, unknown>
     return mapLawFromBackend(res)
   },
   async createLaw(params: {
@@ -97,7 +97,7 @@ export const createLawApi = (client: AxiosInstance) => ({
       officialUrl: params.officialUrl,
       content: params.content
     }
-    const res = (await client.post('/laws', payload)) as any
+    const res = (await client.post('/laws', payload)) as Record<string, unknown>
     return mapLawFromBackend(res)
   },
   async updateLaw(
@@ -123,23 +123,23 @@ export const createLawApi = (client: AxiosInstance) => ({
       content: params.content,
       changeNote: params.changeNote
     }
-    const res = (await client.put(`/laws/${id}`, payload)) as any
+    const res = (await client.put(`/laws/${id}`, payload)) as Record<string, unknown>
     return mapLawFromBackend(res)
   },
   async toggleStatus(id: string, params: { status: 'ACTIVE' | 'INACTIVE'; reason?: string }) {
-    const res = (await client.patch(`/laws/${id}/status`, params)) as any
+    const res = (await client.patch(`/laws/${id}/status`, params)) as Record<string, unknown>
     return mapLawFromBackend(res)
   },
   async listVersions(id: string) {
-    const res = (await client.get(`/laws/${id}/versions`)) as any
+    const res = (await client.get(`/laws/${id}/versions`)) as unknown
     return (res || []).map(mapVersionFromBackend) as LawVersion[]
   },
   async restoreVersion(id: string, versionId: string) {
-    const res = (await client.post(`/laws/${id}/versions/${versionId}/restore`)) as any
+    const res = (await client.post(`/laws/${id}/versions/${versionId}/restore`)) as Record<string, unknown>
     return mapLawFromBackend(res)
   },
   async parseDocx(fileUrl: string) {
-    const res = (await client.post('/laws/parse-docx', { fileUrl })) as any
+    const res = (await client.post('/laws/parse-docx', { fileUrl })) as ParseDocxResponse
     return res as ParseDocxResponse
   },
   async uploadFile(file: File, folder = 'laws') {
@@ -150,7 +150,7 @@ export const createLawApi = (client: AxiosInstance) => ({
       headers: {
         'Content-Type': 'multipart/form-data'
       }
-    })) as any
+    })) as unknown
     return (Array.isArray(res) ? res[0] : res) as { url: string; publicId: string }
   }
 })

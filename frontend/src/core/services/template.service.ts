@@ -8,12 +8,12 @@ export interface BackendTemplate {
   name: string
   description: string | null
   file_url: string
-  fields: any
+  fields: unknown
   created_at: string
   updated_at: string
 }
 
-function mapTemplateFromBackend(t: any): Template {
+function mapTemplateFromBackend(t: Record<string, unknown>): Template {
   return {
     id: t.id,
     title: t.name,
@@ -29,11 +29,11 @@ function mapTemplateFromBackend(t: any): Template {
 
 export const createTemplateApi = (client: AxiosInstance) => ({
   async listTemplates() {
-    const res = (await client.get('/templates')) as any
+    const res = (await client.get('/templates')) as unknown
     return (res || []).map(mapTemplateFromBackend) as Template[]
   },
   async getTemplateById(id: string) {
-    const res = (await client.get(`/templates/${id}`)) as any
+    const res = (await client.get(`/templates/${id}`)) as Record<string, unknown>
     return mapTemplateFromBackend(res)
   }
 })

@@ -34,13 +34,13 @@ export default function LegalAnalysis() {
   const fetchLaws = useCallback(async () => {
     try {
       setIsLoading(true)
-      const res = (await lawApi.listLaws({
+      const res = await lawApi.listLaws({
         page: currentPage,
         size: itemsPerPage,
         search: searchQuery || undefined,
         status: statusFilter || undefined,
         issuedDate: issuedDateFilter || undefined
-      })) as any
+      })
       setLaws(res.items)
       setTotalPages(res.pagination.totalPages)
       setTotalCount(res.pagination.total)
@@ -57,7 +57,7 @@ export default function LegalAnalysis() {
 
   const handleViewClick = async (law: Law) => {
     try {
-      const res = (await lawApi.getLawById(law.id)) as any
+      const res = await lawApi.getLawById(law.id)
       setActiveLawForDetail(res)
       setIsDetailOpen(true)
     } catch (error) {
