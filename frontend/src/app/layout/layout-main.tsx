@@ -40,7 +40,7 @@ const LayoutMain = ({ children }: LayoutMainProps) => {
             </div>
 
             {/* Content Container */}
-            <div className='relative z-10 p-4 h-full'>
+            <div className='relative z-10 sm:p-4 p-0 h-full'>
               <div className='mx-auto max-w-none h-full'>
                 <div
                   className={cn(
