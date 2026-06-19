@@ -1,6 +1,6 @@
 import { Module } from 'packages/handler/Module';
 import { LawyerController } from './lawyer.controller';
-import { DefaultQueryCriteriaDocument } from '../../common/swagger/filter';
+import { DefaultQueryCriteriaDocument } from '../../common/swagger/lawyerFilter';
 import { RecordId } from '../../common/swagger/record-id';
 import { RecordIdInterceptor } from 'core/modules/interceptor/recordId/record-id.interceptor';
 

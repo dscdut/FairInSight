@@ -10,7 +10,7 @@ import { hasAdminRole } from 'core/modules/auth/guard';
 import { RecordIdInterceptor } from 'core/modules/interceptor/recordId/record-id.interceptor';
 import { UserController } from './user.controller';
 import { RecordId } from '../../common/swagger/record-id';
-import { DefaultQueryCriteriaDocument } from '../../common/swagger/filter';
+import { DefaultQueryCriteriaDocument } from '../../common/swagger/lawyerFilter';
 
 export const UserResolver = Module.builder()
     .addPrefix({

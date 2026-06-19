@@ -5,6 +5,7 @@ import { HandlerResolver } from '../../packages/handler/HandlerResolver';
 import { LawyerResolver } from 'core/api/lawyer/lawyer.resolver';
 import { AuthResolver } from './auth/auth.resolver';
 import { UploadResolver } from 'core/api/upload';
+import { ReportsResolver } from './reports/reports.resolver';
 
 export const ModuleResolver = HandlerResolver
     .builder()
@@ -14,6 +15,7 @@ export const ModuleResolver = HandlerResolver
         UserResolver,
         MediaResolver,
         LawyerResolver,
-        UploadResolver
+        UploadResolver,
+        ReportsResolver
     ]);
 
