@@ -279,6 +279,12 @@ export const userSideBarLinks: TSidebarLinks[] = [
     path: ROUTE.USER.LAWYER
   },
   {
+    title: 'Yêu cầu tư vấn',
+    titleKey: 'appointments',
+    icon: <Calendar className='w-5 h-5' />,
+    path: ROUTE.USER.APPOINTMENT
+  },
+  {
     title: 'Quản lý báo cáo',
     titleKey: 'report',
     icon: <BarChart3 className='w-5 h-5' />,

@@ -176,7 +176,7 @@ export default function ChatMessages({
               </Avatar>
 
               {/* Message Content Bubble */}
-              <div className='space-y-1.5 min-w-0 w-full'>
+              <div className='space-y-1.5 min-w-0'>
                 <div
                   className={cn(
                     'p-4 rounded-2xl text-small leading-relaxed text-main',
