@@ -48,7 +48,7 @@ export const AISection = () => {
   }
 
   return (
-    <section id='ai-assistance' className='py-20 bg-background-tertiary dark:bg-gray-900/30 relative overflow-hidden'>
+    <section id='ai-assistance' className='py-20 bg-background-primary relative overflow-hidden'>
       <div className='absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 dark:bg-primary/5 rounded-full filter blur-[100px] pointer-events-none' />
       <div className='absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 dark:bg-blue-500/5 rounded-full filter blur-[100px] pointer-events-none' />
 
@@ -60,10 +60,10 @@ export const AISection = () => {
         <div className='grid grid-cols-1 lg:grid-cols-12 gap-12 items-center'>
           <div className='lg:col-span-6 space-y-8'>
             <div className='space-y-4'>
-              <h2 className='text-h3 sm:text-h2 text-main dark:text-white leading-tight'>
+              <h2 className='text-h3 sm:text-h2 text-main leading-tight'>
                 {t('home.AI_assistance.sectionTitle')}
               </h2>
-              <p className='text-p text-gray-600 dark:text-gray-300 max-w-xl'>{t('home.AI_assistance.description')}</p>
+              <p className='text-p text-text-secondary max-w-xl'>{t('home.AI_assistance.description')}</p>
             </div>
 
             <div className='space-y-4'>
@@ -74,16 +74,16 @@ export const AISection = () => {
                   whileInView={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   viewport={{ once: true }}
-                  className='flex items-start gap-4 p-4 rounded-xl bg-white dark:bg-gray-800/50 shadow-sm border border-gray-100 dark:border-gray-800'
+                  className='flex items-start gap-4 p-4 rounded-xl bg-background-secondary shadow-sm border border-border-primary'
                 >
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${feat.bgColor}`}>
                     <feat.icon className={`w-5 h-5 ${feat.color}`} />
                   </div>
                   <div>
-                    <h4 className='font-bold text-main dark:text-white'>
+                    <h4 className='font-bold text-main'>
                       {t(`home.AI_assistance.features.${feat.key}.title`)}
                     </h4>
-                    <p className='text-md text-gray-600 dark:text-gray-400 mt-1'>
+                    <p className='text-md text-text-secondary mt-1'>
                       {t(`home.AI_assistance.features.${feat.key}.description`)}
                     </p>
                   </div>
@@ -98,29 +98,29 @@ export const AISection = () => {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
-              className='bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800 overflow-hidden flex flex-col h-[480px]'
+              className='bg-background-secondary rounded-2xl shadow-xl border border-border-primary overflow-hidden flex flex-col h-[480px]'
             >
-              <div className='px-6 py-4 bg-gray-50 dark:bg-gray-800/80 border-b border-gray-100 dark:border-gray-800 flex items-center gap-3'>
+              <div className='px-6 py-4 bg-background-primary border-b border-border-primary flex items-center gap-3'>
                 <div className='w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white'>
                   <Bot className='w-5 h-5' />
                 </div>
                 <div>
-                  <h4 className='font-bold text-sm text-gray-900 dark:text-white'>FairInsights AI</h4>
+                  <h4 className='font-bold text-sm text-main'>FairInsights AI</h4>
                   <div className='flex items-center gap-1.5'>
                     <span className='w-2 h-2 rounded-full bg-emerald-500 animate-pulse' />
-                    <span className='text-xs text-gray-500 dark:text-gray-400'>Online</span>
+                    <span className='text-xs text-text-secondary'>Online</span>
                   </div>
                 </div>
               </div>
 
               {/* Chat Area */}
-              <div className='flex-grow p-6 overflow-y-auto space-y-4 bg-gray-50/50 dark:bg-gray-900/10'>
+              <div className='flex-grow p-6 overflow-y-auto space-y-4 bg-background-primary/50'>
                 {/* User Message Bubble */}
                 <div className='flex items-start gap-3 justify-end'>
                   <div className='bg-primary text-white rounded-2xl rounded-tr-none px-4 py-3 max-w-[80%] shadow-sm text-sm'>
                     {t('home.AI_assistance.chatMock.userQuestion')}
                   </div>
-                  <div className='w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-700 dark:text-gray-300 shrink-0 text-xs font-semibold'>
+                  <div className='w-8 h-8 rounded-full bg-background-secondary flex items-center justify-center text-text-primary shrink-0 text-xs font-semibold'>
                     <User className='w-4 h-4' />
                   </div>
                 </div>
@@ -131,7 +131,7 @@ export const AISection = () => {
                     <div className='w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0'>
                       <Bot className='w-4 h-4' />
                     </div>
-                    <div className='bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-2xl rounded-tl-none px-4 py-3 flex gap-1 items-center h-10'>
+                    <div className='bg-background-primary border border-border-primary rounded-2xl rounded-tl-none px-4 py-3 flex gap-1 items-center h-10'>
                       <span
                         className='w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce'
                         style={{ animationDelay: '0ms' }}
@@ -157,7 +157,7 @@ export const AISection = () => {
                     <div className='w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0'>
                       <Bot className='w-4 h-4' />
                     </div>
-                    <div className='bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-2xl rounded-tl-none px-4 py-3 max-w-[80%] shadow-sm text-sm text-gray-800 dark:text-gray-200 space-y-2 leading-relaxed'>
+                    <div className='bg-background-primary border border-border-primary rounded-2xl rounded-tl-none px-4 py-3 max-w-[80%] shadow-sm text-sm text-text-primary space-y-2 leading-relaxed'>
                       <p>{t('home.AI_assistance.chatMock.aiResponse')}</p>
                     </div>
                   </motion.div>
@@ -166,14 +166,14 @@ export const AISection = () => {
 
               <form
                 onSubmit={handleMockSubmit}
-                className='p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-800 flex gap-2'
+                className='p-4 bg-background-primary border-t border-border-primary flex gap-2'
               >
                 <input
                   type='text'
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   placeholder={t('home.AI_assistance.chatMock.placeholder')}
-                  className='flex-grow px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary dark:text-white'
+                  className='flex-grow px-4 py-2 border border-border-secondary rounded-xl bg-background-secondary text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-text-primary'
                 />
                 <Button type='submit' size='icon' className='rounded-xl shrink-0'>
                   <Send className='w-4 h-4' />

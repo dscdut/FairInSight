@@ -26,11 +26,19 @@ const formatMoneyJs = (val: string | number | unknown) => {
   return val
 }
 
-const formatDateJs = (val: string) => {
-  if (!val) return '..../..../....'
-  const parts = val.split('-')
+const formatDateJs = (val: string, format = 'slash') => {
+  if (!val) return format === 'words' ? '...... tháng ...... năm ......' : '..../..../....'
+  const cleanVal = val.trim()
+  const parts = cleanVal.includes('-') ? cleanVal.split('-') : cleanVal.split('/')
   if (parts.length === 3) {
-    return `${parts[2]}/${parts[1]}/${parts[0]}`
+    const isYearFirst = parts[0].length === 4
+    const day = isYearFirst ? parts[2] : parts[0]
+    const month = parts[1]
+    const year = isYearFirst ? parts[0] : parts[2]
+    if (format === 'words') {
+      return `${day} tháng ${month} năm ${year}`
+    }
+    return `${day}/${month}/${year}`
   }
   return val
 }
@@ -136,23 +144,8 @@ export default function TemplateEditor({ template, onBack, documentId, initialVa
       area: values.area || '',
       price: values.price || '',
       rentPeriod: values.rentPeriod || '',
-      format_date: (val: string) => {
-        if (!val) return '..../..../....'
-        const parts = val.split('-')
-        if (parts.length === 3) {
-          return `${parts[2]}/${parts[1]}/${parts[0]}`
-        }
-        return val
-      },
-      format_money: (val: string | number | unknown) => {
-        if (!val) return ''
-        const numStr = String(val).replace(/,/g, '').replace(/\./g, '').replace(/ /g, '')
-        const num = parseInt(numStr, 10)
-        if (!isNaN(num)) {
-          return num.toLocaleString('vi-VN').replace(/,/g, '.')
-        }
-        return val
-      },
+      format_date: (val: string, format = 'slash') => formatDateJs(val, format),
+      format_money: (val: string | number | unknown) => formatMoneyJs(val),
     }
 
     try {
@@ -291,54 +284,51 @@ export default function TemplateEditor({ template, onBack, documentId, initialVa
   return (
     <div className='w-full flex flex-col gap-6'>
       {/* Header action bar */}
-      <div className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-white dark:bg-background-secondary p-5 rounded-2xl border border-border-secondary shadow-sm'>
+      <div className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
         <div className='flex items-center gap-3.5'>
           <Button
             variant='outline'
             size='icon'
             onClick={onBack}
-            className='h-9 w-9 rounded-xl border-border-primary text-text-secondary hover:text-text-primary cursor-pointer'
+            className='h-11 w-11 rounded-md border-border-primary text-text-secondary hover:text-text-primary cursor-pointer'
           >
-            <ArrowLeft className='w-4.5 h-4.5' />
+            <ArrowLeft className='w-5 h-5' />
           </Button>
-          <div className='text-left'>
-            <h2 className='text-lg font-bold text-text-primary uppercase tracking-wide'>{template.title}</h2>
-            <p className='text-xs text-text-description font-semibold'>Điền thông tin hợp đồng ở cột bên trái để cập nhật bản xem trước</p>
-          </div>
+          <h2 className='text-h5 font-bold text-text-primary uppercase tracking-wide text-left'>{template.title}</h2>
         </div>
 
-        <div className='flex items-center gap-2.5'>
+        <div className='flex flex-wrap items-center gap-2'>
           <Button
             variant='outline'
             size='sm'
             onClick={handleSaveDraft}
-            className='h-9 text-xs font-bold rounded-xl border-border-primary text-text-secondary hover:bg-background-secondary transition-all px-4 flex items-center gap-1.5 cursor-pointer'
+            className='text-btn-medium border-border-primary text-text-secondary transition-all flex items-center gap-1.5'
           >
-            <Save className='w-3.5 h-3.5' />
+            <Save className='w-4 h-4' />
             Lưu nháp
           </Button>
           <Button
             variant='outline'
             size='sm'
             onClick={() => alert('Đang tạo bản xem trước...')}
-            className='h-9 text-xs font-bold rounded-xl border-border-primary text-text-secondary hover:bg-background-secondary transition-all px-4 flex items-center gap-1.5 cursor-pointer'
+            className='text-btn-medium border-border-primary text-text-secondary hover:bg-background-secondary transition-all flex items-center gap-1.5'
           >
-            <Eye className='w-3.5 h-3.5' />
+            <Eye className='w-4 h-4' />
             Xem trước
           </Button>
           <Button
             size='sm'
             onClick={handleExport}
-            className='h-9 text-xs font-bold rounded-xl bg-primary hover:opacity-90 text-white border-none shadow-md px-4.5 flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer'
+            className='text-btn-medium border-none shadow-[0_4px_12px_rgba(184,29,36,0.2)] hover:shadow-[0_6px_18px_rgba(244,63,94,0.35)] hover:scale-[1.02] active:scale-95 transition-all px-4 flex items-center gap-1.5 cursor-pointer'
           >
-            <FileDown className='w-3.5 h-3.5' />
+            <FileDown className='w-4 h-4' />
             Hoàn tất & Xuất File
           </Button>
         </div>
       </div>
 
       {/* Main editor area */}
-      <div className='w-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-start'>
+      <div className='w-full grid grid-cols-1 lg:grid-cols-12 gap-2 items-start'>
         {/* Left Form column */}
         <TemplateForm 
           template={template} 

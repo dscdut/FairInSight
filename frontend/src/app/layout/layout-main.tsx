@@ -1,20 +1,17 @@
-import { type ReactNode } from 'react'
+import { type ReactNode, Suspense } from 'react'
 
-import { Outlet, useLocation } from 'react-router-dom'
+import { Outlet } from 'react-router-dom'
 
 import SideBar from '@/components/side-bar/side-bar'
 import TopBar from '@/components/top-bar/top-bar'
-import { ROUTE } from '@/core/constants/path'
+import LoadingSpinner from '@/components/ui/loading-spinner'
 import { cn } from '@/core/lib/utils'
-import { FooterSection } from '@/pages/home/components/footer-section'
 
 interface LayoutMainProps {
   children?: ReactNode
 }
 
 const LayoutMain = ({ children }: LayoutMainProps) => {
-  const location = useLocation()
-  const isChatAiPage = location.pathname === ROUTE.USER.CHAT_AI
 
   return (
     <div>
@@ -51,14 +48,19 @@ const LayoutMain = ({ children }: LayoutMainProps) => {
                     'flex flex-col'
                   )}
                 >
-                  {children || <Outlet />}
+                  <Suspense fallback={
+                    <div className='flex-1 flex items-center justify-center min-h-[300px]'>
+                      <LoadingSpinner />
+                    </div>
+                  }>
+                    {children || <Outlet />}
+                  </Suspense>
                 </div>
               </div>
             </div>
           </main>
         </div>
       </div>
-      {!isChatAiPage && <FooterSection />}
     </div>
   )
 }

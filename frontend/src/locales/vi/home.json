@@ -5,14 +5,21 @@
       "title": "Kết nối niềm tin, giải quyết pháp lý hiệu quả",
       "description": "Nền tảng kết nối bạn với đội luật sư uy tín, giúp giải quyết mọi vấn đề pháp lý một cách minh bạch và hiệu quả",
       "getStarted": "Bắt đầu",
-      "searchLaw": "Tra cứu luật"
+      "searchLaw": "Tra cứu luật",
+      "footerText": "Pháp luật giản đơn: Nguồn tài nguyên tin cậy cho chuyên môn pháp lý của bạn. Nhận sự hỗ trợ chuyên nghiệp bất cứ khi nào bạn cần, đảm bảo sự rõ ràng và tự tin trong mọi vấn đề pháp lý.",
+      "footerTextRight": "Thấu hiểu Pháp lý: Nguồn tri thức pháp luật của bạn. Tiếp cận sự hỗ trợ từ chuyên gia để vững tâm trong mọi sự vụ pháp lý.",
+      "lawyersCount": "+50 Luật sư"
     },
     "dashboard": {
       "title": "Trang chủ"
     },
     "library": {
+      "badge": "Dịch vụ của tôi",
       "title": "Các lĩnh vực tư vấn",
       "description": "Chúng tôi cung cấp dịch vụ tư vấn pháp lý toàn diện cho mọi khía cạnh trong đời sống và kinh doanh:",
+      "trusted": "Lĩnh vực",
+      "expertise": "Tư vấn",
+      "trustedDesc": "Chúng tôi cung cấp các dịch vụ pháp lý đáng tin cậy với kinh nghiệm dày dặn và mục tiêu mang lại kết quả tối ưu.",
       "civil": {
         "title": "Dân sự",
         "description": "Tư vấn hợp đồng, bồi thường thiệt hại, thừa kế, quyền sở hữu và các tranh chấp dân sự khác."
@@ -72,11 +79,24 @@
     },
     "contacts": {
       "title": "Liên hệ",
-      "ctaTitle": "Sẵn sàng bảo vệ quyền lợi của bạn?",
-      "ctaDesc": "Hãy để các chuyên gia từ FairInsights đồng hành cùng bạn trên con đường tìm kiếm công lý.",
-      "ctaBtn": "Bắt đầu miễn phí"
+      "heading": "Bạn có câu hỏi hay phản hồi?",
+      "description": "Vui lòng điền thông tin vào mẫu bên dưới và chúng tôi sẽ phản hồi bạn trong thời gian sớm nhất.",
+      "nameLabel": "Họ và tên",
+      "companyLabel": "Công ty",
+      "emailLabel": "Email",
+      "phoneLabel": "Số điện thoại",
+      "subjectLabel": "Tiêu đề",
+      "messageLabel": "Lời nhắn",
+      "submitBtn": "Gửi yêu cầu",
+      "locationTitle": "ĐỊA ĐIỂM",
+      "locationHeading": "Chúng tôi ở đây để giúp đỡ bạn.",
+      "locationDesc": "Ghé thăm văn phòng của chúng tôi hoặc liên hệ trực tiếp qua các kênh thông tin dưới đây.",
+      "address": "54 Nguyễn Lương Bằng, Liên Chiểu, Đà Nẵng",
+      "email": "admin@gdsc.dev",
+      "phone": "+(84) 28 1234-5678"
     },
     "features": {
+      "step": "Bước",
       "title": "Vì sao chọn FairInsights?",
       "description": "FairInsights là người bạn đồng hành đáng tin cậy cho nhu cầu pháp lý của bạn tại Việt Nam, cung cấp thông tin đáng tin cậy và hỗ trợ AI cho quy trình pháp lý liền mạch.",
       "reputable": {

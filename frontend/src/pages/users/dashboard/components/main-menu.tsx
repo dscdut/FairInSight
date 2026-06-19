@@ -1,15 +1,16 @@
 import { Lightbulb, TrendingUp } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 import { DASHBOARD_ACTIVITY, DASHBOARD_DATA } from '@/_mocks/data-dashboard'
 import { RECENT_DOCUMENTS, FEATURED_UPDATE } from '@/_mocks/recent.document.mock'
 import { FadeUp } from '@/components/animated/animated-component'
-import { Button, Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '@/components/ui'
+import { Button } from '@/components/ui'
 import { useAuthStore } from '@/core/store/features/auth/authStore'
 
-import RequestForm from './request-form'
 
 export default function MainMenu() {
   const user = useAuthStore((state) => state.user)
+  const navigate = useNavigate()
 
   return (
     <main className='space-y-8'>
@@ -31,7 +32,7 @@ export default function MainMenu() {
               <div>
                 <span className='inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 px-4 py-1 text-xs font-semibold text-primary backdrop-blur-md'>
                   <span className='h-1.5 w-1.5 rounded-full bg-primary animate-pulse' aria-hidden='true' />
-                  LegalAI Client Portal
+                  FairInsight Client Portal
                 </span>
                 <h1 className='mt-5 text-h1 tracking-tight text-text-main leading-tight font-light'>
                   Xin chào, <br />
@@ -41,27 +42,13 @@ export default function MainMenu() {
                 </h1>
               </div>
 
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button
-                    size='lg'
-                    className='group/btn relative mt-6 bg-gradient-to-r from-primary to-rose-500 text-white font-semibold rounded-full border border-white/20 shadow-[0_4px_20px_rgba(184,29,36,0.25)] hover:shadow-[0_8px_30px_rgba(244,63,94,0.4)] hover:scale-[1.03] active:scale-95 transition-all duration-300 z-10 flex items-center gap-2 cursor-pointer'
-                  >
-                    <span>Phân tích pháp lý</span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className='bg-background-secondary max-w-4xl w-[95vw] md:w-full max-h-[90vh] overflow-y-auto'>
-                  <DialogTitle>
-                    <span className='text-h4 flex items-center tracking-tight text-text-main gap-2'>
-                      Khởi tạo vụ việc pháp lý mới
-                    </span>
-                  </DialogTitle>
-                  <DialogDescription className='sr-only'>
-                    Mô tả chi tiết vấn đề của bạn để Trợ lý AI bóc tách cấu trúc dữ liệu luật liên quan.
-                  </DialogDescription>
-                  <RequestForm />
-                </DialogContent>
-              </Dialog>
+              <Button
+                onClick={() => navigate('/chat-ai')}
+                size='lg'
+                className='group/btn relative mt-6 bg-gradient-to-r from-primary to-rose-500 text-white font-semibold rounded-full border border-white/20 shadow-[0_4px_20px_rgba(184,29,36,0.25)] hover:shadow-[0_8px_30px_rgba(244,63,94,0.4)] hover:scale-[1.03] active:scale-95 transition-all duration-300 z-10 flex items-center gap-2 cursor-pointer'
+              >
+                <span>Phân tích ngay</span>
+              </Button>
             </div>
 
             {/* Right Column: 2x2 Stats Grid (5/12) */}

@@ -51,7 +51,7 @@
       <!-- Empty space to align signature to the right -->
     </div>
     <div class="signature-right" style="text-align: center; width: 50%;">
-      <div class="italic" style="font-size: 11.5pt; margin-bottom: 5px;">Đà Nẵng, ngày ...... tháng ...... năm 2026</div>
+      <div class="italic" style="font-size: 11.5pt; margin-bottom: 5px;">{{ signLocation|default('Đà Nẵng', true) }}, ngày {{ format_date(signDate, 'words') if signDate else '...... tháng ...... năm ......' }}</div>
       <div class="bold uppercase">CHỦ DOANH NGHIỆP</div>
       <div class="italic text-sm text-gray-500">(Ký và ghi rõ họ tên)</div>
       <div class="bold" style="margin-top: 70px;">{{ ownerName|default('...................................', true) }}</div>
