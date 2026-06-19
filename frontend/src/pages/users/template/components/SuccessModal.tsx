@@ -2,27 +2,30 @@ import { motion } from 'framer-motion'
 import { CheckCircle2, FileDown } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { printDocument } from '@/core/helpers/print-document'
 
 interface SuccessModalProps {
   showSuccess: boolean
   activeFileUrl: string | null
   templateTitle: string
   onClose: () => void
+  onDownloadFallback?: () => void
 }
 
-export default function SuccessModal({ showSuccess, activeFileUrl, templateTitle, onClose }: SuccessModalProps) {
+export default function SuccessModal({ showSuccess, activeFileUrl, templateTitle, onClose, onDownloadFallback }: SuccessModalProps) {
   if (!showSuccess) return null
 
   const handleDownload = () => {
-    if (!activeFileUrl) return
-    const link = document.createElement('a')
-    link.href = activeFileUrl
-    link.download = `${templateTitle.replace(/\s+/g, '_')}.pdf`
-    link.target = '_blank'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    if (activeFileUrl) {
+      const link = document.createElement('a')
+      link.href = activeFileUrl
+      link.download = `${templateTitle.replace(/\s+/g, '_')}.pdf`
+      link.target = '_blank'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } else if (onDownloadFallback) {
+      onDownloadFallback()
+    }
   }
 
   return (
@@ -39,7 +42,7 @@ export default function SuccessModal({ showSuccess, activeFileUrl, templateTitle
         <p className='text-xs text-text-secondary leading-relaxed font-semibold'>
           {activeFileUrl 
             ? 'File PDF của bạn đã được xuất bản và tự động tải xuống. Bạn có thể kiểm tra tệp tin trong thư mục tải về của trình duyệt.'
-            : 'Trình in ấn trình duyệt đã được kích hoạt. Hãy chọn "Lưu dưới dạng PDF" để tải văn bản về máy tính của bạn.'}
+            : 'Văn bản của bạn đã được khởi tạo thành công và sẵn sàng để lưu/in dưới dạng tài liệu PDF.'}
         </p>
         <div className='flex flex-col gap-2.5 w-full mt-2'>
           {activeFileUrl ? (
@@ -52,11 +55,11 @@ export default function SuccessModal({ showSuccess, activeFileUrl, templateTitle
             </Button>
           ) : (
             <Button
-              onClick={() => printDocument(templateTitle)}
+              onClick={handleDownload}
               className='h-9.5 w-full bg-gradient-to-r from-primary to-rose-500 text-white hover:opacity-90 font-bold text-xs rounded-xl shadow-md border-none flex items-center justify-center gap-1.5 cursor-pointer'
             >
               <FileDown className='w-4 h-4' />
-              Lưu dưới dạng PDF
+              Xuất file PDF / In
             </Button>
           )}
           <Button

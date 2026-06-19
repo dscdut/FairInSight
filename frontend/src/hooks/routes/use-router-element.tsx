@@ -35,6 +35,7 @@ const Template = lazy(() => import('@/pages/users/template/Template'))
 const User = lazy(() => import('@/pages/users/user/User'))
 const LawyerList = lazy(() => import('@/pages/users/lawyer/LawyerList'))
 const LawyerProfile = lazy(() => import('@/pages/users/lawyer/LawyerProfile'))
+const Appointments = lazy(() => import('@/pages/users/appointments/Appointments'))
 
 export default function useRoutesElements() {
   const location = useLocation()
@@ -68,6 +69,7 @@ export default function useRoutesElements() {
                 <Route path={ROUTE.USER.LEGAL} element={<LegalAnalysis />} />
                 <Route path={ROUTE.USER.LAWYER} element={<LawyerList />} />
                 <Route path={ROUTE.USER.LAWYER_DETAIL} element={<LawyerProfile />} />
+                <Route path={ROUTE.USER.APPOINTMENT} element={<Appointments />} />
                 <Route path={ROUTE.USER.REPORT} element={<Report />} />
                 <Route path={ROUTE.USER.INFO} element={<User />} />
                 <Route path={ROUTE.USER.SETTING} element={<Setting />} />

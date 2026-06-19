@@ -4,7 +4,6 @@ import { ArrowLeft, Save, FileDown, Eye } from 'lucide-react'
 import nunjucks from 'nunjucks'
 
 import { Button } from '@/components/ui/button'
-import { printDocument } from '@/core/helpers/print-document'
 import { documentApi, type UserDocument } from '@/core/services/document.service'
 import { type Template } from '@/models/types/form-library'
 
@@ -235,6 +234,38 @@ export default function TemplateEditor({ template, onBack, documentId, initialVa
     }
   }
 
+  const handleDownloadFallback = () => {
+    const compiledHtml = compileHtml(htmlContent, formValues)
+    const printWindow = window.open('', '_blank')
+    if (printWindow) {
+      printWindow.document.write(compiledHtml)
+      printWindow.document.close()
+      
+      printWindow.onload = () => {
+        printWindow.print()
+        printWindow.close()
+      }
+      
+      setTimeout(() => {
+        try {
+          if (printWindow && !printWindow.closed) {
+            printWindow.print()
+            printWindow.close()
+          }
+        } catch (e) {
+          console.error(e)
+        }
+      }, 500)
+    } else {
+      const iframe = document.querySelector('iframe')
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.print()
+      } else {
+        alert('Không thể mở cửa sổ in. Vui lòng tắt trình chặn pop-up của trình duyệt.')
+      }
+    }
+  }
+
   // Handle export flow
   const handleExport = async () => {
     setIsExporting(true)
@@ -262,7 +293,7 @@ export default function TemplateEditor({ template, onBack, documentId, initialVa
       setIsExporting(false)
       setShowSuccess(true)
 
-      // Automatically download PDF if fileUrl is available, otherwise open print dialog
+      // Automatically download PDF if fileUrl is available, otherwise trigger print-to-PDF flow
       if (doc && doc.file_url) {
         const link = document.createElement('a')
         link.href = doc.file_url
@@ -272,7 +303,7 @@ export default function TemplateEditor({ template, onBack, documentId, initialVa
         link.click()
         document.body.removeChild(link)
       } else {
-        printDocument(template.title)
+        handleDownloadFallback()
       }
     } catch (err) {
       console.error('Failed to save and export document:', err)
@@ -354,6 +385,7 @@ export default function TemplateEditor({ template, onBack, documentId, initialVa
         activeFileUrl={activeFileUrl} 
         templateTitle={template.title} 
         onClose={() => setShowSuccess(false)} 
+        onDownloadFallback={handleDownloadFallback}
       />
     </div>
   )

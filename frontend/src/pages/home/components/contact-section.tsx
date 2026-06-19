@@ -33,10 +33,10 @@ export const ContactSection = () => {
             <span className='text-xs font-bold uppercase tracking-widest text-primary mb-3 block'>
               {t('home.contacts.title') || 'GET IN TOUCH'}
             </span>
-            <h2 className='text-h3 sm:text-h2 md:text-[2.75rem] font-bold text-main mb-6 leading-tight'>
+            <h2 className='text-[2.5rem] md:text-[2.75rem] text-main mb-6 leading-tight'>
               {t('home.contacts.heading') || 'Have a question or feedback?'}
             </h2>
-            <p className='text-p text-slate-600 dark:text-slate-300 leading-relaxed mb-8 max-w-lg'>
+            <p className='text-p text-text-description leading-relaxed mb-8 max-w-lg'>
               {t('home.contacts.description') || 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut elit tellus, luctus nec ullamcorper mattis, pulvinar dapibus leo.'}
             </p>
             <div className='w-14 h-1 bg-primary rounded-full' />

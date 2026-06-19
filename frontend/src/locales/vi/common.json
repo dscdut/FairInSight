@@ -16,6 +16,30 @@
       "email": "Vui lòng nhập địa chỉ email hợp lệ",
       "minLength": "{{field}} phải có ít nhất {{min}} ký tự",
       "maxLength": "{{field}} không được vượt quá {{max}} ký tự"
+    },
+    "appointments": {
+      "title": "Danh sách lịch hẹn tư vấn",
+      "searchPlaceholder": "Tìm kiếm theo tên luật sư hoặc lĩnh vực...",
+      "statusAll": "Tất cả",
+      "statusPending": "Chờ xác nhận",
+      "statusConfirmed": "Đã xác nhận",
+      "statusRejected": "Đã từ chối",
+      "colLawyer": "Luật sư",
+      "colTopic": "Chủ đề/Lĩnh vực",
+      "colDate": "Ngày gửi",
+      "colStatus": "Trạng thái",
+      "colAction": "Thao tác",
+      "viewDetail": "Xem chi tiết",
+      "cancel": "Huỷ",
+      "request": "Yêu cầu",
+      "noRequests": "Không tìm thấy lịch hẹn tư vấn nào.",
+      "detailTitle": "Chi tiết lịch hẹn tư vấn",
+      "detailLawyer": "Luật sư tư vấn",
+      "detailDate": "Ngày yêu cầu",
+      "detailStatus": "Trạng thái",
+      "detailMessage": "Nội dung yêu cầu",
+      "detailFiles": "Tài liệu đính kèm",
+      "close": "Đóng"
     }
   }
 }
