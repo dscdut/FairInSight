@@ -1,5 +1,5 @@
-import prisma from '../database';
 import { DuplicateException, NotFoundException } from 'packages/httpException';
+import prisma from '../database';
 
 export class BaseRepository {
     constructor(model) {

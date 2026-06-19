@@ -16,16 +16,23 @@ export const ROUTE = {
     BLOG: '/blog',
     CHAT_AI: '/chat-ai',
     TEMPLATE: '/template',
-    LEGAL_ANALYSIS: '/legal-analysis',
+    LEGAL: '/legal',
+    LAWYER: '/lawyers',
+    LAWYER_DETAIL: '/lawyers/:id',
     REPORT: '/report',
     INFO: '/users',
-    SETTING: '/setting'
+    SETTING: '/setting',
+    PROFILE: '/profile',
+    EDIT: '/profile/edit',
+    MESSAGES: '/messages',
+    APPOINTMENT: '/appointment'
   },
   FORM_LIBRARY: '/form-library',
   ADMIN: {
     ROOT: '/admin',
     DASHBOARD: 'dashboard',
     USERS: 'users',
+    LEGAL_DOCUMENTS: 'legal-documents',
     ANALYTICS: {
       ROOT: 'analytics',
       OVERVIEW: 'analytics/overview',

@@ -3,6 +3,10 @@ export type RequestStatus = | "" | "idle" | "loading" | "analyzed" | "error"
 export interface AnalysisRequest {
   title?: string
   content?: string
+  category?: string
+  role?: string
+  requirement?: string
+  attachments?: FileList | null
 }
 
 export interface AnalysisResponse {

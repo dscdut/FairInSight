@@ -7,9 +7,11 @@
   "performance": "Performance",
   "users": "Users Management",
   "home": "Home",
-  "chat_ai": "AI Chat",
+  "chat_ai": "Legal Analysis",
+  "messages": "Messages",
   "template": "Template Repository",
-  "legal_analysis": "Legal Analysis",
+  "legal": "Legal",
+  "find_lawyer": " Lawyers",
   "report": "Report Management",
   "setting": "Settings",
   "system_status": "System Status",
@@ -17,5 +19,6 @@
   "account": "Account",
   "profile": "Profile",
   "edit_profile": "Edit Profile",
-  "logout": "Log Out"
+  "logout": "Log Out",
+  "appointments": "Consultation & Appointments"
 }

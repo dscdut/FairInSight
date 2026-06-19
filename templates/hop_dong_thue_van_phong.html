@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Hợp đồng thuê văn phòng</title>
+  <style>
+    body {
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 13pt;
+      line-height: 1.5;
+      color: #000;
+      padding: 30px;
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: #fff;
+    }
+    .header-section {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+    .header-title-main {
+      font-weight: bold;
+      font-size: 13pt;
+      text-transform: uppercase;
+      margin: 0 0 5px 0;
+    }
+    .header-motto {
+      font-weight: bold;
+      font-size: 13pt;
+      border-bottom: 1.5px solid #000;
+      display: inline-block;
+      padding-bottom: 3px;
+      margin: 0;
+    }
+    .document-title {
+      text-align: center;
+      margin-top: 30px;
+      margin-bottom: 30px;
+      text-transform: uppercase;
+    }
+    .document-title h1 {
+      font-size: 14pt;
+      font-weight: bold;
+      margin: 0;
+    }
+    .field-row {
+      margin-bottom: 10px;
+      text-align: justify;
+    }
+    .field-label {
+      font-weight: normal;
+    }
+    .field-value {
+      font-weight: bold;
+      border-bottom: 1px dotted #000;
+      padding-left: 5px;
+      padding-right: 5px;
+    }
+    .section-title {
+      font-weight: bold;
+      margin-top: 20px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+    .signature-section {
+      margin-top: 50px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .signature-block {
+      text-align: center;
+      width: 250px;
+    }
+    .signature-title {
+      font-weight: bold;
+      text-transform: uppercase;
+      margin-bottom: 60px;
+    }
+    .signature-name {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="header-section">
+    <p class="header-title-main">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
+    <p class="header-motto">Độc lập - Tự do - Hạnh phúc</p>
+  </div>
+
+  <div class="document-title">
+    <h1>HỢP ĐỒNG THUÊ VĂN PHÒNG</h1>
+  </div>
+
+  <div class="section-title">BÊN CHO THUÊ (BÊN A):</div>
+  <div class="field-row">
+    <span class="field-label">Tên tổ chức/cá nhân:</span>
+    <span class="field-value">{{ lessorName }}</span>
+  </div>
+  <div class="field-row">
+    <span class="field-label">Địa chỉ trụ sở:</span>
+    <span class="field-value">{{ lessorAddress }}</span>
+  </div>
+
+  <div class="section-title">BÊN THUÊ (BÊN B):</div>
+  <div class="field-row">
+    <span class="field-label">Tên doanh nghiệp thuê:</span>
+    <span class="field-value">BÊN THUÊ VĂN PHÒNG</span>
+  </div>
+
+  <div class="section-title">ĐIỀU 1: THÔNG TIN MẶT BẰNG THUÊ</div>
+  <div class="field-row">
+    Bên A đồng ý cho Bên B thuê văn phòng tại địa chỉ trên với diện tích thuê là <span class="field-value">{{ area }} m2</span>.
+  </div>
+
+  <div class="section-title">ĐIỀU 2: PHÍ THUÊ VÀ THỜI HẠN</div>
+  <div class="field-row">
+    Giá thuê hàng tháng thỏa thuận là: <span class="field-value">{{ price }} VND</span>.
+  </div>
+  <div class="field-row">
+    Thời hạn thuê văn phòng là: <span class="field-value">{{ rentPeriod }} tháng</span> kể từ ngày bàn giao mặt bằng.
+  </div>
+
+  <div class="signature-section">
+    <div class="signature-block">
+      <div class="signature-title">ĐẠI DIỆN BÊN A</div>
+      <div class="signature-name">{{ lessorName }}</div>
+    </div>
+    <div class="signature-block">
+      <div class="signature-title">ĐẠI DIỆN BÊN B</div>
+      <div class="signature-name">ĐẠI DIỆN BÊN THUÊ</div>
+    </div>
+  </div>
+</body>
+</html>

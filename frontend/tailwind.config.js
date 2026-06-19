@@ -111,19 +111,27 @@ export default {
         },
         error: {
           primary: 'var(--error-primary)',
-          secondary: 'var(--error-secondary)'
+          secondary: 'var(--error-secondary)',
+          background: 'var(--error-background)',
+          bg: 'var(--error-bg)'
         },
         success: {
           primary: 'var(--success-primary)',
-          secondary: 'var(--success-secondary)'
+          secondary: 'var(--success-secondary)',
+          background: 'var(--success-background)',
+          bg: 'var(--success-bg)'
         },
         warning: {
           primary: 'var(--warning-primary)',
-          secondary: 'var(--warning-secondary)'
+          secondary: 'var(--warning-secondary)',
+          background: 'var(--warning-background)',
+          bg: 'var(--warning-bg)'
         },
         info: {
           primary: 'var(--info-primary)',
           secondary: 'var(--info-secondary)',
+          background: 'var(--info-background)',
+          bg: 'var(--info-bg)',
           DEFAULT: 'var(--info-primary)',
           50: 'var(--blue-50)',
           400: 'var(--blue-400)',
@@ -160,6 +168,32 @@ export default {
         600: 'var(--shadow-600)',
         700: 'var(--shadow-700)',
         800: 'var(--shadow-800)'
+      },
+      keyframes: {
+        'zoom-out': {
+          '0%': {
+            transform: 'scale(1.3)',
+            opacity: '0.4'
+          },
+          '100%': {
+            transform: 'scale(1)',
+            opacity: '1'
+          }
+        }
+      },
+      keyframes: {
+        'zoom-out': {
+          '0%': { transform: 'scale(1.3)', opacity: '0.4' },
+          '100%': { transform: 'scale(1)', opacity: '1' }
+        },
+        'text-float': {
+          '0%': { transform: 'translateY(50px)', opacity: '0', filter: 'blur(10px)' },
+          '100%': { transform: 'translateY(0)', opacity: '1', filter: 'blur(0)' }
+        }
+      },
+      animation: {
+        'hero-zoom': 'zoom-out 2.5s ease-out forwards',
+        'hero-text': 'text-float 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards'
       }
     }
   },

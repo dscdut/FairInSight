@@ -1,26 +1,27 @@
-import { type ReactNode } from 'react'
+import { type ReactNode, Suspense } from 'react'
 
 import { Outlet } from 'react-router-dom'
 
 import SideBar from '@/components/side-bar/side-bar'
 import TopBar from '@/components/top-bar/top-bar'
+import LoadingSpinner from '@/components/ui/loading-spinner'
 import { cn } from '@/core/lib/utils'
-import { FooterSection } from '@/pages/home/components/footer-section'
 
 interface LayoutMainProps {
   children?: ReactNode
 }
 
 const LayoutMain = ({ children }: LayoutMainProps) => {
+
   return (
     <div>
       <div className='flex min-h-screen'>
         <SideBar />
-        <div className='flex flex-col flex-1 min-h-0 bg-background-secondary'>
+        <div className='flex flex-col flex-1 min-w-0 min-h-0 bg-background-secondary'>
           <TopBar />
           <main
             className={cn(
-              'relative flex-1 transition-all duration-300',
+              'relative flex-1 transition-all duration-300 min-w-0',
               'backdrop-blur-sm'
             )}
           >
@@ -36,25 +37,30 @@ const LayoutMain = ({ children }: LayoutMainProps) => {
             </div>
 
             {/* Content Container */}
-            <div className='relative z-10 p-4 h-full'>
+            <div className='relative z-10 sm:p-4 p-0 h-full'>
               <div className='mx-auto max-w-none h-full'>
                 <div
                   className={cn(
                     'rounded-2xl border min-h-[calc(100vh-140px)] border-border-secondary',
                     'shadow-2xl backdrop-blur-xl bg-background-primary',
                     'h-full transition-all duration-300 hover:shadow-3xl',
-                    'mx-auto p-4 lg:p-8',
+                    'mx-auto',
                     'flex flex-col'
                   )}
                 >
-                  {children || <Outlet />}
+                  <Suspense fallback={
+                    <div className='flex-1 flex items-center justify-center min-h-[300px]'>
+                      <LoadingSpinner />
+                    </div>
+                  }>
+                    {children || <Outlet />}
+                  </Suspense>
                 </div>
               </div>
             </div>
           </main>
         </div>
       </div>
-      <FooterSection />
     </div>
   )
 }

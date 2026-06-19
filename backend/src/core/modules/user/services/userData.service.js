@@ -6,7 +6,7 @@ class Service {
             id: user.id,
             fullName: user.full_name,
             email: user.email,
-            role: (user.roles?.name || Role.USER).toLowerCase(),
+            roleName: (user.roles?.name || Role.USER).toUpperCase(),
         };
     }
 }

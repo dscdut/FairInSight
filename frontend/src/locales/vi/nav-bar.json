@@ -7,9 +7,11 @@
   "performance": "Hiệu suất hệ thống",
   "users": "Quản lý người dùng",
   "home": "Trang chủ",
-  "chat_ai": "Chat với AI",
+  "chat_ai": "Phân tích pháp luật",
+  "messages": "Tin nhắn",
   "template": "Kho biểu mẫu",
-  "legal_analysis": "Phân tích pháp lý",
+  "legal": "Văn bản pháp luật",
+  "find_lawyer": "Danh sách luật sư",
   "report": "Quản lý báo cáo",
   "setting": "Cài đặt",
   "system_status": "Trạng thái hệ thống",
@@ -17,5 +19,6 @@
   "account": "Tài khoản",
   "profile": "Hồ sơ cá nhân",
   "edit_profile": "Chỉnh sửa hồ sơ",
-  "logout": "Đăng xuất"
+  "logout": "Đăng xuất",
+  "appointments": "Lịch hẹn tư vấn"
 }

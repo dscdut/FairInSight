@@ -21,14 +21,14 @@ class Service {
     async register(registerDto) {
         const existingEmail = await this.repository.findActiveUserByEmail(registerDto.email);
         if (existingEmail) {
-            throw new DuplicateException("Email already in use");
+            throw new DuplicateException('Email already in use');
         }
 
         registerDto.password = await this.bcryptService.hash(registerDto.password);
 
         const existingRole = await this.repository.findRoleByName(registerDto.role);
         if (!existingRole) {
-            throw new BadRequestException("Role does not exist");
+            throw new BadRequestException('Role does not exist');
         }
 
         const otp = crypto.randomInt(100000, 999999).toString();
@@ -56,9 +56,9 @@ class Service {
                 id: result.id,
                 fullName: registerDto.fullName,
                 email: registerDto.email,
-                roleName: existingRole.name,
+                roleName: existingRole.name.toUpperCase(),
             },
-            message: "User registered successfully",
+            message: 'User registered successfully',
         };
     }
 
@@ -81,7 +81,7 @@ class Service {
             userId: user.id,
             email: user.email,
             fullName: user.full_name,
-            roleName: user.roles?.name || null,
+            roleName: user.roles?.name ? user.roles.name.toUpperCase() : null,
         };
 
         const targetUserId = userId ?? user.id;
@@ -92,18 +92,18 @@ class Service {
         return {
             data: {
                 user: userData,
-                accessToken: accessToken,
-                refreshToken: refreshToken,
+                accessToken,
+                refreshToken,
             },
-            message: "Login successful.",
+            message: 'Login successful.',
         };
     }
 
     async forgotPassword(forgotPasswordDto) {
         const existingEmail = await this.repository.findActiveUserByEmail(forgotPasswordDto.email);
-        
+
         if (!existingEmail) {
-            throw new BadRequestException("Email does not exist");
+            throw new BadRequestException('Email does not exist');
         }
 
         const otp = crypto.randomInt(100000, 999999).toString();
@@ -119,7 +119,7 @@ class Service {
         });
 
         return {
-            message: "OTP has been sent to your email.",
+            message: 'OTP has been sent to your email.',
         };
     }
 
@@ -129,7 +129,7 @@ class Service {
         if (type === 'email') {
             const user = await this.repository.getEmailConfirmationDataByEmail(verifyOtpDto.email);
             if (!user) {
-                throw new BadRequestException("Email does not exist");
+                throw new BadRequestException('Email does not exist');
             }
 
             if (user.is_email_confirmed) {
@@ -138,15 +138,15 @@ class Service {
 
             const parsed = this.#parseOtpToken(user.email_confirmation_token);
             if (!parsed) {
-                throw new UnAuthorizedException("Invalid OTP");
+                throw new UnAuthorizedException('Invalid OTP');
             }
 
             if (parsed.expiresAt < Date.now()) {
-                throw new UnAuthorizedException("OTP has expired");
+                throw new UnAuthorizedException('OTP has expired');
             }
 
             if (parsed.otp !== verifyOtpDto.otp) {
-                throw new UnAuthorizedException("Invalid OTP");
+                throw new UnAuthorizedException('Invalid OTP');
             }
 
             await this.repository.confirmEmail(user.id);
@@ -160,17 +160,17 @@ class Service {
 
         const existingEmail = await this.repository.findActiveUserByEmail(verifyOtpDto.email);
         if (!existingEmail) {
-            throw new BadRequestException("Email does not exist");
+            throw new BadRequestException('Email does not exist');
         }
 
         const existingOtp = await this.repository.getPasswordResetData(existingEmail.id);
 
         if (existingOtp.password_reset_expiry < Date.now()) {
-            throw new UnAuthorizedException("OTP has expired");
+            throw new UnAuthorizedException('OTP has expired');
         }
 
-        if (existingOtp.password_reset_token != verifyOtpDto.otp) {
-            throw new UnAuthorizedException("Invalid OTP");
+        if (existingOtp.password_reset_token !== verifyOtpDto.otp) {
+            throw new UnAuthorizedException('Invalid OTP');
         }
 
         const { token: passwordResetToken } = await this.#createPasswordResetToken(existingEmail.id);
@@ -185,7 +185,7 @@ class Service {
     async resetPassword(resetPasswordDto) {
         const user = await this.repository.findUserByResetToken(resetPasswordDto.token);
         if (!user) {
-            throw new UnAuthorizedException("Invalid or expired token");
+            throw new UnAuthorizedException('Invalid or expired token');
         }
 
         resetPasswordDto.newPassword = await this.bcryptService.hash(resetPasswordDto.newPassword);
@@ -193,8 +193,8 @@ class Service {
         await this.repository.updatePasswordHash(user.id, resetPasswordDto.newPassword);
 
         return {
-            message: "Password has been reset successfully",
-        }
+            message: 'Password has been reset successfully',
+        };
     }
 
     async getMyProfile(userId) {
@@ -217,16 +217,16 @@ class Service {
         });
         return {
             data: this.#mapProfile(result),
-        }
+        };
     }
 
     async refreshToken(refreshTokenDto, userId) {
         const result = await this.repository.findRefreshToken(refreshTokenDto.refresh_token);
         if (!result) {
-            throw new UnAuthorizedException("Invalid or expired refresh token");
+            throw new UnAuthorizedException('Invalid or expired refresh token');
         }
         if (result.expires_at < Date.now() || result.is_revoked) {
-            throw new UnAuthorizedException("Invalid or expired refresh token");
+            throw new UnAuthorizedException('Invalid or expired refresh token');
         }
 
         const roleNames = await this.#getRoleNames(userId);
@@ -234,22 +234,22 @@ class Service {
 
         return {
             data: {
-                accessToken: accessToken,
-                refreshToken: refreshToken,
+                accessToken,
+                refreshToken,
             },
-        }
+        };
     }
 
     async logout(logoutDto) {
         const existToken = await this.repository.findRefreshToken(logoutDto.refresh_token);
         if (!existToken) {
-            throw new UnAuthorizedException("Invalid or expired refresh token");
+            throw new UnAuthorizedException('Invalid or expired refresh token');
         }
 
         await this.repository.revokeRefreshToken(logoutDto.refresh_token);
-        return { 
-            type: "string",
-            message: "Logout successful",
+        return {
+            type: 'string',
+            message: 'Logout successful',
         };
     }
 
@@ -291,7 +291,7 @@ class Service {
         }
 
         if (Array.isArray(userWithRole.roles)) {
-            return userWithRole.roles.map((role) => role.name);
+            return userWithRole.roles.map(role => role.name);
         }
 
         return [userWithRole.roles.name];

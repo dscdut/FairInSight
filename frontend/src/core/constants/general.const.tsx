@@ -11,7 +11,9 @@ import {
   Settings,
   ShoppingCart,
   TrendingUp,
-  Users
+  Users,
+  UserCheck,
+  MessageCircle
 } from 'lucide-react'
 
 import { ROUTE } from '@/core/constants/path'
@@ -23,6 +25,12 @@ export const adminSidebarLinks: TSidebarLinks[] = [
     titleKey: 'dashboard',
     icon: <BarChart3 className='w-5 h-5' />,
     path: ROUTE.ADMIN.DASHBOARD
+  },
+  {
+    title: 'Văn bản pháp luật',
+    titleKey: 'Legal Document',
+    icon: <Scale className='w-5 h-5' />,
+    path: ROUTE.ADMIN.LEGAL_DOCUMENTS
   },
   {
     title: 'Phân tích',
@@ -241,10 +249,16 @@ export const userSideBarLinks: TSidebarLinks[] = [
     path: ROUTE.USER.ROOT
   },
   {
-    title: 'Chat với AI',
+    title: 'Phân tích pháp luật',
     titleKey: 'chat_ai',
     icon: <MessageSquare className='w-5 h-5' />,
     path: ROUTE.USER.CHAT_AI
+  },
+  {
+    title: 'Tin nhắn',
+    titleKey: 'messages',
+    icon: <MessageCircle className='w-5 h-5' />,
+    path: ROUTE.USER.MESSAGES
   },
   {
     title: 'Kho biểu mẫu',
@@ -253,10 +267,22 @@ export const userSideBarLinks: TSidebarLinks[] = [
     path: ROUTE.USER.TEMPLATE
   },
   {
-    title: 'Phân tích pháp lý',
-    titleKey: 'legal_analysis',
+    title: 'Văn bản pháp luật',
+    titleKey: 'legal',
     icon: <Scale className='w-5 h-5' />,
-    path: ROUTE.USER.LEGAL_ANALYSIS
+    path: ROUTE.USER.LEGAL
+  },
+  {
+    title: 'Danh sách luật sư',
+    titleKey: 'find_lawyer',
+    icon: <UserCheck className='w-5 h-5' />,
+    path: ROUTE.USER.LAWYER
+  },
+  {
+    title: 'Yêu cầu tư vấn',
+    titleKey: 'appointments',
+    icon: <Calendar className='w-5 h-5' />,
+    path: ROUTE.USER.APPOINTMENT
   },
   {
     title: 'Quản lý báo cáo',

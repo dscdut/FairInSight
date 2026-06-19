@@ -1,0 +1,61 @@
+{% import 'self' as c %}
+{{ c.style() }}
+{% call c.page() %}
+  <div class="header">
+    <div class="republic">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+    <div class="motto">Độc lập - Tự do - Hạnh phúc</div>
+  </div>
+
+  <div class="title" style="margin-top: 35px; margin-bottom: 25px;">
+    <h1>ĐƠN XIN NGHỈ PHÉP</h1>
+  </div>
+
+  <div class="line bold center" style="margin-bottom: 25px;">
+    Kính gửi: Ban Giám đốc cùng Trưởng bộ phận nhân sự
+  </div>
+
+  <div class="line">
+    Tôi tên là: <span class="bold uppercase">{{ fullName|default('......................................................', true) }}</span>
+  </div>
+
+  <div class="line">
+    Chức vụ: {{ position|default('........................................', true) }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Bộ phận: {{ department|default('........................................', true) }}
+  </div>
+
+  <div class="line text-justify" style="margin-top: 15px;">
+    Tôi làm đơn này kính đề nghị Ban Giám đốc và Trưởng bộ phận cho phép tôi được nghỉ phép:
+  </div>
+
+  <div class="line indent-1">
+    - Từ ngày: <span class="bold">{{ format_date(startDate) if startDate else '..../..../........' }}</span>
+  </div>
+  <div class="line indent-1">
+    - Đến hết ngày: <span class="bold">{{ format_date(endDate) if endDate else '..../..../........' }}</span>
+  </div>
+
+  <div class="line text-justify" style="margin-top: 10px;">
+    Lý do nghỉ phép: {{ reason|default('................................................................................................................................................', true) }}
+  </div>
+
+  <div class="line text-justify" style="margin-top: 15px; text-indent: 20px;">
+    Tôi cam kết sẽ bàn giao đầy đủ công việc trước khi nghỉ và giữ liên lạc trong trường hợp khẩn cấp. Rất mong Ban Giám đốc xem xét và phê duyệt.
+  </div>
+
+  <div class="line text-justify" style="margin-top: 10px;">
+    Tôi xin chân thành cảm ơn!
+  </div>
+
+  <div class="signature" style="margin-top: 55px;">
+    <div class="signature-left" style="text-align: center; width: 48%;">
+      <div class="bold uppercase">Ý KIẾN DUYỆT</div>
+      <div class="italic text-sm text-gray-500">(Ký và ghi rõ họ tên)</div>
+      <div class="bold" style="margin-top: 70px;">...................................</div>
+    </div>
+    <div class="signature-right" style="text-align: center; width: 48%;">
+      <div class="italic" style="font-size: 11.5pt; margin-bottom: 5px;">{{ signLocation|default('Đà Nẵng', true) }}, ngày {{ format_date(signDate, 'words') if signDate else '...... tháng ...... năm ......' }}</div>
+      <div class="bold uppercase">NGƯỜI LÀM ĐƠN</div>
+      <div class="italic text-sm text-gray-500">(Ký và ghi rõ họ tên)</div>
+      <div class="bold" style="margin-top: 70px;">{{ fullName|default('...................................', true) }}</div>
+    </div>
+  </div>
+{% endcall %}

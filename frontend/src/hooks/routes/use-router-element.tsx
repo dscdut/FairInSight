@@ -20,17 +20,22 @@ const ForgotPassword = lazy(() => import('@/pages/forgot-password/ForgotPassword
 const ResetPassword = lazy(() => import('@/pages/reset-password/ResetPassword'))
 const Dashboard = lazy(() => import('@/pages/admin/dashboard'))
 const Users = lazy(() => import('@/pages/admin/users'))
+const LegalDocuments = lazy(() => import('@/pages/admin/legal-documents'))
 const PageNotFound = lazy(() => import('@/pages/404/PageNotFound'))
 const Profile = lazy(() => import('@/pages/profile/Profile'))
 const HomePage = lazy(() => import('@/pages/home/HomePage'))
 const UserDashboard = lazy(() => import('@/pages/users/dashboard/Dashboard'))
 const ProfileEdit = lazy(() => import('@/pages/profile/ProfileEdit'))
 const AIChat = lazy(() => import('@/pages/users/ai-chat/AIChat'))
+const Messages = lazy(() => import('@/pages/users/messages/Messages'))
 const LegalAnalysis = lazy(() => import('@/pages/users/legal-analysis/LegalAnalysis'))
 const Report = lazy(() => import('@/pages/users/report/Report'))
 const Setting = lazy(() => import('@/pages/users/setting/Setting'))
 const Template = lazy(() => import('@/pages/users/template/Template'))
 const User = lazy(() => import('@/pages/users/user/User'))
+const LawyerList = lazy(() => import('@/pages/users/lawyer/LawyerList'))
+const LawyerProfile = lazy(() => import('@/pages/users/lawyer/LawyerProfile'))
+const Appointments = lazy(() => import('@/pages/users/appointments/Appointments'))
 
 export default function useRoutesElements() {
   const location = useLocation()
@@ -56,11 +61,15 @@ export default function useRoutesElements() {
             ) : (
               <Route path={ROUTE.USER.ROOT} element={<LayoutMain />}>
                 <Route index element={<UserDashboard />} />
-                <Route path={ROUTE.PROFILE.ROOT} element={<Profile />} />
-                <Route path={ROUTE.PROFILE.EDIT} element={<ProfileEdit />} />
+                <Route path={ROUTE.USER.PROFILE} element={<Profile />} />
+                <Route path={ROUTE.USER.EDIT} element={<ProfileEdit />} />
                 <Route path={ROUTE.USER.CHAT_AI} element={<AIChat />} />
+                <Route path={ROUTE.USER.MESSAGES} element={<Messages />} />
                 <Route path={ROUTE.USER.TEMPLATE} element={<Template />} />
-                <Route path={ROUTE.USER.LEGAL_ANALYSIS} element={<LegalAnalysis />} />
+                <Route path={ROUTE.USER.LEGAL} element={<LegalAnalysis />} />
+                <Route path={ROUTE.USER.LAWYER} element={<LawyerList />} />
+                <Route path={ROUTE.USER.LAWYER_DETAIL} element={<LawyerProfile />} />
+                <Route path={ROUTE.USER.APPOINTMENT} element={<Appointments />} />
                 <Route path={ROUTE.USER.REPORT} element={<Report />} />
                 <Route path={ROUTE.USER.INFO} element={<User />} />
                 <Route path={ROUTE.USER.SETTING} element={<Setting />} />
@@ -89,6 +98,7 @@ export default function useRoutesElements() {
           <Route path={ROUTE.ADMIN.ROOT} element={<LayoutMain />}>
             <Route path={ROUTE.ADMIN.DASHBOARD} element={<Dashboard />} />
             <Route path={ROUTE.ADMIN.USERS} element={<Users />} />
+            <Route path={ROUTE.ADMIN.LEGAL_DOCUMENTS} element={<LegalDocuments />} />
             <Route path={ROUTE.ADMIN.ANALYTICS.ROOT} element={<span>Analytics</span>} />
             <Route path={ROUTE.ADMIN.ANALYTICS.OVERVIEW} element={<span>Analytics Overview</span>} />
             <Route path={ROUTE.ADMIN.ANALYTICS.SALES} element={<span>Analytics Sales</span>} />

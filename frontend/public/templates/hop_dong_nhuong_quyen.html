@@ -1,0 +1,66 @@
+{% import 'self' as c %}
+{{ c.style() }}
+{% call c.page() %}
+  <div class="header">
+    <div class="republic">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+    <div class="motto">Độc lập - Tự do - Hạnh phúc</div>
+    <div class="italic" style="font-size: 13pt; margin-top: 10px; text-align: right;">
+      {{ signLocation|default('......', true) }}, ngày {{ format_date(signDate, 'words') if signDate else '...... tháng ...... năm ......' }}
+    </div>
+  </div>
+
+  <div class="title" style="margin-top: 25px; margin-bottom: 25px;">
+    <h1>HỢP ĐỒNG NHƯỢNG QUYỀN THƯƠNG MẠI</h1>
+    <div class="bold" style="font-size: 12pt; margin-top: 6px;">Số: {{ contractNumber|default('........................', true) }}</div>
+  </div>
+
+  <div class="line">
+    Hôm nay, ngày {{ format_date(signDate, 'words') if signDate else '...... tháng ...... năm ......' }}, tại {{ signLocation|default('....................................', true) }}, chúng tôi gồm các bên dưới đây:
+  </div>
+
+  <div class="section">BÊN NHƯỢNG QUYỀN (BÊN A):</div>
+  <div class="line indent-1"><span class="bold">Tên thương hiệu:</span> IKEA Việt Nam</div>
+  <div class="line indent-1"><span class="bold">Địa chỉ trụ sở:</span> Älmhult, Thụy Điển</div>
+  <div class="line indent-1"><span class="bold">Đại diện pháp luật:</span> Ông Ingvar Kamprad</div>
+
+  <div class="section">BÊN NHẬN QUYỀN (BÊN B):</div>
+  <div class="line indent-1"><span class="bold">Họ và tên:</span> {{ fullName|default('......................................................', true) }}</div>
+  <div class="line indent-1"><span class="bold">Số CCCD/CMND:</span> {{ idNumber|default('........................................', true) }}</div>
+  <div class="line indent-1"><span class="bold">Ngày cấp, nơi cấp:</span> {{ idIssueInfo|default('......................................................', true) }}</div>
+  <div class="line indent-1"><span class="bold">Địa chỉ thường trú:</span> {{ permanentAddress|default('......................................................', true) }}</div>
+  <div class="line indent-1"><span class="bold">Số điện thoại liên lạc:</span> {{ phone|default('........................................', true) }}</div>
+
+  <div class="section">ĐIỀU 1: PHẠM VI NHƯỢNG QUYỀN THƯƠNG HIỆU</div>
+  <div class="line">
+    Bên A đồng ý nhượng quyền quyền khai thác thương mại đối với hệ thống cửa hàng trang trí nội thất mang nhãn hiệu IKEA cho Bên B vận hành tại thị trường Việt Nam.
+  </div>
+
+  <div class="section">ĐIỀU 2: GIÁ TRỊ HỢP ĐỒNG VÀ PHƯƠNG THỨC THANH TOÁN</div>
+  <div class="line">
+    2.1. Tổng giá trị nhượng quyền thỏa thuận ban đầu là: <span class="bold">{{ format_money(contractValue) if contractValue else '...........................' }}</span> VNĐ.
+  </div>
+  <div class="line">
+    2.2. Phương thức thanh toán: Chuyển khoản qua tài khoản ngân hàng được chỉ định của Bên A trong vòng 10 ngày kể từ ngày ký hợp đồng.
+  </div>
+
+  <div class="section">ĐIỀU 3: QUYỀN VÀ NGHĨA VỤ CỦA CÁC BÊN</div>
+  <div class="line">
+    3.1. Bên B cam kết đầu tư tài chính thiết lập mặt bằng theo đúng thiết kế tiêu chuẩn mà Bên A đưa ra.
+  </div>
+  <div class="line">
+    3.2. Bên A có trách nhiệm đào tạo nghiệp vụ và cung cấp tài liệu hướng dẫn quy chuẩn vận hành cửa hàng cho Bên B.
+  </div>
+
+  <div class="signature" style="margin-top: 40px;">
+    <div class="signature-left" style="text-align: center;">
+      <div class="bold uppercase">ĐẠI DIỆN BÊN A</div>
+      <div class="italic text-sm text-gray-500">(Ký và ghi rõ họ tên)</div>
+      <div class="bold" style="margin-top: 60px;">Ingvar Kamprad</div>
+    </div>
+    <div class="signature-right" style="text-align: center;">
+      <div class="bold uppercase">ĐẠI DIỆN BÊN B</div>
+      <div class="italic text-sm text-gray-500">(Ký và ghi rõ họ tên)</div>
+      <div class="bold" style="margin-top: 60px;">{{ fullName|default('...................................', true) }}</div>
+    </div>
+  </div>
+{% endcall %}

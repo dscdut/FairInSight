@@ -1,0 +1,52 @@
+export const LAW_MAJORS = {
+  ALL: 'Tất cả',
+  CIVIL: 'Dân sự',
+  CRIMINAL: 'Hình sự',
+  LAND: 'Đất đai',
+  CONTRACT: 'Hợp đồng',
+  LABOR: 'Lao động',
+  BUSINESS: 'Doanh nghiệp',
+  FAMILY: 'Hôn nhân & Gia đình',
+  ADMINISTRATIVE: 'Hành chính',
+  TAX: 'Tài chính & Thuế',
+  IP: 'Sở hữu trí tuệ',
+  CIVIL_INHERITANCE: 'Dân sự & Thừa kế',
+  LAND_PROPERTY: 'Đất đai & Bất động sản',
+  BUSINESS_COMMERCE: 'Doanh nghiệp & Thương mại',
+  FAMILY_LONG: 'Hôn nhân và gia đình',
+  UNKNOWN: 'Tôi không chắc lĩnh vực'
+} as const
+
+export const FIND_LAWYER_CATEGORIES = [
+  LAW_MAJORS.ALL,
+  LAW_MAJORS.CRIMINAL,
+  LAW_MAJORS.CIVIL_INHERITANCE,
+  LAW_MAJORS.LAND_PROPERTY,
+  LAW_MAJORS.FAMILY,
+  LAW_MAJORS.BUSINESS_COMMERCE,
+  LAW_MAJORS.LABOR,
+  LAW_MAJORS.ADMINISTRATIVE,
+  LAW_MAJORS.IP
+] as const
+
+export const REQUEST_FORM_CATEGORIES = [
+  LAW_MAJORS.CIVIL,
+  LAW_MAJORS.CRIMINAL,
+  LAW_MAJORS.LAND,
+  LAW_MAJORS.CONTRACT,
+  LAW_MAJORS.LABOR,
+  LAW_MAJORS.BUSINESS,
+  LAW_MAJORS.FAMILY,
+  LAW_MAJORS.ADMINISTRATIVE,
+  LAW_MAJORS.TAX
+] as const
+
+export const CHAT_STARTER_CATEGORIES = [
+  LAW_MAJORS.FAMILY_LONG,
+  LAW_MAJORS.LAND,
+  LAW_MAJORS.CRIMINAL,
+  LAW_MAJORS.CIVIL,
+  LAW_MAJORS.LABOR,
+  LAW_MAJORS.BUSINESS,
+  LAW_MAJORS.UNKNOWN
+] as const

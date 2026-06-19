@@ -16,6 +16,30 @@
       "email": "Please enter a valid email",
       "minLength": "{{field}} must be at least {{min}} characters",
       "maxLength": "{{field}} must not exceed {{max}} characters"
+    },
+    "appointments": {
+      "title": "Consultation Appointments List",
+      "searchPlaceholder": "Search by lawyer name or specialization...",
+      "statusAll": "All",
+      "statusPending": "Pending",
+      "statusConfirmed": "Confirmed",
+      "statusRejected": "Rejected",
+      "colLawyer": "Lawyer",
+      "colTopic": "Topic/Specialization",
+      "colDate": "Sent Date",
+      "colStatus": "Status",
+      "colAction": "Action",
+      "viewDetail": "View Detail",
+      "cancel": "Cancel",
+      "request": "Request",
+      "noRequests": "No consultation appointments found.",
+      "detailTitle": "Appointment Details",
+      "detailLawyer": "Consultant Lawyer",
+      "detailDate": "Requested Date",
+      "detailStatus": "Status",
+      "detailMessage": "Message Details",
+      "detailFiles": "Attached Documents",
+      "close": "Close"
     }
   }
 }

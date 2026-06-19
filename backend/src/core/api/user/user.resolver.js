@@ -1,6 +1,5 @@
 import { Module } from 'packages/handler/Module';
 import {
-    CreateUserInterceptor,
     UpdateUserInterceptor,
     BanUserInterceptor,
     UnbanUserInterceptor,

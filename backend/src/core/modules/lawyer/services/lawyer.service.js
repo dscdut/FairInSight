@@ -1,5 +1,5 @@
-import { LawyerRepository } from '../lawyer.repository';
 import { NotFoundException } from 'packages/httpException';
+import { LawyerRepository } from '../lawyer.repository';
 import { mapLawyerListItem, mapLawyerDetail } from './lawyer.mapper';
 
 class Service {
