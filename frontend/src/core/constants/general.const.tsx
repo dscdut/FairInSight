@@ -12,7 +12,8 @@ import {
   ShoppingCart,
   TrendingUp,
   Users,
-  UserCheck
+  UserCheck,
+  MessageCircle
 } from 'lucide-react'
 
 import { ROUTE } from '@/core/constants/path'
@@ -248,10 +249,16 @@ export const userSideBarLinks: TSidebarLinks[] = [
     path: ROUTE.USER.ROOT
   },
   {
-    title: 'Chat với AI',
+    title: 'Phân tích pháp luật',
     titleKey: 'chat_ai',
     icon: <MessageSquare className='w-5 h-5' />,
     path: ROUTE.USER.CHAT_AI
+  },
+  {
+    title: 'Tin nhắn',
+    titleKey: 'messages',
+    icon: <MessageCircle className='w-5 h-5' />,
+    path: ROUTE.USER.MESSAGES
   },
   {
     title: 'Kho biểu mẫu',

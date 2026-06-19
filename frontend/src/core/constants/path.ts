@@ -23,8 +23,8 @@ export const ROUTE = {
     INFO: '/users',
     SETTING: '/setting',
     PROFILE: '/profile',
-    EDIT: '/profile/edit'
-
+    EDIT: '/profile/edit',
+    MESSAGES: '/messages'
   },
   FORM_LIBRARY: '/form-library',
   ADMIN: {

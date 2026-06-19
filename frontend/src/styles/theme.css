@@ -141,6 +141,6 @@
   --border: var(--border-primary);
   --input: var(--border-secondary);
   --ring: var(--border-focus);
-  --primary: var(--primary-400);
+  --primary: var(--primary-500);
   --primary-foreground: var(--grey-900);
 }

@@ -5,7 +5,7 @@
     <div class="republic">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
     <div class="motto">Độc lập - Tự do - Hạnh phúc</div>
     <div class="italic" style="font-size: 13pt; margin-top: 10px; text-align: right;">
-      {{ signLocation|default('......', true) }}, ngày {{ format_date(signDate) if signDate else '...... tháng ...... năm ......' }}
+      {{ signLocation|default('......', true) }}, ngày {{ format_date(signDate, 'words') if signDate else '...... tháng ...... năm ......' }}
     </div>
   </div>
 
@@ -15,7 +15,7 @@
   </div>
 
   <div class="line">
-    Hôm nay, ngày {{ format_date(signDate) if signDate else '...... tháng ...... năm ......' }}, tại {{ signLocation|default('....................................', true) }}, chúng tôi gồm các bên dưới đây:
+    Hôm nay, ngày {{ format_date(signDate, 'words') if signDate else '...... tháng ...... năm ......' }}, tại {{ signLocation|default('....................................', true) }}, chúng tôi gồm các bên dưới đây:
   </div>
 
   <div class="section">BÊN NHƯỢNG QUYỀN (BÊN A):</div>
@@ -37,7 +37,7 @@
 
   <div class="section">ĐIỀU 2: GIÁ TRỊ HỢP ĐỒNG VÀ PHƯƠNG THỨC THANH TOÁN</div>
   <div class="line">
-    2.1. Tổng giá trị nhượng quyền thỏa thuận ban đầu là: <span class="bold">{{ contractValue|default('...........................', true) }}</span> VNĐ.
+    2.1. Tổng giá trị nhượng quyền thỏa thuận ban đầu là: <span class="bold">{{ format_money(contractValue) if contractValue else '...........................' }}</span> VNĐ.
   </div>
   <div class="line">
     2.2. Phương thức thanh toán: Chuyển khoản qua tài khoản ngân hàng được chỉ định của Bên A trong vòng 10 ngày kể từ ngày ký hợp đồng.

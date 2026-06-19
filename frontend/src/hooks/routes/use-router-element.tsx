@@ -27,6 +27,7 @@ const HomePage = lazy(() => import('@/pages/home/HomePage'))
 const UserDashboard = lazy(() => import('@/pages/users/dashboard/Dashboard'))
 const ProfileEdit = lazy(() => import('@/pages/profile/ProfileEdit'))
 const AIChat = lazy(() => import('@/pages/users/ai-chat/AIChat'))
+const Messages = lazy(() => import('@/pages/users/messages/Messages'))
 const LegalAnalysis = lazy(() => import('@/pages/users/legal-analysis/LegalAnalysis'))
 const Report = lazy(() => import('@/pages/users/report/Report'))
 const Setting = lazy(() => import('@/pages/users/setting/Setting'))
@@ -62,6 +63,7 @@ export default function useRoutesElements() {
                 <Route path={ROUTE.USER.PROFILE} element={<Profile />} />
                 <Route path={ROUTE.USER.EDIT} element={<ProfileEdit />} />
                 <Route path={ROUTE.USER.CHAT_AI} element={<AIChat />} />
+                <Route path={ROUTE.USER.MESSAGES} element={<Messages />} />
                 <Route path={ROUTE.USER.TEMPLATE} element={<Template />} />
                 <Route path={ROUTE.USER.LEGAL} element={<LegalAnalysis />} />
                 <Route path={ROUTE.USER.LAWYER} element={<LawyerList />} />

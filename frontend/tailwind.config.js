@@ -168,6 +168,32 @@ export default {
         600: 'var(--shadow-600)',
         700: 'var(--shadow-700)',
         800: 'var(--shadow-800)'
+      },
+      keyframes: {
+        'zoom-out': {
+          '0%': {
+            transform: 'scale(1.3)',
+            opacity: '0.4'
+          },
+          '100%': {
+            transform: 'scale(1)',
+            opacity: '1'
+          }
+        }
+      },
+      keyframes: {
+        'zoom-out': {
+          '0%': { transform: 'scale(1.3)', opacity: '0.4' },
+          '100%': { transform: 'scale(1)', opacity: '1' }
+        },
+        'text-float': {
+          '0%': { transform: 'translateY(50px)', opacity: '0', filter: 'blur(10px)' },
+          '100%': { transform: 'translateY(0)', opacity: '1', filter: 'blur(0)' }
+        }
+      },
+      animation: {
+        'hero-zoom': 'zoom-out 2.5s ease-out forwards',
+        'hero-text': 'text-float 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards'
       }
     }
   },

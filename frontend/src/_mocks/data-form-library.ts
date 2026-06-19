@@ -67,6 +67,13 @@ export const mockTemplates: Template[] = [
           { key: 'officeAddress', label: 'Địa chỉ trụ sở chính', type: 'text', defaultValue: '123 Nguyễn Hữu Thọ, Hải Châu, Đà Nẵng', required: true },
           { key: 'capital', label: 'Vốn đầu tư (VND)', type: 'text', defaultValue: '500000000', required: true }
         ]
+      },
+      {
+        section: 'Thông tin hồ sơ',
+        inputs: [
+          { key: 'signDate', label: 'Ngày lập đề nghị', type: 'date', defaultValue: '2026-06-19', required: true },
+          { key: 'signLocation', label: 'Địa điểm lập', type: 'text', defaultValue: 'Đà Nẵng', required: true }
+        ]
       }
     ]
   },
@@ -86,6 +93,22 @@ export const mockTemplates: Template[] = [
         inputs: [
           { key: 'lessorName', label: 'Tên tổ chức/cá nhân', type: 'text', defaultValue: 'Công ty Quản lý Bất động sản OfficeLand', required: true },
           { key: 'lessorAddress', label: 'Địa chỉ', type: 'text', defaultValue: '456 Lê Lợi, Hải Châu, Đà Nẵng', required: true }
+        ]
+      },
+      {
+        section: 'Thông tin bên thuê (Bên B)',
+        inputs: [
+          { key: 'fullName', label: 'Họ và tên bên thuê', type: 'text', defaultValue: 'Nguyễn Văn B', required: true },
+          { key: 'idNumber', label: 'Số CCCD/CMND', type: 'text', defaultValue: '012345678910', required: true },
+          { key: 'permanentAddress', label: 'Địa chỉ thường trú', type: 'text', defaultValue: 'Hải Châu, Đà Nẵng', required: true }
+        ]
+      },
+      {
+        section: 'Thông tin hợp đồng',
+        inputs: [
+          { key: 'contractNumber', label: 'Số hợp đồng', type: 'text', defaultValue: '01/2026/HĐTVP', required: true },
+          { key: 'signDate', label: 'Ngày ký', type: 'date', defaultValue: '2026-06-18', required: true },
+          { key: 'signLocation', label: 'Địa điểm ký', type: 'text', defaultValue: 'Đà Nẵng', required: true }
         ]
       },
       {
@@ -124,6 +147,13 @@ export const mockTemplates: Template[] = [
           { key: 'endDate', label: 'Đến hết ngày', type: 'date', defaultValue: '2026-06-22', required: true },
           { key: 'reason', label: 'Lý do xin nghỉ', type: 'text', defaultValue: 'Giải quyết công việc gia đình', required: true }
         ]
+      },
+      {
+        section: 'Thông tin đơn',
+        inputs: [
+          { key: 'signDate', label: 'Ngày viết đơn', type: 'date', defaultValue: '2026-06-19', required: true },
+          { key: 'signLocation', label: 'Địa điểm viết', type: 'text', defaultValue: 'Đà Nẵng', required: true }
+        ]
       }
     ]
   },
@@ -141,6 +171,7 @@ export const mockTemplates: Template[] = [
       {
         section: 'Thông tin bàn giao',
         inputs: [
+          { key: 'contractNumber', label: 'Số biên bản', type: 'text', defaultValue: '05/BBBG', required: true },
           { key: 'handoverDate', label: 'Ngày bàn giao', type: 'date', defaultValue: '2026-06-16', required: true },
           { key: 'handoverLocation', label: 'Địa điểm bàn giao', type: 'text', defaultValue: 'Văn phòng Công ty, Tầng 5, Tòa nhà A', required: true }
         ]

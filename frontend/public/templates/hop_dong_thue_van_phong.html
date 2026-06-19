@@ -5,13 +5,13 @@
     <div class="republic">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
     <div class="motto">Độc lập - Tự do - Hạnh phúc</div>
     <div class="italic" style="font-size: 13pt; margin-top: 10px; text-align: right;">
-      ......, ngày ...... tháng ...... năm ......
+      {{ signLocation|default('......', true) }}, ngày {{ format_date(signDate, 'words') if signDate else '...... tháng ...... năm ......' }}
     </div>
   </div>
 
   <div class="title" style="margin-top: 25px; margin-bottom: 25px;">
     <h1>HỢP ĐỒNG THUÊ VĂN PHÒNG</h1>
-    <div class="bold" style="font-size: 12pt; margin-top: 6px;">Số: ....../HĐTVP</div>
+    <div class="bold" style="font-size: 12pt; margin-top: 6px;">Số: {{ contractNumber|default('........................', true) }}</div>
   </div>
 
   <div class="line text-justify" style="text-indent: 20px;">
