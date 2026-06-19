@@ -18,7 +18,7 @@ interface LawyerContactDialogProps {
   onPreviewChatPdf?: () => void
 }
 
-const formatFileSize = (bytes: number) => {
+const formatContactFileSize = (bytes: number) => {
   if (bytes === 0) return '0 Bytes'
   const k = 1024
   const sizes = ['Bytes', 'KB', 'MB', 'GB']
@@ -86,7 +86,7 @@ export function LawyerContactDialog({
         })),
         ...selectedFiles.map((file) => ({
           name: file.name,
-          size: formatFileSize(file.size)
+          size: formatContactFileSize(file.size)
         }))
       ]
     })
@@ -294,7 +294,7 @@ export function LawyerContactDialog({
                           <div className='flex items-center gap-2 overflow-hidden mr-2'>
                             <Paperclip className='w-3.5 h-3.5 text-text-tertiary shrink-0' />
                             <span className='font-medium truncate text-text-primary'>{file.name}</span>
-                            <span className='text-text-description shrink-0'>({formatFileSize(file.size)})</span>
+                            <span className='text-text-description shrink-0'>({formatContactFileSize(file.size)})</span>
                           </div>
                           <button
                             type='button'
