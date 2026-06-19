@@ -6,12 +6,12 @@ import { LibrarySection } from '@/pages/home/components/library-section'
 
 const HomePage = () => {
   return (
-    <div className='min-h-screen bg-white dark:bg-gray-900'>
+    <div className='min-h-screen bg-background-primary'>
       <main>
         <HeroSection />
-        <AboutSection />
-        <LibrarySection />
         <AISection />
+        <LibrarySection />
+        <AboutSection />
         <ContactSection />
       </main>
     </div>

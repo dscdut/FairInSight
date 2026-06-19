@@ -5,14 +5,21 @@
       "title": "Connecting trust, delivering effective legal solutions",
       "description": "This platform connects you with reputable lawyers, helping you resolve all legal issues transparently and effectively.",
       "getStarted": "Get Started",
-      "searchLaw": "Search Law"
+      "searchLaw": "Search Law",
+      "footerText": "Law Made Simple: Your go-to resource for legal expertise. Get professional help whenever you need it, ensuring clarity and confidence in your legal matters.",
+      "footerTextRight": "Legal Insights: Your source for legal knowledge. Access expert help for assurance in your legal affairs.",
+      "lawyersCount": "+50 Lawyers"
     },
     "dashboard": {
       "title": "Dashboard"
     },
     "library": {
+      "badge": "My Services",
       "title": "Consulting Fields",
       "description": "We provide comprehensive legal consultation services across various fields of life and business:",
+      "trusted": "Trusted",
+      "expertise": "Expertise",
+      "trustedDesc": "I deliver trusted legal services with proven experience and a results-driven focus.",
       "civil": {
         "title": "Civil Law",
         "description": "Consultation on contracts, compensation for damages, inheritance, ownership, and other civil disputes."
@@ -71,12 +78,25 @@
       }
     },
     "contacts": {
-      "title": "Contacts",
-      "ctaTitle": "Ready to protect your rights?",
-      "ctaDesc": "Let the experts from FairInsights walk with you on the path to finding justice.",
-      "ctaBtn": "Get started for free"
+      "title": "Get In Touch",
+      "heading": "Have a question or feedback?",
+      "description": "Please fill out the form below and we will get back to you as soon as possible.",
+      "nameLabel": "Name",
+      "companyLabel": "Company",
+      "emailLabel": "Email",
+      "phoneLabel": "Phone",
+      "subjectLabel": "Subject",
+      "messageLabel": "Message",
+      "submitBtn": "Submit",
+      "locationTitle": "LOCATION",
+      "locationHeading": "We're here to help.",
+      "locationDesc": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+      "address": "54 Nguyễn Lương Bằng, Liên Chiểu, Đà Nẵng",
+      "email": "admin@gdsc.dev",
+      "phone": "+(62)21 2002-2012"
     },
     "features": {
+      "step": "Step",
       "title": "Why choose FairInsights?",
       "description": "FairInsights is your trusted companion for Vietnamese legal needs, offering reliable information and AI-powered assistance for seamless legal workflows.",
       "reputable": {

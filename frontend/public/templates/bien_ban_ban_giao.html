@@ -5,17 +5,17 @@
     <div class="republic">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
     <div class="motto">Độc lập - Tự do - Hạnh phúc</div>
     <div class="italic text-right" style="font-size: 13pt; margin-top: 10px; text-align: right">
-      ......, ngày ...... tháng ...... năm ......
+      {{ handoverLocation|default('......', true) }}, ngày {{ format_date(handoverDate, 'words') if handoverDate else '...... tháng ...... năm ......' }}
     </div>
   </div>
 
   <div class="title" style="margin-top: 25px; margin-bottom: 25px;">
     <h1>BIÊN BẢN BÀN GIAO TÀI SẢN</h1>
-    <div class="bold" style="font-size: 12pt; margin-top: 6px;">Số: ....../BBBG</div>
+    <div class="bold" style="font-size: 12pt; margin-top: 6px;">Số: {{ contractNumber|default('......', true) }}/BBBG</div>
   </div>
 
   <div class="line text-justify" style="text-indent: 20px;">
-    Hôm nay, ngày {{ format_date(handoverDate) if handoverDate else '...... tháng ...... năm ......' }}, tại {{ handoverLocation|default('......................................................', true) }}, chúng tôi gồm các bên tiến hành bàn giao tài sản như sau:
+    Hôm nay, ngày {{ format_date(handoverDate, 'words') if handoverDate else '...... tháng ...... năm ......' }}, tại {{ handoverLocation|default('......................................................', true) }}, chúng tôi gồm các bên tiến hành bàn giao tài sản như sau:
   </div>
 
   <div class="section">BÊN GIAO (BÊN A):</div>

@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 
-import { MapPin, Star, MessageSquare, Check } from 'lucide-react'
+import { MapPin, Star, MessageSquare, Check, Paperclip, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import FileUpload from '@/components/upload-file/file-upload'
+import { useUserInfo } from '@/hooks/tanstack-query/auth/use-query-auth'
 import { type Lawyer } from '@/models/lawyer/list-lawyer.type'
 
 interface LawyerContactDialogProps {
@@ -13,32 +15,46 @@ interface LawyerContactDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
+const formatFileSize = (bytes: number) => {
+  if (bytes === 0) return '0 Bytes'
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+}
+
 export function LawyerContactDialog({
   lawyer,
   isOpen,
   onOpenChange
 }: LawyerContactDialogProps) {
   const [contactForm, setContactForm] = useState({ name: '', phone: '', email: '', message: '' })
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [isSubmitSuccess, setIsSubmitSuccess] = useState(false)
+
+  const { data: user } = useUserInfo()
 
   // Reset/Initialize form when modal opens or lawyer changes
   useEffect(() => {
     if (lawyer && isOpen) {
       setContactForm({
-        name: '',
-        phone: '',
-        email: '',
+        name: user?.fullName || '',
+        phone: user?.phone || '0912832123',
+        email: user?.email || '',
         message: `Tôi muốn nhận tư vấn pháp lý từ Luật sư ${lawyer.fullName}.`
       })
       setIsSubmitSuccess(false)
+      setSelectedFiles([])
     }
-  }, [lawyer, isOpen])
+  }, [lawyer, isOpen, user])
 
   if (!lawyer) return null
 
   const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     // Mock submit logic
+    // eslint-disable-next-line no-console
+    console.log('Submitted contact request:', { ...contactForm, files: selectedFiles })
     setIsSubmitSuccess(true)
     setTimeout(() => {
       onOpenChange(false)
@@ -126,6 +142,7 @@ export function LawyerContactDialog({
                       onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
                       placeholder='Nhập họ tên...'
                       className='h-9.5 border-border-secondary bg-background-primary text-sm'
+                      disabled
                     />
                   </div>
                   <div className='space-y-1'>
@@ -136,6 +153,7 @@ export function LawyerContactDialog({
                       onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })}
                       placeholder='Nhập số điện thoại...'
                       className='h-9.5 border-border-secondary bg-background-primary text-sm'
+                      disabled
                     />
                   </div>
                 </div>
@@ -149,6 +167,7 @@ export function LawyerContactDialog({
                     onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
                     placeholder='Nhập địa chỉ email...'
                     className='h-9.5 border-border-secondary bg-background-primary text-sm'
+                    disabled
                   />
                 </div>
 
@@ -162,6 +181,55 @@ export function LawyerContactDialog({
                     rows={3}
                     className='w-full p-2.5 rounded-md border border-border-secondary bg-background-primary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-sm text-text-primary'
                   />
+                </div>
+
+                <div className='space-y-1.5'>
+                  <label className='text-xs font-bold text-text-secondary block'>Tài liệu đính kèm</label>
+                  <FileUpload
+                    multiple
+                    accept='.pdf,.doc,.docx,.png,.jpg,.jpeg,.txt'
+                    onChange={(files) => {
+                      if (files) {
+                        const fileList = Array.from(files)
+                        setSelectedFiles((prev) => [...prev, ...fileList])
+                      }
+                    }}
+                  >
+                    <Button
+                      type='button'
+                      variant='outline'
+                      size='sm'
+                      className='h-9 text-xs flex items-center gap-1.5 border-border-secondary text-text-secondary hover:text-text-primary hover:bg-background-tertiary w-full justify-center border-dashed border'
+                    >
+                      <Paperclip className='w-4 h-4 text-primary' />
+                      Đính kèm tài liệu (PDF, DOCX, Hình ảnh...)
+                    </Button>
+                  </FileUpload>
+
+                  {/* List of uploaded files */}
+                  {selectedFiles.length > 0 && (
+                    <div className='mt-2 space-y-1.5 max-h-32 overflow-y-auto pr-1'>
+                      {selectedFiles.map((file, idx) => (
+                        <div
+                          key={`${file.name}-${idx}`}
+                          className='flex items-center justify-between p-2 bg-background-tertiary rounded-md border border-border-primary text-xs'
+                        >
+                          <div className='flex items-center gap-2 overflow-hidden mr-2'>
+                            <Paperclip className='w-3.5 h-3.5 text-text-tertiary shrink-0' />
+                            <span className='font-medium truncate text-text-primary'>{file.name}</span>
+                            <span className='text-text-description shrink-0'>({formatFileSize(file.size)})</span>
+                          </div>
+                          <button
+                            type='button'
+                            onClick={() => setSelectedFiles((prev) => prev.filter((_, i) => i !== idx))}
+                            className='text-text-description hover:text-error-secondary transition-colors p-0.5 rounded-full hover:bg-background-secondary shrink-0'
+                          >
+                            <X className='w-3.5 h-3.5' />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <DialogFooter className='pt-2'>
