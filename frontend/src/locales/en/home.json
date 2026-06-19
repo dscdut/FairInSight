@@ -78,9 +78,9 @@
       }
     },
     "contacts": {
-      "title": "GET IN TOUCH",
+      "title": "Get In Touch",
       "heading": "Have a question or feedback?",
-      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut elit tellus, luctus nec ullamcorper mattis, pulvinar dapibus leo.",
+      "description": "Please fill out the form below and we will get back to you as soon as possible.",
       "nameLabel": "Name",
       "companyLabel": "Company",
       "emailLabel": "Email",
