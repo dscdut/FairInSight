@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { useRef, useEffect } from 'react'
 
-import { Send, Paperclip, Image as ImageIcon, FileText, X } from 'lucide-react'
+import { Send, Paperclip, Image as ImageIcon, FileText, X, Scale, FileDown } from 'lucide-react'
 
 import { Button, Textarea } from '@/components/ui'
 import { cn } from '@/core/lib/utils'
@@ -22,6 +22,9 @@ interface ChatInputProps {
   onAttach: (files: FileList | null, type: 'file' | 'image') => void
   onSubmit: (e: React.FormEvent) => void
   isLoading: boolean
+  onRequestLawyer?: () => void
+  onExportPdf?: () => void
+  showSuggestions?: boolean
 }
 
 export default function ChatInput({
@@ -31,7 +34,10 @@ export default function ChatInput({
   onRemoveAttachment,
   onAttach,
   onSubmit,
-  isLoading
+  isLoading,
+  onRequestLawyer,
+  onExportPdf,
+  showSuggestions = false
 }: ChatInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
@@ -121,6 +127,34 @@ export default function ChatInput({
               </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Quick Action Suggestions */}
+      {showSuggestions && (
+        <div className='flex items-center gap-2 mb-3 animate-in slide-in-from-bottom-2 duration-300'>
+          <span className='text-[10px] font-bold tracking-wider text-text-description uppercase shrink-0'>
+            Gợi ý nhanh:
+          </span>
+          <div className='flex flex-wrap gap-2'>
+            <button
+              type='button'
+              onClick={onRequestLawyer}
+              disabled={isLoading}
+              className='flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-background-secondary text-main border border-border-secondary hover:border-primary hover:text-primary transition-all duration-200 shadow-sm cursor-pointer hover:scale-[1.02] active:scale-[0.98]'
+            >
+              <Scale className='w-3.5 h-3.5' />
+              <span>Yêu cầu luật sư</span>
+            </button>
+            <button
+              type='button'
+              onClick={onExportPdf}
+              className='flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-background-secondary text-main border border-border-secondary hover:border-emerald-500 hover:text-emerald-600 transition-all duration-200 shadow-sm cursor-pointer hover:scale-[1.02] active:scale-[0.98]'
+            >
+              <FileDown className='w-3.5 h-3.5' />
+              <span>Xuất PDF</span>
+            </button>
+          </div>
         </div>
       )}
 

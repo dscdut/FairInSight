@@ -2,7 +2,6 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 
 import {  hero_bg } from '@/assets/images'
-import { ScrollIndicator } from '@/components/animated/animated-component'
 import { FloatAnimate } from '@/components/animated/float'
 import { Button } from '@/components/ui/button'
 
@@ -90,7 +89,6 @@ export const HeroSection = () => {
         </FloatAnimate>
       </div>
 
-      <ScrollIndicator />
     </section>
   )
 }
