@@ -125,6 +125,15 @@ export const DocumentDetailContent: React.FC<DocumentDetailContentProps> = ({
     return url.includes('#') ? url : `${url}#${hashFragment}`
   }
 
+  // Chỉ NHÚNG iframe khi link là PDF THẬT (Cloudinary raw / đuôi .pdf). Link web ngoài
+  // (vbpl, thuvienphapluat...) KHÔNG nhúng — nhúng nguyên trang web khác vào web mình
+  // trông kỳ + thường bị chặn iframe (X-Frame-Options). Thay bằng nút mở tab mới.
+  const isPdfLink = (url: string) => {
+    if (!url) return false
+    const u = url.toLowerCase().split('#')[0].split('?')[0]
+    return u.endsWith('.pdf') || u.includes('res.cloudinary.com')
+  }
+
   return (
     <div className='flex-1 flex flex-col overflow-hidden bg-background-primary border-r border-border-secondary text-left'>
       {/* Scrollable Document Content Area */}
@@ -503,12 +512,26 @@ export const DocumentDetailContent: React.FC<DocumentDetailContentProps> = ({
             /* PDF Preview view mode */
             <div className='flex flex-col gap-3'>
               <div className='w-full h-[620px] border border-border-secondary rounded-2xl overflow-hidden shadow-inner bg-background-secondary/20 relative'>
-                {pdfUrl ? (
+                {pdfUrl && isPdfLink(pdfUrl) ? (
                   <iframe
                     src={getInlinePdfUrl(pdfUrl)}
                     className='w-full h-full border-none'
                     title={`Bản PDF của ${currentTitle}`}
                   />
+                ) : pdfUrl ? (
+                  /* Link web ngoài (vbpl/thuvienphapluat) — KHÔNG nhúng, cho mở tab mới */
+                  <div className='absolute inset-0 flex flex-col items-center justify-center text-text-tertiary gap-3 p-6 text-center'>
+                    <Info className='w-10 h-10 text-text-tertiary' />
+                    <p className='text-sm font-semibold'>Tài liệu này là liên kết trang nguồn (chưa có bản PDF).</p>
+                    <a
+                      href={pdfUrl}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      className='inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-primary rounded-xl hover:opacity-90 transition-all'
+                    >
+                      Mở trang nguồn ↗
+                    </a>
+                  </div>
                 ) : (
                   <div className='absolute inset-0 flex flex-col items-center justify-center text-text-tertiary gap-2 p-6 text-center'>
                     <Info className='w-10 h-10 text-text-tertiary' />

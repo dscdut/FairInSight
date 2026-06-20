@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 
 import { Award, Loader2 } from 'lucide-react'
 
@@ -44,7 +44,13 @@ export default function LegalAnalysis() {
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [activeLawForDetail, setActiveLawForDetail] = useState<Law | null>(null)
 
-  // Fetch Laws from API
+  // HYBRID (giống admin): hiện trang 1 server-side ngay, song song ngầm tải HẾT danh
+  // sách → tải xong thì đổi trang/search/filter tức thì (FE tự cắt). DB cloud Tokyo mạng
+  // chậm nên 1 lần chờ < nhiều lần chờ mỗi khi đổi trang.
+  const [allLaws, setAllLaws] = useState<Law[] | null>(null)
+  const allLoaded = allLaws !== null
+
+  // Fetch trang hiện tại (server-side) — CHỈ khi chưa tải hết.
   const fetchLaws = useCallback(async () => {
     try {
       setIsLoading(true)
@@ -66,17 +72,52 @@ export default function LegalAnalysis() {
   }, [currentPage, searchQuery, statusFilter, issuedDateFilter])
 
   useEffect(() => {
-    fetchLaws()
-  }, [fetchLaws])
+    if (!allLoaded) fetchLaws()
+  }, [fetchLaws, allLoaded])
 
-  const handleViewClick = async (law: Law) => {
-    try {
-      const res = (await lawAiApi.getLawById(law.id)) as any
-      setActiveLawForDetail(res)
-      setIsDetailOpen(true)
-    } catch (error) {
-      console.error('Lỗi khi tải chi tiết văn bản:', error)
+  // Ngầm tải HẾT 1 lần (mount).
+  useEffect(() => {
+    let cancelled = false
+    lawAiApi
+      .listAllLaws()
+      .then((items) => {
+        if (!cancelled) setAllLaws(items)
+      })
+      .catch((e) => {
+        if (!cancelled) console.error('Lỗi tải toàn bộ (giữ server-side):', e)
+      })
+    return () => {
+      cancelled = true
     }
+  }, [])
+
+  // Lọc client-side khi đã tải hết.
+  const filteredAll = useMemo(() => {
+    if (!allLaws) return []
+    const q = searchQuery.trim().toLowerCase()
+    return allLaws.filter((l) => {
+      if (q && !`${l.title} ${l.documentNumber}`.toLowerCase().includes(q)) return false
+      if (statusFilter && statusFilter !== 'ALL' && l.status !== statusFilter) return false
+      if (issuedDateFilter && (l.issuedDate || '').slice(0, 10) < issuedDateFilter) return false
+      return true
+    })
+  }, [allLaws, searchQuery, statusFilter, issuedDateFilter])
+
+  // Nguồn hiển thị + tổng: tải hết → cắt client-side; chưa → server-side.
+  const pagedLaws = allLoaded
+    ? filteredAll.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+    : laws
+  const effTotalCount = allLoaded ? filteredAll.length : totalCount
+  const effTotalPages = allLoaded
+    ? Math.max(1, Math.ceil(filteredAll.length / itemsPerPage))
+    : totalPages
+
+  // Mở drawer NGAY với data đã có trong row (đã đủ: title/số hiệu/ngày/pdf_url) — KHÔNG
+  // chờ getLawById (detail trả cùng DTO list nên chờ round-trip cloud Tokyo là vô ích →
+  // trước đây "ấn chi tiết rất lâu"). iframe PDF tự load trong drawer.
+  const handleViewClick = (law: Law) => {
+    setActiveLawForDetail(law)
+    setIsDetailOpen(true)
   }
 
   return (
@@ -125,17 +166,18 @@ export default function LegalAnalysis() {
         ) : (
           <>
             <DocumentListTable
-              laws={laws}
+              laws={pagedLaws}
               onView={handleViewClick}
               readOnly={true}
             />
 
             {/* Table Pagination */}
-            {totalCount > itemsPerPage && (
+            {effTotalCount > itemsPerPage && (
               <div className='flex items-center justify-between p-5 bg-background-primary border-t border-border-secondary rounded-b-2xl mt-auto'>
                 <p className='text-xs text-text-description font-semibold'>
                   Hiển thị {(currentPage - 1) * itemsPerPage + 1} -{' '}
-                  {Math.min(currentPage * itemsPerPage, totalCount)} của {totalCount} văn bản
+                  {Math.min(currentPage * itemsPerPage, effTotalCount)} của {effTotalCount} văn bản
+                  {!allLoaded && <span className='ml-1 text-text-tertiary'>(đang tải thêm…)</span>}
                 </p>
                 <div className='flex gap-2.5'>
                   <Button
@@ -147,7 +189,7 @@ export default function LegalAnalysis() {
                   >
                     Trước
                   </Button>
-                  {getPageRange(currentPage, totalPages).map((p, idx) =>
+                  {getPageRange(currentPage, effTotalPages).map((p, idx) =>
                     p === '...' ? (
                       <span
                         key={`gap-${idx}`}
@@ -173,8 +215,8 @@ export default function LegalAnalysis() {
                   <Button
                     variant='outline'
                     size='sm'
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((p) => Math.min(effTotalPages, p + 1))}
+                    disabled={currentPage === effTotalPages}
                     className='h-8 px-3 text-xs border-border-primary text-text-primary font-bold hover:bg-background-secondary transition-all rounded-xl'
                   >
                     Sau

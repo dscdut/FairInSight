@@ -12,9 +12,10 @@ interface FormCardProps {
   viewMode: ViewMode
   index: number
   onSelect?: (template: Template) => void
+  onPreview?: (template: Template) => void
 }
 
-export default function FormCard({ template, viewMode, index, onSelect }: FormCardProps) {
+export default function FormCard({ template, viewMode, index, onSelect, onPreview }: FormCardProps) {
   const cardVariant = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -86,6 +87,7 @@ export default function FormCard({ template, viewMode, index, onSelect }: FormCa
             <Button
               variant='ghost'
               size='sm'
+              onClick={() => onPreview?.(template)}
               className='w-full rounded-xl text-xs font-semibold text-main hover:bg-background-secondary hover:text-main transition-all h-8 cursor-pointer justify-center'
             >
               Xem trước
@@ -176,6 +178,7 @@ export default function FormCard({ template, viewMode, index, onSelect }: FormCa
           <Button
             variant='ghost'
             size='sm'
+            onClick={() => onPreview?.(template)}
             className='w-full sm:w-auto rounded-xl text-xs font-semibold text-main hover:bg-background-secondary hover:text-main transition-all h-8 cursor-pointer'
           >
             Xem trước

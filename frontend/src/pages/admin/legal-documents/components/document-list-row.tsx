@@ -62,13 +62,13 @@ export const DocumentListRow: React.FC<DocumentListRowProps> = ({
         </div>
       </td>
 
-      {/* Số hiệu */}
-      <td className='px-6 py-5.5 font-semibold text-text-secondary'>
+      {/* Số hiệu — không xuống dòng, luôn nằm gọn 1 dòng */}
+      <td className='px-6 py-5.5 font-semibold text-text-secondary whitespace-nowrap'>
         {law.documentNumber}
       </td>
 
       {/* Ngày hiệu lực */}
-      <td className='px-6 py-5.5 font-semibold text-text-secondary'>
+      <td className='px-6 py-5.5 font-semibold text-text-secondary whitespace-nowrap'>
         {formatDate(law.effectiveDate)}
       </td>
 

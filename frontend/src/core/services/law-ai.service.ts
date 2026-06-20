@@ -19,6 +19,7 @@ interface AiDocument {
   expiry_date: string | null
   pdf_url: string | null
   source_url: string | null
+  summary?: string | null
 }
 
 interface AiListResponse {
@@ -33,7 +34,7 @@ function mapAiToLaw(d: AiDocument): Law {
   return {
     id: d.id,
     title: d.title,
-    content: '', // danh sách không kèm toàn văn → drawer tự mở chế độ xem PDF
+    content: d.summary || '', // tóm tắt (nếu có) cho drawer; danh sách thường rỗng → xem PDF
     documentNumber: d.official_code || '',
     issuedDate: d.issue_date || '',
     effectiveDate: d.effective_date || '',
@@ -148,6 +149,28 @@ export const lawAiApi = {
         totalPages: res.pagination.total_pages
       }
     }
+  },
+
+  // Lấy HẾT danh sách (chia trang size=100, nối lại). Dùng cho hybrid: hiện trang 1
+  // server-side ngay, rồi ngầm gọi cái này tải hết → đổi trang/search/filter tức thì
+  // (FE tự cắt, không gọi mạng). DB cloud Tokyo mạng chậm nên 1 lần chờ < nhiều lần chờ.
+  async listAllLaws(): Promise<Law[]> {
+    const SIZE = 100
+    const first = (await aiClient.get('/documents', {
+      params: { page: 1, size: SIZE },
+      timeout: 120000 // mạng cloud có thể lâu, cho biên rộng
+    })) as AiListResponse
+    const totalPages = first.pagination.total_pages || 1
+    const all: AiDocument[] = [...(first.items || [])]
+    // tải các trang còn lại tuần tự (tránh ép cloud quá nhiều request đồng thời).
+    for (let p = 2; p <= totalPages; p++) {
+      const res = (await aiClient.get('/documents', {
+        params: { page: p, size: SIZE },
+        timeout: 120000
+      })) as AiListResponse
+      all.push(...(res.items || []))
+    }
+    return all.map(mapAiToLaw)
   },
 
   async getLawById(id: string) {

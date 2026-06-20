@@ -17,6 +17,11 @@ build/
 *.env
 **/*.env
 **/*.env.local
+# Bản sao .env (vd .env.cloud.bak) — chứa secret, KHÔNG commit
+.env.*.bak
+**/.env.*.bak
+# Backup title cloud (dữ liệu nội bộ, dùng rollback backfill)
+**/title_backup_cloud*.json
 
 # Logs
 logs/
@@ -47,10 +52,12 @@ env/
 # Sub-projects / clones to ignore
 GovDoc/
 
-# Claude memory (bộ nhớ cá nhân theo phiên — không commit). Giữ CLAUDE.md/skills.
+# Claude memory (bộ nhớ cá nhân theo phiên — không commit)
 .claude/memory/
 .claude/skills/
 **/.claude/memory/**
 **/.claude/skills/**
 **/.claude/scheduled_tasks.lock
 .ask/
+tmp/
+temp/

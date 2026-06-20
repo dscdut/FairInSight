@@ -25,8 +25,8 @@ export const DocumentListTable: React.FC<DocumentListTableProps> = ({
         <thead className='bg-background-secondary/40 text-xs font-semibold uppercase text-text-secondary border-b border-border-secondary'>
           <tr>
             <th scope='col' className='px-6 py-4 font-bold'>Tên văn bản</th>
-            <th scope='col' className='px-6 py-4 font-bold'>Số hiệu</th>
-            <th scope='col' className='px-6 py-4 font-bold'>Ngày hiệu lực</th>
+            <th scope='col' className='px-6 py-4 font-bold whitespace-nowrap'>Số hiệu</th>
+            <th scope='col' className='px-6 py-4 font-bold whitespace-nowrap'>Ngày hiệu lực</th>
             <th scope='col' className='px-6 py-4 font-bold text-center'>Version</th>
             <th scope='col' className='px-6 py-4 font-bold text-center'>Trạng thái</th>
             <th scope='col' className='px-6 py-4 font-bold text-center'>Hành động</th>

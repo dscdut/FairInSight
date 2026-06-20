@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 
 import { Award, Loader2, CheckCircle2, XCircle, X } from 'lucide-react'
 
@@ -60,6 +60,7 @@ export default function LegalDocumentsPage() {
   const [ingest, setIngest] = useState<{
     status: 'running' | 'success' | 'error'
     title: string
+    message?: string // ghi đè nội dung lỗi (vd 409: văn bản đã tồn tại)
   } | null>(null)
 
   // Guard FE: chỉ admin mới thấy nút thêm + gọi API import.
@@ -91,6 +92,42 @@ export default function LegalDocumentsPage() {
 
   const [totalCount, setTotalCount] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
+
+  // ---- HYBRID: ngầm tải HẾT danh sách nền ----
+  // allLaws != null = đã tải xong toàn bộ → chuyển sang chia trang/lọc CLIENT-SIDE
+  // (đổi trang/search/filter tức thì, không gọi mạng). Trước khi xong → server-side.
+  const [allLaws, setAllLaws] = useState<Law[] | null>(null)
+  const allLoaded = allLaws !== null
+  // bộ đếm để buộc tải lại nền sau khi thêm/sửa văn bản.
+  const [allReloadTick, setAllReloadTick] = useState(0)
+
+  useEffect(() => {
+    let cancelled = false
+    setAllLaws(null) // bắt đầu (lại) → tạm về server-side
+    lawAiApi
+      .listAllLaws()
+      .then((items) => {
+        if (!cancelled) setAllLaws(items)
+      })
+      .catch((e) => {
+        if (!cancelled) console.error('Lỗi tải toàn bộ danh sách (giữ server-side):', e)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [allReloadTick])
+
+  // Lọc + sắp danh sách đã tải hết theo bộ lọc hiện tại (client-side, tức thì).
+  const filteredAll = useMemo(() => {
+    if (!allLaws) return []
+    const q = searchQuery.trim().toLowerCase()
+    return allLaws.filter((l) => {
+      if (q && !(`${l.title} ${l.documentNumber}`.toLowerCase().includes(q))) return false
+      if (statusFilter && statusFilter !== 'ALL' && l.status !== statusFilter) return false
+      if (issuedDateFilter && (l.issuedDate || '').slice(0, 10) < issuedDateFilter) return false
+      return true
+    })
+  }, [allLaws, searchQuery, statusFilter, issuedDateFilter])
 
   // Phân trang SERVER-SIDE (chuẩn cho data lớn): mỗi trang chỉ kéo `itemsPerPage` mục.
   // Cache theo (bộ lọc → trang) để quay lại trang cũ là tức thì + prefetch trang kế khi
@@ -138,22 +175,31 @@ export default function LegalDocumentsPage() {
     [filterKey, searchQuery, statusFilter, issuedDateFilter]
   )
 
-  // Tải trang đang xem (từ cache hoặc server) mỗi khi đổi trang / đổi bộ lọc.
+  // Tải trang đang xem (server-side) — CHỈ khi CHƯA tải hết nền. Tải hết rồi thì cắt
+  // client-side (không gọi mạng nữa).
   useEffect(() => {
-    fetchPage(currentPage)
-  }, [fetchPage, currentPage])
+    if (!allLoaded) fetchPage(currentPage)
+  }, [fetchPage, currentPage, allLoaded])
 
-  // Prefetch âm thầm trang kế sau khi trang hiện tại sẵn sàng → "Sau" bấm là có ngay.
+  // Prefetch trang kế (server-side) — cũng chỉ khi chưa tải hết.
   useEffect(() => {
-    if (currentPage < totalPages) fetchPage(currentPage + 1, true)
-  }, [fetchPage, currentPage, totalPages])
+    if (!allLoaded && currentPage < totalPages) fetchPage(currentPage + 1, true)
+  }, [fetchPage, currentPage, totalPages, allLoaded])
 
-  const pagedLaws = laws
+  // Nguồn hiển thị: tải hết rồi → cắt từ filteredAll (client-side); chưa → laws (server).
+  const pagedLaws = allLoaded
+    ? filteredAll.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+    : laws
+  const effTotalCount = allLoaded ? filteredAll.length : totalCount
+  const effTotalPages = allLoaded
+    ? Math.max(1, Math.ceil(filteredAll.length / itemsPerPage))
+    : totalPages
 
-  // Tải lại sau khi thêm văn bản: xóa toàn bộ cache (data đã đổi) rồi về trang 1.
+  // Tải lại sau khi thêm/sửa văn bản: xóa cache server + buộc tải lại toàn bộ nền.
   const reload = useCallback(() => {
     cacheRef.current.clear()
     isFirstLoad.current = true
+    setAllReloadTick((t) => t + 1) // tải lại allLaws nền
     if (currentPage === 1) fetchPage(1)
     else setCurrentPage(1)
   }, [currentPage, fetchPage])
@@ -208,7 +254,14 @@ export default function LegalDocumentsPage() {
       })
       .catch((error) => {
         console.error('Lỗi khi nạp văn bản vào KB:', error)
-        setIngest({ status: 'error', title: formData.title || 'Văn bản mới' })
+        // 409 = văn bản đã tồn tại (trùng file đã nạp) → báo rõ thay vì "thất bại".
+        const status = (error as { response?: { status?: number } })?.response?.status
+        const detail = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+        setIngest({
+          status: 'error',
+          title: formData.title || 'Văn bản mới',
+          message: status === 409 ? (detail || 'Văn bản này đã có trong hệ thống.') : undefined
+        })
       })
   }
 
@@ -271,11 +324,12 @@ export default function LegalDocumentsPage() {
             />
 
             {/* Table Pagination */}
-            {totalCount > itemsPerPage && (
+            {effTotalCount > itemsPerPage && (
               <div className='flex items-center justify-between p-5 bg-background-primary border-t border-border-secondary rounded-b-2xl mt-auto'>
                 <p className='text-xs text-text-description font-semibold'>
                   Hiển thị {(currentPage - 1) * itemsPerPage + 1} -{' '}
-                  {Math.min(currentPage * itemsPerPage, totalCount)} của {totalCount} văn bản
+                  {Math.min(currentPage * itemsPerPage, effTotalCount)} của {effTotalCount} văn bản
+                  {!allLoaded && <span className='ml-1 text-text-tertiary'>(đang tải thêm…)</span>}
                 </p>
                 <div className='flex gap-2.5'>
                   <Button
@@ -287,7 +341,7 @@ export default function LegalDocumentsPage() {
                   >
                     Trước
                   </Button>
-                  {getPageRange(currentPage, totalPages).map((p, idx) =>
+                  {getPageRange(currentPage, effTotalPages).map((p, idx) =>
                     p === '...' ? (
                       <span
                         key={`gap-${idx}`}
@@ -313,8 +367,8 @@ export default function LegalDocumentsPage() {
                   <Button
                     variant='outline'
                     size='sm'
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((p) => Math.min(effTotalPages, p + 1))}
+                    disabled={currentPage === effTotalPages}
                     className='h-8 px-3 text-xs border-border-primary text-text-primary font-bold hover:bg-background-secondary transition-all rounded-xl'
                   >
                     Sau
@@ -326,12 +380,15 @@ export default function LegalDocumentsPage() {
         )}
       </section>
 
-      {/* Drawer — chỉ xem */}
+      {/* Drawer — xem chi tiết. readOnly chặn sửa NỘI DUNG điều khoản; admin vẫn được
+          sửa METADATA (tên/số hiệu/ngày/tóm tắt) qua nút bút chì (allowMetadataEdit). */}
       <DocumentDetailDrawer
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
         law={activeLawForDetail}
         readOnly={true}
+        allowMetadataEdit={isAdmin}
+        onMetadataUpdated={reload}
       />
 
       {/* Form thêm văn bản — chỉ render cho admin */}
@@ -365,7 +422,7 @@ export default function LegalDocumentsPage() {
               <p className='text-xs font-bold text-text-primary'>
                 {ingest.status === 'running' && 'Đang nạp văn bản vào hệ thống...'}
                 {ingest.status === 'success' && 'Đã thêm văn bản thành công'}
-                {ingest.status === 'error' && 'Nạp văn bản thất bại'}
+                {ingest.status === 'error' && (ingest.message ? 'Văn bản đã tồn tại' : 'Nạp văn bản thất bại')}
               </p>
               <p className='text-[11px] text-text-description font-semibold truncate mt-0.5'>
                 {ingest.title}
@@ -378,7 +435,7 @@ export default function LegalDocumentsPage() {
               )}
               {ingest.status === 'error' && (
                 <p className='text-[10px] text-text-tertiary font-medium mt-1.5 leading-relaxed'>
-                  Vui lòng thử tạo lại văn bản.
+                  {ingest.message || 'Vui lòng thử tạo lại văn bản.'}
                 </p>
               )}
             </div>
