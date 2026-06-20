@@ -1,17 +1,23 @@
 import React, { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 
-import axios from 'axios'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Info, ChevronDown, ChevronUp, RotateCcw, UploadCloud, FileText, Trash2, Loader2 } from 'lucide-react'
+import { X, Info, ChevronDown, ChevronUp, RotateCcw, UploadCloud, FileText, Trash2, Loader2, Lock } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import config from '@/core/configs/env'
 import { cn } from '@/core/lib/utils'
+import {
+  lawAiApi,
+  type DuplicateCandidate,
+  type PreviewLawFields,
+} from '@/core/services/law-ai.service'
 import { lawApi } from '@/core/services/law.service'
 import { type Law, type LawVersion } from '@/models/types/law.type'
 
+import { DuplicateWarning } from './duplicate-warning'
 import { MarkdownPreview } from './markdown-preview'
 import { PipelineLoader } from './pipeline-loader'
 
@@ -24,12 +30,16 @@ export interface FormSubmitData {
   officialUrl: string
   content: string
   changeNote: string
+  // Chỉ có ở luồng "thêm mới" qua AI (preview -> confirm). Edit mode để undefined.
+  previewClientId?: string
+  previewFields?: PreviewLawFields
+  forceConfirmed?: boolean
 }
 
 interface DocumentFormDrawerProps {
   isOpen: boolean
   onClose: () => void
-  onSubmit: (formData: FormSubmitData) => void
+  onSubmit: (formData: FormSubmitData) => void | Promise<void>
   law: Law | null // Null means "Add New", not null means "Edit"
   onRestoreVersion?: (version: LawVersion) => void
 }
@@ -70,6 +80,22 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
     error?: string
   }[]>([])
 
+  // ---- State machine luồng thêm mới (preview -> confirm) ----
+  // idle: 1 box upload chiếm nguyên drawer.
+  // preview: đã trích xuất xong -> 2 cột (trái lock + card PDF + tóm tắt; phải đã xong).
+  // confirming: đang gọi /confirm nạp KB.
+  const [phase, setPhase] = useState<'idle' | 'preview' | 'confirming'>('idle')
+  const [summary, setSummary] = useState('') // tóm tắt sơ bộ (read-only)
+  const [cloudinaryUrl, setCloudinaryUrl] = useState('') // link PDF trên Cloudinary
+  const [showPdf, setShowPdf] = useState(false) // mở PDF inline ngay dưới (không tải về)
+  const [previewClientId, setPreviewClientId] = useState('') // client_id từ /preview
+  const [previewFields, setPreviewFields] = useState<PreviewLawFields | null>(null)
+  const [duplicate, setDuplicate] = useState<{
+    verdict: 'unique' | 'different' | 'suspect'
+    candidates: DuplicateCandidate[]
+  } | null>(null)
+  const [forceConfirmed, setForceConfirmed] = useState(false) // admin bấm "Vẫn tạo"
+
   // Initialize form values
   useEffect(() => {
     if (isOpen) {
@@ -98,6 +124,15 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
       setIsUploading(false)
       setIsPdfUpload(false)
       setPdfProgress([])
+      // Reset state machine luồng thêm mới
+      setPhase('idle')
+      setSummary('')
+      setCloudinaryUrl('')
+      setShowPdf(false)
+      setPreviewClientId('')
+      setPreviewFields(null)
+      setDuplicate(null)
+      setForceConfirmed(false)
     }
   }, [isOpen, law])
 
@@ -113,114 +148,164 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
     }
   }, [isOpen])
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Chuẩn hóa ngày từ LLM về dạng yyyy-MM-dd cho input[type=date].
+  const normalizeDate = (raw?: string) => {
+    if (!raw) return ''
+    const s = raw.trim()
+    // dd/MM/yyyy hoặc dd-MM-yyyy
+    const m = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/)
+    if (m) {
+      const [, d, mo, y] = m
+      return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`
+    }
+    // đã là yyyy-MM-dd (có thể kèm time)
+    return s.split('T')[0]
+  }
+
+  // === EDIT MODE: giữ nguyên luồng docx/pdf cũ (upload + parse) ===
+  const handleEditFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
     setUploadingFileName(file.name)
-    const isPdf = file.name.toLowerCase().endsWith('.pdf')
-    setIsPdfUpload(isPdf)
+    setIsPdfUpload(false)
     setIsUploading(true)
+    try {
+      const uploadRes = await lawApi.uploadFile(file)
+      const secureUrl = uploadRes.url
+      const parseRes = await lawApi.parseDocx(secureUrl)
+      setUploadedFile({
+        name: file.name,
+        size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
+      })
+      setContent(parseRes.text)
+      setSourceUrl(secureUrl)
+    } catch (error: unknown) {
+      console.error('Lỗi tải file:', error)
+      const errorMsg = (error as { response?: { data?: { error?: { message?: string }; message?: string } }; message?: string }).response?.data?.error?.message || (error as { response?: { data?: { message?: string } } }).response?.data?.message || (error as { message?: string }).message || 'Có lỗi xảy ra khi upload hoặc trích xuất văn bản.'
+      alert(errorMsg)
+    } finally {
+      setIsUploading(false)
+    }
+  }
 
-    if (isPdf) {
-      setPdfProgress([
-        { step: 'upload', status: 'pending' },
-        { step: 'scan', status: 'pending' },
-        { step: 'summarize', status: 'pending' },
-        { step: 'chunk', status: 'pending' },
-        { step: 'embed', status: 'pending' },
-        { step: 'store', status: 'pending' },
-      ])
+  // === ADD-NEW: PDF -> /preview (KHÔNG ghi KB). Trích metadata + tóm tắt + check trùng. ===
+  const handlePreviewUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      alert('Chỉ chấp nhận tệp PDF (.pdf).')
+      return
+    }
 
-      const clientId = 'client-' + Math.random().toString(36).substring(2, 9)
-      const aiBase = config.aiBaseUrl || 'http://localhost:8000/api/v1'
-      const wsBase = aiBase.replace(/^http/, 'ws')
-      const wsUrl = `${wsBase}/ws/progress/${clientId}`
-      const socket = new WebSocket(wsUrl)
+    setUploadingFileName(file.name)
+    setIsPdfUpload(true)
+    setIsUploading(true)
+    setPhase('preview') // chuyển sang 2 cột ngay; bên phải hiển thị PipelineLoader
+    setForceConfirmed(false)
+    setDuplicate(null)
 
+    // Tiến trình hiển thị (PipelineLoader). WS /ws/progress BE có thể chưa có nên
+    // dùng giả lập: bật 'running' từng bước, để loader tự "ticking". Không block luồng.
+    setPdfProgress([
+      { step: 'upload', status: 'running' },
+      { step: 'scan', status: 'pending' },
+      { step: 'summarize', status: 'pending' },
+      { step: 'chunk', status: 'pending' },
+      { step: 'embed', status: 'pending' },
+      { step: 'store', status: 'pending' },
+    ])
+
+    const clientId = 'client-' + Math.random().toString(36).substring(2, 9)
+
+    // Cố mở WS để nhận progress thật nếu BE đã hỗ trợ; lỗi thì bỏ qua (giả lập).
+    let socket: WebSocket | null = null
+    try {
+      const wsBase = config.aiBaseUrl.replace(/^http/, 'ws')
+      socket = new WebSocket(`${wsBase}/ws/progress/${clientId}`)
       socket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data)
           setPdfProgress((prev) =>
             prev.map((item) =>
-              item.step === data.step
-                ? { ...item, status: data.status, error: data.error }
-                : item
+              item.step === data.step ? { ...item, status: data.status, error: data.error } : item
             )
           )
-        } catch (err) {
-          console.error('Lỗi WebSocket:', err)
+        } catch {
+          /* ignore parse errors */
         }
       }
+      socket.onerror = () => { /* WS chưa sẵn — dùng giả lập */ }
+    } catch {
+      socket = null
+    }
 
-      try {
-        // Step 1: Upload to Cloudinary
-        setPdfProgress((prev) => prev.map((item) => item.step === 'upload' ? { ...item, status: 'running' } : item))
+    // Giả lập tiến trình các bước trước khi /preview trả về (không block API).
+    const fakeOrder = ['upload', 'scan', 'summarize']
+    let fakeIdx = 0
+    const ticker = setInterval(() => {
+      if (fakeIdx >= fakeOrder.length - 1) return
+      setPdfProgress((prev) => {
+        const cur = fakeOrder[fakeIdx]
+        const next = fakeOrder[fakeIdx + 1]
+        return prev.map((item) => {
+          if (item.step === cur) return { ...item, status: 'completed' }
+          if (item.step === next) return { ...item, status: 'running' }
+          return item
+        })
+      })
+      fakeIdx++
+    }, 1400)
 
-        const uploadRes = await lawApi.uploadFile(file)
-        const secureUrl = uploadRes.url
-        setPdfProgress((prev) => prev.map((item) => item.step === 'upload' ? { ...item, status: 'completed' } : item))
+    try {
+      const res = await lawAiApi.previewLaw(file, clientId)
 
-        // Step 2: Post to GovDoc Backend
-        const importFormData = new FormData()
-        importFormData.append('file', file)
-        importFormData.append('doc_type', 'luat')
-        importFormData.append('clientId', clientId)
-
-        const importRes = await axios.post(
-          `${aiBase}/import`,
-          importFormData,
-          { headers: { 'Content-Type': 'multipart/form-data' } }
+      // Trích xuất xong -> đánh dấu các bước phân tích hoàn tất.
+      setPdfProgress((prev) =>
+        prev.map((item) =>
+          ['upload', 'scan', 'summarize'].includes(item.step)
+            ? { ...item, status: 'completed' }
+            : item
         )
+      )
 
-        const text = importRes.data.summary || importRes.data.rawText || 'Đã trích xuất và phân tích thành công tài liệu luật.'
-
-        const extractedTitle = importRes.data.extractedTitle
-        const extractedDocumentNumber = importRes.data.extractedDocumentNumber
-        const extractedIssuedDate = importRes.data.extractedIssuedDate
-        const extractedEffectiveDate = importRes.data.extractedEffectiveDate
-
-        if (extractedTitle) setTitle(extractedTitle)
-        if (extractedDocumentNumber) setDocumentNumber(extractedDocumentNumber)
-        if (extractedIssuedDate) setIssuedDate(extractedIssuedDate)
-        if (extractedEffectiveDate) setEffectiveDate(extractedEffectiveDate)
-
-        setUploadedFile({
-          name: file.name,
-          size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
-        })
-        setContent(text)
-        setSourceUrl(secureUrl)
-      } catch (error: unknown) {
-        console.error('Lỗi tải file PDF:', error)
-        const errorMsg = (error as { response?: { data?: { error?: { message?: string }; message?: string } }; message?: string }).response?.data?.error?.message || (error as { response?: { data?: { message?: string } } }).response?.data?.message || (error as { message?: string }).message || 'Có lỗi xảy ra khi xử lý file PDF.'
-        alert(errorMsg)
-      } finally {
-        socket.close()
-        setIsUploading(false)
-      }
-    } else {
-      try {
-        // 2. Upload via backend media service
-        const uploadRes = await lawApi.uploadFile(file)
-        const secureUrl = uploadRes.url
-
-        // 3. Parse docx text content using backend Mammoth integration
-        const parseRes = await lawApi.parseDocx(secureUrl)
-
-        setUploadedFile({
-          name: file.name,
-          size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
-        })
-        setContent(parseRes.text)
-        setSourceUrl(secureUrl)
-      } catch (error: unknown) {
-        console.error('Lỗi tải file:', error)
-        const errorMsg = (error as { response?: { data?: { error?: { message?: string }; message?: string } }; message?: string }).response?.data?.error?.message || (error as { response?: { data?: { message?: string } } }).response?.data?.message || (error as { message?: string }).message || 'Có lỗi xảy ra khi upload hoặc trích xuất văn bản.'
-        alert(errorMsg)
-      } finally {
-        setIsUploading(false)
-      }
+      const f = res.fields
+      setTitle(f.title || '')
+      setDocumentNumber(f.official_code || '')
+      setIssuedDate(normalizeDate(f.issue_date))
+      setEffectiveDate(normalizeDate(f.effective_date))
+      setPreviewFields({
+        ...f,
+        issue_date: normalizeDate(f.issue_date),
+        effective_date: normalizeDate(f.effective_date),
+      })
+      setPreviewClientId(res.client_id || clientId)
+      setCloudinaryUrl(res.cloudinary_url || '')
+      setSourceUrl(res.cloudinary_url || '')
+      setSummary(res.summary || '')
+      setContent(res.summary || '')
+      setDuplicate({
+        verdict: res.duplicate?.verdict || 'unique',
+        candidates: res.duplicate?.candidates || [],
+      })
+      setUploadedFile({
+        name: file.name,
+        size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
+      })
+    } catch (error: unknown) {
+      console.error('Lỗi preview PDF:', error)
+      setPdfProgress((prev) =>
+        prev.map((item) => (item.status === 'running' ? { ...item, status: 'error' } : item))
+      )
+      const errorMsg = (error as { response?: { data?: { error?: { message?: string }; message?: string } }; message?: string }).response?.data?.error?.message || (error as { response?: { data?: { message?: string } } }).response?.data?.message || (error as { message?: string }).message || 'Có lỗi xảy ra khi xử lý file PDF.'
+      alert(errorMsg)
+      // Quay về idle để admin thử lại.
+      setPhase('idle')
+      setUploadedFile(null)
+    } finally {
+      clearInterval(ticker)
+      socket?.close()
+      setIsUploading(false)
     }
   }
 
@@ -228,24 +313,72 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
     setUploadedFile(null)
     setContent('')
     setSourceUrl('')
+    if (!isEdit) {
+      // Reset toàn bộ state preview -> quay về box upload.
+      setPhase('idle')
+      setTitle('')
+      setDocumentNumber('')
+      setIssuedDate('')
+      setEffectiveDate('')
+      setSummary('')
+      setCloudinaryUrl('')
+      setShowPdf(false)
+      setPreviewClientId('')
+      setPreviewFields(null)
+      setDuplicate(null)
+      setForceConfirmed(false)
+      setPdfProgress([])
+    }
   }
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  // Sẵn sàng confirm khi: đã preview xong + (không nghi trùng HOẶC admin đã bấm "Vẫn tạo").
+  const isSuspect = !isEdit && duplicate?.verdict === 'suspect'
+  const confirmReady =
+    isEdit
+      ? true
+      : phase === 'preview' && !!previewFields && (!isSuspect || forceConfirmed)
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!title || !documentNumber || !issuedDate || !effectiveDate || !content) {
-      alert('Vui lòng điền đầy đủ các thông tin bắt buộc.')
+    if (isEdit) {
+      if (!title || !documentNumber || !issuedDate || !effectiveDate || !content) {
+        alert('Vui lòng điền đầy đủ các thông tin bắt buộc.')
+        return
+      }
+      onSubmit({
+        title,
+        documentNumber,
+        issuedDate,
+        effectiveDate,
+        sourceUrl,
+        officialUrl,
+        content,
+        changeNote: changeNote || 'Cập nhật tài liệu',
+      })
       return
     }
-    onSubmit({
-      title,
-      documentNumber,
-      issuedDate,
-      effectiveDate,
-      sourceUrl,
-      officialUrl,
-      content,
-      changeNote: isEdit ? changeNote || 'Cập nhật tài liệu' : 'Khởi tạo văn bản',
-    })
+
+    // ADD-NEW: chỉ confirm khi đã preview xong & qua cảnh báo trùng.
+    if (!confirmReady || !previewFields) return
+    setPhase('confirming')
+    try {
+      await onSubmit({
+        title,
+        documentNumber,
+        issuedDate,
+        effectiveDate,
+        sourceUrl: cloudinaryUrl,
+        officialUrl: '',
+        content: summary,
+        changeNote: 'Khởi tạo văn bản',
+        previewClientId,
+        previewFields,
+        forceConfirmed,
+      })
+    } catch {
+      // Lỗi confirm (vd BE chưa sẵn) -> quay lại preview để admin thử lại.
+      setPhase('preview')
+    }
   }
 
   const getSortedVersions = () => {
@@ -260,7 +393,10 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
     return date.toLocaleDateString('vi-VN')
   }
 
-  return (
+  // Render qua PORTAL ở document.body: layout admin (LayoutMain) có backdrop-blur tạo
+  // containing block khiến position:fixed bị bó theo khung mờ đó → overlay không phủ hết
+  // sidebar/topbar, viền layout lòi ra. Portal đưa modal ra ngoài → fixed bám viewport.
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <>
@@ -270,7 +406,7 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
             animate={{ opacity: 0.4 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className='fixed inset-0 z-40 bg-black'
+            className='fixed inset-0 z-[200] bg-black'
           />
 
           {/* Large Centered Form Modal Container */}
@@ -279,7 +415,7 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
             animate={{ opacity: 1, scale: 1, x: '-50%', y: '-54%' }}
             exit={{ opacity: 0, scale: 0.96, x: '-50%', y: '-52%' }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className='fixed left-1/2 top-1/2 z-50 w-[95vw] max-w-5xl h-[85vh] bg-background-primary shadow-2xl rounded-2xl flex flex-col border border-border-secondary overflow-hidden'
+            className='fixed left-1/2 top-1/2 z-[201] w-[95vw] max-w-5xl h-[85vh] bg-background-primary shadow-2xl rounded-2xl flex flex-col border border-border-secondary overflow-hidden'
           >
             {/* Header */}
             <div className='flex items-center justify-between p-5 border-b border-border-secondary bg-background-primary shrink-0'>
@@ -309,6 +445,194 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
 
             {/* Split Columns Form Container */}
             <form onSubmit={handleFormSubmit} className='flex-1 flex flex-col overflow-hidden bg-background-primary text-text-primary'>
+              {/* ===== ADD-NEW (luồng AI preview -> confirm) ===== */}
+              {!isEdit && phase === 'idle' ? (
+                /* IDLE: 1 box upload chiếm nguyên drawer, chỉ nhận PDF */
+                <div className='flex-1 flex items-center justify-center p-8 overflow-y-auto'>
+                  <div className='w-full max-w-xl'>
+                    <h3 className='text-xs font-bold text-text-tertiary uppercase tracking-widest mb-4 text-center'>
+                      Tải lên văn bản pháp luật (PDF)
+                    </h3>
+                    <div className='border-2 border-dashed border-border-secondary hover:border-primary/50 transition-all rounded-2xl p-12 bg-background-secondary/20 flex flex-col items-center justify-center gap-3 relative group min-h-[320px]'>
+                      <input
+                        type='file'
+                        accept='.pdf,application/pdf'
+                        onChange={handlePreviewUpload}
+                        className='absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10'
+                      />
+                      <UploadCloud className='w-12 h-12 text-text-tertiary group-hover:text-primary transition-all' />
+                      <span className='text-sm font-bold text-text-secondary text-center'>
+                        Kéo thả file .pdf vào đây hoặc click để chọn
+                      </span>
+                      <span className='text-[11px] text-text-tertiary font-semibold text-center max-w-sm'>
+                        Hệ thống sẽ tự trích xuất số hiệu, tiêu đề, ngày tháng và tóm tắt sơ bộ để bạn kiểm tra trước khi tạo. Chấp nhận PDF tối đa 20MB.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ) : !isEdit ? (
+                /* PREVIEW / CONFIRMING: 2 cột (trái = thông tin lock + card PDF + tóm tắt; phải = tiến trình) */
+                <div className='flex-1 flex overflow-hidden'>
+                  {/* Cột trái */}
+                  <div className='flex-1 overflow-y-auto p-6 space-y-6 border-r border-border-secondary text-left'>
+                    <h3 className='text-xs font-bold text-text-tertiary uppercase tracking-widest flex items-center gap-2'>
+                      Thông tin chi tiết
+                      <span className='inline-flex items-center gap-1 text-[10px] font-bold text-text-tertiary normal-case tracking-normal bg-background-secondary/60 border border-border-secondary rounded-full px-2 py-0.5'>
+                        <Lock className='w-3 h-3' /> Tự động điền từ tài liệu
+                      </span>
+                    </h3>
+
+                    {/* Tiêu đề (lock) */}
+                    <div>
+                      <label className='block text-xs font-bold text-text-secondary mb-1.5'>
+                        Tiêu đề văn bản <span className='text-primary'>*</span>
+                      </label>
+                      <Input
+                        value={title}
+                        readOnly
+                        placeholder='Đang trích xuất...'
+                        className='h-10 text-sm bg-background-secondary/40 border-border-secondary rounded-xl text-text-primary cursor-default'
+                      />
+                    </div>
+
+                    {/* Số hiệu & Ngày ban hành (lock) */}
+                    <div className='grid grid-cols-2 gap-4'>
+                      <div>
+                        <label className='block text-xs font-bold text-text-secondary mb-1.5'>
+                          Số hiệu <span className='text-primary'>*</span>
+                        </label>
+                        <Input
+                          value={documentNumber}
+                          readOnly
+                          placeholder='—'
+                          className='h-10 text-sm bg-background-secondary/40 border-border-secondary rounded-xl text-text-primary cursor-default'
+                        />
+                      </div>
+                      <div>
+                        <label className='block text-xs font-bold text-text-secondary mb-1.5'>
+                          Ngày ban hành <span className='text-primary'>*</span>
+                        </label>
+                        <Input
+                          type='date'
+                          value={issuedDate}
+                          readOnly
+                          className='h-10 text-sm bg-background-secondary/40 border-border-secondary rounded-xl text-text-primary cursor-default'
+                        />
+                      </div>
+                    </div>
+
+                    {/* Ngày hiệu lực — CHO SỬA TAY: LLM hay đọc trượt/để trống ngày hiệu
+                        lực (nằm cuối văn bản), admin chỉnh trực tiếp. Đồng bộ previewFields
+                        để bước confirm gửi đúng giá trị admin nhập. */}
+                    <div className='grid grid-cols-2 gap-4'>
+                      <div>
+                        <label className='block text-xs font-bold text-text-secondary mb-1.5'>
+                          Ngày hiệu lực <span className='text-primary'>*</span>
+                          <span className='ml-1.5 text-[10px] font-semibold text-text-tertiary normal-case'>
+                            (có thể sửa)
+                          </span>
+                        </label>
+                        <Input
+                          type='date'
+                          value={effectiveDate}
+                          onChange={(e) => {
+                            setEffectiveDate(e.target.value)
+                            setPreviewFields((prev) =>
+                              prev ? { ...prev, effective_date: e.target.value } : prev
+                            )
+                          }}
+                          className='h-10 text-sm bg-background-secondary/30 border-border-secondary focus:bg-background-primary rounded-xl text-text-primary'
+                        />
+                      </div>
+                    </div>
+
+                    {/* Card PDF (dưới phần thông tin) */}
+                    {uploadedFile && (
+                      <div className='border border-success-primary/20 bg-success-primary/5 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-sm'>
+                        <div className='flex items-center gap-3 overflow-hidden'>
+                          <div className='w-10 h-10 rounded-xl bg-success-primary/10 text-success-primary flex items-center justify-center shrink-0 border border-success-primary/15'>
+                            <FileText className='w-5 h-5' />
+                          </div>
+                          <div className='flex flex-col gap-0.5 min-w-0 text-left'>
+                            <span className='text-xs font-bold text-text-primary truncate'>
+                              {uploadedFile.name}
+                            </span>
+                            <span className='text-[10px] text-text-tertiary font-semibold'>
+                              {uploadedFile.size}
+                              {cloudinaryUrl ? ' • Đã tải lên Cloudinary' : ''}
+                            </span>
+                          </div>
+                        </div>
+                        <div className='flex items-center gap-1.5 shrink-0'>
+                          {cloudinaryUrl && (
+                            <button
+                              type='button'
+                              onClick={() => setShowPdf((v) => !v)}
+                              className='h-8 px-2.5 flex items-center text-[10px] font-bold text-primary border border-border-primary rounded-xl hover:bg-background-secondary'
+                            >
+                              {showPdf ? 'Ẩn PDF' : 'Xem PDF'}
+                            </button>
+                          )}
+                          <Button
+                            type='button'
+                            variant='outline'
+                            size='icon'
+                            onClick={handleRemoveFile}
+                            disabled={phase === 'confirming'}
+                            className='h-8 w-8 text-error-primary hover:text-error-secondary border-border-primary hover:bg-error-primary/5 rounded-xl'
+                          >
+                            <Trash2 className='w-4.5 h-4.5' />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* PDF inline viewer — xem ngay tại chỗ, không tải về */}
+                    {uploadedFile && cloudinaryUrl && showPdf && (
+                      <div className='border border-border-secondary rounded-2xl overflow-hidden bg-background-secondary/20'>
+                        <iframe
+                          src={`${cloudinaryUrl}#toolbar=1&navpanes=0`}
+                          title='Xem PDF văn bản'
+                          className='w-full h-[480px]'
+                        />
+                      </div>
+                    )}
+
+                    {/* Tóm tắt sơ bộ (read-only) */}
+                    <div>
+                      <label className='block text-xs font-bold text-text-secondary mb-1.5'>
+                        Tóm tắt sơ bộ
+                      </label>
+                      <div className='bg-background-secondary/20 border border-border-secondary rounded-2xl p-4 max-h-72 overflow-y-auto'>
+                        {summary ? (
+                          <MarkdownPreview content={summary} />
+                        ) : (
+                          <p className='text-[11px] text-text-tertiary font-semibold italic'>
+                            Đang tạo tóm tắt sơ bộ...
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Cảnh báo trùng */}
+                    {isSuspect && !forceConfirmed && (
+                      <DuplicateWarning
+                        candidates={duplicate?.candidates || []}
+                        onForceCreate={() => setForceConfirmed(true)}
+                        onCancel={handleRemoveFile}
+                      />
+                    )}
+                  </div>
+
+                  {/* Cột phải: tiến trình */}
+                  <div className='w-[420px] bg-background-secondary/25 p-6 flex flex-col gap-4 overflow-y-auto shrink-0 text-left border-l border-border-secondary'>
+                    <h3 className='text-xs font-bold text-text-tertiary uppercase tracking-widest mb-1'>
+                      Tiến trình xử lý
+                    </h3>
+                    <PipelineLoader filename={uploadingFileName || 'document.pdf'} pdfProgress={pdfProgress} />
+                  </div>
+                </div>
+              ) : (
               <div className='flex-1 flex overflow-hidden'>
                 {/* Left Column: Form Inputs */}
                 <div className='flex-1 overflow-y-auto p-6 space-y-6 border-r border-border-secondary text-left'>
@@ -534,16 +858,16 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
                         <div className='border-2 border-dashed border-border-secondary hover:border-primary/50 transition-all rounded-2xl p-8 bg-background-secondary/20 flex flex-col items-center justify-center gap-2 relative group min-h-[180px] shrink-0'>
                           <input
                             type='file'
-                            accept='.docx,.pdf'
-                            onChange={handleFileUpload}
+                            accept='.docx'
+                            onChange={handleEditFileUpload}
                             className='absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10'
                           />
                           <UploadCloud className='w-8 h-8 text-text-tertiary group-hover:text-primary transition-all' />
                           <span className='text-xs font-bold text-text-secondary text-center'>
-                            Kéo thả file .docx hoặc .pdf vào đây hoặc click để chọn
+                            Kéo thả file .docx vào đây hoặc click để chọn
                           </span>
                           <span className='text-[10px] text-text-tertiary font-semibold'>
-                            Chấp nhận định dạng Word (.docx), PDF (.pdf) tối đa 20MB
+                            Chấp nhận định dạng Word (.docx) tối đa 20MB
                           </span>
                         </div>
                       ) : isUploading ? (
@@ -646,6 +970,7 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
                   )}
                 </div>
               </div>
+              )}
 
               {/* Footer Actions */}
               <div className='p-5 border-t border-border-secondary bg-background-secondary/30 flex items-center justify-end gap-3 shrink-0'>
@@ -659,15 +984,18 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
                 </Button>
                 <Button
                   type='submit'
-                  className='h-11 bg-primary text-white hover:opacity-90 px-6 font-semibold text-sm rounded-xl transition-all shadow-md active:scale-98'
+                  disabled={(!isEdit && !confirmReady) || phase === 'confirming'}
+                  className='h-11 bg-primary text-white hover:opacity-90 px-6 font-semibold text-sm rounded-xl transition-all shadow-md active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2'
                 >
-                  {isEdit ? 'Lưu thay đổi' : 'Tạo văn bản'}
+                  {phase === 'confirming' && <Loader2 className='w-4 h-4 animate-spin' />}
+                  {isEdit ? 'Lưu thay đổi' : phase === 'confirming' ? 'Đang nạp KB...' : 'Tạo văn bản'}
                 </Button>
               </div>
             </form>
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   )
 }

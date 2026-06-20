@@ -46,3 +46,11 @@ env/
 
 # Sub-projects / clones to ignore
 GovDoc/
+
+# Claude memory (bộ nhớ cá nhân theo phiên — không commit). Giữ CLAUDE.md/skills.
+.claude/memory/
+.claude/skills/
+**/.claude/memory/**
+**/.claude/skills/**
+**/.claude/scheduled_tasks.lock
+.ask/

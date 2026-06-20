@@ -2,6 +2,7 @@ import { ThemeProvider } from '@/app/providers/theme-provider'
 import AutoScrollToTop from '@/components/scroll/auto-scroll-to-top'
 import useRoutesElements from '@/hooks/routes/use-router-element'
 import '@/styles/theme.css'
+import { Agentation } from 'agentation'
 
 const App = () => {
   const router = useRoutesElements()
@@ -10,6 +11,7 @@ const App = () => {
     <ThemeProvider>
       <AutoScrollToTop behavior='smooth' />
       {router}
+      {import.meta.env.DEV && <Agentation />}
     </ThemeProvider>
   )
 }

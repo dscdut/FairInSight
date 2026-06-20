@@ -2,46 +2,32 @@ import { useState, useRef, useEffect } from 'react'
 
 import dayjs from 'dayjs'
 import { Settings } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 import {
   type Attachment,
   type ChatSession,
   DEFAULT_SESSION,
-  INITIAL_SESSIONS,
   type Message
 } from '@/_mocks/chat-data-mock'
-import { MOCK_LAWYERS_BY_CATEGORY } from '@/_mocks/lawyer.mock'
-import { requestAssistantReply } from '@/api/workspaceApi'
-import { LAW_MAJORS } from '@/core/constants/law-major'
+import { sendChatAi } from '@/api/chatAiApi'
+import { fetchLawyers } from '@/api/lawyerApi'
 import { formatTime } from '@/core/helpers/date-time'
 import { cn } from '@/core/lib/utils'
+import { exportAnalysisPdf } from '@/utils/pdfExport'
 
 import ChatInput from './components/ChatInput'
 import ChatMessages from './components/ChatMessages'
 import HistorySidebar from './components/HistorySidebar'
 
-const detectCategoryFromSession = (session: ChatSession, currentMessage: string): string => {
-  const textToAnalyze = (session.title + ' ' + currentMessage + ' ' + session.messages.map(m => m.content).join(' ')).toLowerCase()
-  if (textToAnalyze.includes('đất') || textToAnalyze.includes('ranh giới') || textToAnalyze.includes('sổ đỏ')) {
-    return LAW_MAJORS.LAND
-  }
-  if (textToAnalyze.includes('hôn nhân') || textToAnalyze.includes('ly hôn') || textToAnalyze.includes('gia đình') || textToAnalyze.includes('con cái')) {
-    return LAW_MAJORS.FAMILY_LONG
-  }
-  if (textToAnalyze.includes('hình sự') || textToAnalyze.includes('tội') || textToAnalyze.includes('bị cáo') || textToAnalyze.includes('bào chữa')) {
-    return LAW_MAJORS.CRIMINAL
-  }
-  if (textToAnalyze.includes('dân sự') || textToAnalyze.includes('thừa kế') || textToAnalyze.includes('đại diện')) {
-    return LAW_MAJORS.CIVIL
-  }
-  if (textToAnalyze.includes('lao động') || textToAnalyze.includes('sa thải') || textToAnalyze.includes('lương') || textToAnalyze.includes('bảo hiểm')) {
-    return LAW_MAJORS.LABOR
-  }
-  if (textToAnalyze.includes('doanh nghiệp') || textToAnalyze.includes('công ty') || textToAnalyze.includes('thương mại') || textToAnalyze.includes('m&a')) {
-    return LAW_MAJORS.BUSINESS
-  }
-  return LAW_MAJORS.UNKNOWN
-}
+// Phiên rỗng khởi đầu (không còn mock hội thoại cũ)
+const makeEmptySession = (): ChatSession => ({
+  id: 'session-1',
+  title: 'Yêu cầu phân tích mới',
+  date: '',
+  messages: [],
+  aiSessionId: null
+})
 
 export default function AIChat() {
   const [sessions, setSessions] = useState<ChatSession[]>(() => {
@@ -49,13 +35,20 @@ export default function AIChat() {
       const saved = localStorage.getItem('legal_ai_chat_sessions')
       if (saved) {
         try {
-          return JSON.parse(saved)
+          const parsed = JSON.parse(saved)
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            // Dọn phiên rỗng tích lũy (do bấm "tạo mới" nhiều lần): giữ TỐI ĐA 1 phiên rỗng.
+            const nonEmpty = parsed.filter((s: ChatSession) => s.messages.length > 0)
+            const oneEmpty = parsed.find((s: ChatSession) => s.messages.length === 0)
+            const cleaned = oneEmpty ? [oneEmpty, ...nonEmpty] : nonEmpty
+            return cleaned.length > 0 ? cleaned : [makeEmptySession()]
+          }
         } catch (e) {
           console.error('Failed to parse sessions from localStorage', e)
         }
       }
     }
-    return INITIAL_SESSIONS
+    return [makeEmptySession()]
   })
   const [activeSessionId, setActiveSessionId] = useState<string>(() => {
     if (typeof window !== 'undefined') {
@@ -67,6 +60,9 @@ export default function AIChat() {
   const [inputText, setInputText] = useState<string>('')
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(false)
+
+  const location = useLocation()
+  const navigate = useNavigate()
 
   // UI responsive control
   const [isHistoryOpen, setIsHistoryOpen] = useState<boolean>(false)
@@ -129,6 +125,15 @@ export default function AIChat() {
 
   // Start a new clean session (client state only)
   const handleNewChat = () => {
+    // Chống spam: đã có sẵn 1 phiên RỖNG (chưa chat gì) → dùng lại nó, không tạo thêm.
+    const emptySession = sessions.find((s) => s.messages.length === 0)
+    if (emptySession) {
+      setActiveSessionId(emptySession.id)
+      setInputText('')
+      setAttachments([])
+      setIsHistoryOpen(false)
+      return
+    }
     const newId = `session-${Date.now()}`
     const newSession: ChatSession = {
       id: newId,
@@ -142,6 +147,17 @@ export default function AIChat() {
     setAttachments([])
     setIsHistoryOpen(false)
   }
+
+  // Khi điều hướng vào với cờ newChat (vd: bấm "Phân tích pháp lý" ở dashboard),
+  // luôn tạo một cuộc trò chuyện mới thay vì mở lại phiên cũ.
+  useEffect(() => {
+    if (location.state?.newChat) {
+      handleNewChat()
+      // Xoá state để F5/back không tạo phiên mới lặp lại.
+      navigate(location.pathname, { replace: true, state: {} })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state])
 
   // Delete a session from history
   const handleDeleteSession = (id: string, e: React.MouseEvent) => {
@@ -183,128 +199,134 @@ export default function AIChat() {
     }
   }
 
+  // Gọi AI BE thật. deepConfirmed=true khi user bấm "Phân tích sâu" (gửi lại câu
+  // tình huống với cờ để vào luồng reasoning).
+  const callAi = async (messageContent: string, userAttachments: Attachment[], deepConfirmed: boolean) => {
+    const timestamp = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+
+    const newUserMsg: Message = {
+      id: `msg-user-${Date.now()}`,
+      sender: 'user',
+      content: messageContent,
+      timestamp,
+      attachments: userAttachments
+    }
+
+    // Thêm tin user + auto đặt tên phiên theo câu đầu
+    setSessions((prev) =>
+      prev.map((s) => {
+        if (s.id !== activeSessionId) return s
+        const newTitle = s.title === 'Yêu cầu phân tích mới' && messageContent.trim()
+          ? (messageContent.trim().length > 30 ? messageContent.trim().slice(0, 30) + '...' : messageContent.trim())
+          : s.title
+        return { ...s, title: newTitle, messages: [...s.messages, newUserMsg] }
+      })
+    )
+    setIsLoading(true)
+
+    try {
+      const res = await sendChatAi({
+        message: messageContent,
+        session_id: activeSession.aiSessionId ?? null,
+        deep_confirmed: deepConfirmed,
+      })
+
+      const aiMessage: Message = {
+        id: `msg-ai-${Date.now()}`,
+        sender: 'ai',
+        content: res.answer || '(Không có nội dung trả về)',
+        timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        mode: res.mode,
+        citations: res.citations,
+        domain: res.domain,
+        deepPending: res.mode === 'deep_reasoning_pending',
+        // Sau khi reasoning ra kết luận (deep_reasoning) → hiện 2 nút hành động.
+        showPostActions: res.mode === 'deep_reasoning',
+      }
+
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.id === activeSessionId
+            ? { ...s, aiSessionId: res.session_id, messages: [...s.messages, aiMessage] }
+            : s
+        )
+      )
+    } catch (err) {
+      const errMessage: Message = {
+        id: `msg-ai-err-${Date.now()}`,
+        sender: 'ai',
+        content: `⚠️ Xin lỗi, hệ thống AI đang gặp sự cố. Bạn thử lại sau giúp nhé.\n\n_(${err instanceof Error ? err.message : 'lỗi không xác định'})_`,
+        timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+      }
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.id === activeSessionId ? { ...s, messages: [...s.messages, errMessage] } : s
+        )
+      )
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   // Submit Prompt to AI
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!inputText.trim() && attachments.length === 0) return
     if (isLoading) return
 
-    const userMessageId = `msg-user-${Date.now()}`
-    const userMessageContent = inputText
+    const messageContent = inputText
     const userAttachments = [...attachments]
-    const timestamp = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
-
-    const newUserMsg: Message = {
-      id: userMessageId,
-      sender: 'user',
-      content: userMessageContent,
-      timestamp,
-      attachments: userAttachments
-    }
-
-    // Update session with User Message
-    setSessions((prev) =>
-      prev.map((s) => {
-        if (s.id === activeSessionId) {
-          // If it was default empty name, auto-name it based on input
-          const newTitle = s.title === 'Yêu cầu phân tích mới' && userMessageContent.trim()
-            ? (userMessageContent.trim().length > 30 ? userMessageContent.trim().slice(0, 30) + '...' : userMessageContent.trim())
-            : s.title
-          return {
-            ...s,
-            title: newTitle,
-            messages: [...s.messages, newUserMsg]
-          }
-        }
-        return s
-      })
-    )
-
-    // Reset Input form state
     setInputText('')
     setAttachments([])
-    setIsLoading(true)
+    await callAi(messageContent, userAttachments, false)
+  }
 
-    // Call real RAG Assistant Query API
+  // User bấm "Phân tích sâu" sau khi AI mời → gửi lại câu hỏi gốc với deep_confirmed
+  const handleConfirmDeep = async (originalQuestion: string) => {
+    if (isLoading) return
+    await callAi(originalQuestion, [], true)
+  }
+
+  // Tải bản phân tích về máy dạng PDF — client-side (html2pdf), không cần BE.
+  const handleDownloadAnalysis = async (content: string) => {
     try {
-      const history = activeSession.messages.map((m) => ({
-        role: (m.sender === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
-        content: m.content
-      }))
+      await exportAnalysisPdf(content, { title: 'Bản phân tích pháp lý' })
+    } catch (err) {
+      console.error('Xuất PDF lỗi', err)
+    }
+  }
 
-      const reply = await requestAssistantReply(
-        userMessageContent,
-        'low',
-        history,
-        docSummary || null,
-        activeSessionId,
-        topK,
-        legalDomain,
-        isActiveOnly
-      )
-
-      // Retain lawyer recommendation overlay if user explicitly asks for it
-      let recommendedLawyers = undefined
-      const lowerInput = userMessageContent.toLowerCase().trim()
-      const isRequestingLawyers = 
-        lowerInput === 'có' || 
-        lowerInput === 'co' || 
-        lowerInput.includes('tôi muốn tìm kiếm luật sư') || 
-        lowerInput.includes('tôi muốn tìm luật sư') || 
-        lowerInput.includes('tìm luật sư') || 
-        lowerInput.includes('gợi ý luật sư') || 
-        lowerInput.includes('có, tôi muốn') ||
-        lowerInput.includes('có tôi muốn') ||
-        (lowerInput.includes('có') && (lowerInput.includes('muốn') || lowerInput.includes('luật sư') || lowerInput.includes('gợi ý')))
-
-      if (isRequestingLawyers) {
-        const category = detectCategoryFromSession(activeSession, userMessageContent)
-        const rawLawyers = MOCK_LAWYERS_BY_CATEGORY[category] || MOCK_LAWYERS_BY_CATEGORY['Tôi không chắc lĩnh vực']
-        recommendedLawyers = rawLawyers.map((l) => ({
-          id: l.id,
-          name: l.fullName,
-          avatar: l.avatar || '',
-          specialty: l.specializations.join(', ')
-        }))
-      }
-
+  // Gợi ý luật sư: gọi Node BE lấy luật sư THẬT theo lĩnh vực → render card vào 1 tin AI mới.
+  const handleSuggestLawyers = async (domain?: string | null) => {
+    if (isLoading) return
+    setIsLoading(true)
+    try {
+      const lawyers = await fetchLawyers(domain)
       const aiMessage: Message = {
-        id: reply.id || `msg-ai-${Date.now()}`,
+        id: `msg-lawyers-${Date.now()}`,
         sender: 'ai',
-        content: reply.content,
+        content: lawyers.length
+          ? 'Dưới đây là các luật sư phù hợp mà mình tìm thấy cho bạn:'
+          : 'Hiện chưa có luật sư phù hợp trong hệ thống. Bạn thử lại sau nhé.',
         timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-        lawyers: recommendedLawyers
+        lawyers,
       }
-
       setSessions((prev) =>
-        prev.map((s) => {
-          if (s.id === activeSessionId) {
-            return {
-              ...s,
-              messages: [...s.messages, aiMessage]
-            }
-          }
-          return s
-        })
+        prev.map((s) =>
+          s.id === activeSessionId ? { ...s, messages: [...s.messages, aiMessage] } : s
+        )
       )
-    } catch (error) {
-      console.error('Error fetching AI response:', error)
+    } catch (err) {
       const errMessage: Message = {
-        id: `msg-ai-err-${Date.now()}`,
+        id: `msg-lawyers-err-${Date.now()}`,
         sender: 'ai',
-        content: 'Có lỗi xảy ra khi kết nối tới trợ lý AI. Vui lòng kiểm tra lại kết nối mạng hoặc thử lại sau.',
-        timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+        content: `⚠️ Không lấy được danh sách luật sư.\n\n_(${err instanceof Error ? err.message : 'lỗi không xác định'})_`,
+        timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
       }
       setSessions((prev) =>
-        prev.map((s) => {
-          if (s.id === activeSessionId) {
-            return {
-              ...s,
-              messages: [...s.messages, errMessage]
-            }
-          }
-          return s
-        })
+        prev.map((s) =>
+          s.id === activeSessionId ? { ...s, messages: [...s.messages, errMessage] } : s
+        )
       )
     } finally {
       setIsLoading(false)
@@ -419,6 +441,9 @@ export default function AIChat() {
             isLoading={isLoading}
             messagesEndRef={messagesEndRef}
             onSelectCategory={handleSelectStarterCategory}
+            onConfirmDeep={handleConfirmDeep}
+            onDownloadAnalysis={handleDownloadAnalysis}
+            onSuggestLawyers={handleSuggestLawyers}
           />
 
           {/* Form Input Area */}

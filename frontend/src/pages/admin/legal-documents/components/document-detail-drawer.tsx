@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 
 import axios from 'axios'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -256,7 +257,10 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
     setNewChangeNote('')
   }
 
-  return (
+  // Render qua PORTAL ở document.body: layout admin (LayoutMain) có backdrop-blur tạo
+  // containing block khiến position:fixed bị tính theo khung mờ đó (bị bó/che) thay vì
+  // viewport. Portal đưa drawer ra ngoài → fixed bám đúng viewport, z-index ăn thật.
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <>
@@ -266,7 +270,7 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
             animate={{ opacity: 0.4 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className='fixed inset-0 z-40 bg-black'
+            className='fixed inset-0 z-[200] bg-black'
           />
 
           {/* Large Centered Dialog Container */}
@@ -275,7 +279,7 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
             animate={{ opacity: 1, scale: 1, x: '-50%', y: '-54%' }}
             exit={{ opacity: 0, scale: 0.96, x: '-50%', y: '-52%' }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className='fixed left-1/2 top-1/2 z-50 w-[95vw] max-w-6xl h-[85vh] bg-background-primary shadow-2xl rounded-2xl flex flex-col border border-border-secondary overflow-hidden'
+            className='fixed left-1/2 top-1/2 z-[201] w-[95vw] max-w-6xl h-[85vh] bg-background-primary shadow-2xl rounded-2xl flex flex-col border border-border-secondary overflow-hidden'
           >
             {/* Upper Title Header bar */}
             <div className='flex items-center justify-between px-8 py-5 bg-background-primary border-b border-border-secondary'>
@@ -411,6 +415,7 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   )
 }

@@ -1,117 +1,120 @@
 import * as React from 'react'
 
-import { Bot, FileText, Scale, AlertTriangle } from 'lucide-react'
+import { Bot, Download, FileText, Sparkles, Users } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
+import { useNavigate } from 'react-router-dom'
+import remarkGfm from 'remark-gfm'
 
 import logo from '@/assets/images/logo.png'
+import { type Citation, type Message } from '@/_mocks/chat-data-mock'
 import { Avatar, AvatarFallback, AvatarImage, Button } from '@/components/ui'
+import { ROUTE } from '@/core/constants/path'
 import { CHAT_STARTER_CATEGORIES } from '@/core/constants/law-major'
 import { getInitials } from '@/core/helpers/get-initials'
 import { cn } from '@/core/lib/utils'
 import { useAuthStore } from '@/core/store/features/auth/authStore'
-import { type Lawyer } from '@/models/types/case.types'
-
-interface Attachment {
-  id: string
-  name: string
-  type: 'image' | 'file'
-  url?: string
-  size?: string
-}
-
-interface Message {
-  id: string
-  sender: 'user' | 'ai'
-  content: string
-  timestamp: string
-  attachments?: Attachment[]
-  lawyers?: Lawyer[]
-}
 
 interface ChatMessagesProps {
   messages: Message[]
   isLoading: boolean
   messagesEndRef: React.RefObject<HTMLDivElement | null>
   onSelectCategory?: (category: string) => void
+  onConfirmDeep?: (originalQuestion: string) => void
+  onDownloadAnalysis?: (content: string) => void
+  onSuggestLawyers?: (domain?: string | null) => void
 }
 
-const STARTER_CATEGORIES = [...CHAT_STARTER_CATEGORIES]
-
-const renderStructuredMessage = (content: string) => {
-  const tomTatRegex = /\[TÓM TẮT\]:?([\s\S]*?)(?=\[(?:CĂN CỨ|LƯU Ý)\]|$)/i
-  const canCuRegex = /\[CĂN CỨ\]:?([\s\S]*?)(?=\[(?:TÓM TẮT|LƯU Ý)\]|$)/i
-  const luuYRegex = /\[LƯU Ý\]:?([\s\S]*?)(?=\[(?:TÓM TẮT|CĂN CỨ)\]|$)/i
-
-  const hasTomTat = tomTatRegex.test(content)
-  const hasCanCu = canCuRegex.test(content)
-  const hasLuuY = luuYRegex.test(content)
-
-  if (!hasTomTat && !hasCanCu && !hasLuuY) {
-    return <span className='whitespace-pre-line'>{content}</span>
-  }
-
-  const firstSectionIdx = Math.min(
-    ...[
-      content.search(/\[TÓM TẮT\]/i),
-      content.search(/\[CĂN CỨ\]/i),
-      content.search(/\[LƯU Ý\]/i)
-    ].filter((idx) => idx >= 0)
-  )
-
-  const prefix = firstSectionIdx > 0 ? content.slice(0, firstSectionIdx).trim() : ''
-
-  const tomTatMatch = content.match(tomTatRegex)
-  const canCuMatch = content.match(canCuRegex)
-  const luuYMatch = content.match(luuYRegex)
-
-  const tomTatText = tomTatMatch ? tomTatMatch[1].trim() : ''
-  const canCuText = canCuMatch ? canCuMatch[1].trim() : ''
-  const luuYText = luuYMatch ? luuYMatch[1].trim() : ''
-
+// Render markdown câu trả lời AI (đậm, heading, bảng, danh sách...)
+function AiMarkdown({ content }: { content: string }) {
   return (
-    <div className='space-y-4 w-full'>
-      {prefix && <div className='whitespace-pre-line text-main pb-2'>{prefix}</div>}
-      
-      {tomTatText && (
-        <div className='p-4 rounded-xl border border-teal-500/30 bg-teal-50/40 dark:bg-teal-950/10 shadow-sm space-y-2 animate-in fade-in duration-300'>
-          <div className='flex items-center gap-2 text-teal-600 dark:text-teal-400 font-bold text-xs uppercase tracking-wider'>
-            <FileText className='w-4 h-4 text-teal-500' />
-            <span>Tóm tắt</span>
-          </div>
-          <div className='text-small text-main leading-relaxed whitespace-pre-line'>{tomTatText}</div>
-        </div>
-      )}
-
-      {canCuText && (
-        <div className='p-4 rounded-xl border border-indigo-500/30 bg-indigo-50/40 dark:bg-indigo-950/10 shadow-sm space-y-2 animate-in fade-in duration-300'>
-          <div className='flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-xs uppercase tracking-wider'>
-            <Scale className='w-4 h-4 text-indigo-500' />
-            <span>Căn cứ pháp lý</span>
-          </div>
-          <div className='text-small text-main leading-relaxed whitespace-pre-line'>{canCuText}</div>
-        </div>
-      )}
-
-      {luuYText && (
-        <div className='p-4 rounded-xl border border-amber-500/30 bg-amber-50/40 dark:bg-amber-950/10 shadow-sm space-y-2 animate-in fade-in duration-300'>
-          <div className='flex items-center gap-2 text-amber-600 dark:text-amber-400 font-bold text-xs uppercase tracking-wider'>
-            <AlertTriangle className='w-4 h-4 text-amber-500' />
-            <span>Lưu ý</span>
-          </div>
-          <div className='text-small text-main leading-relaxed whitespace-pre-line'>{luuYText}</div>
-        </div>
-      )}
+    <div className='prose prose-sm prose-slate max-w-none text-small text-main leading-relaxed'>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          h1: ({ ...p }) => <h1 className='text-base font-black text-primary mb-2 mt-3' {...p} />,
+          h2: ({ ...p }) => <h2 className='text-sm font-bold text-main mb-1.5 mt-3' {...p} />,
+          h3: ({ ...p }) => <h3 className='text-sm font-bold text-main mb-1 mt-2' {...p} />,
+          p: ({ ...p }) => <p className='mb-2 leading-relaxed' {...p} />,
+          ul: ({ ...p }) => <ul className='list-disc pl-5 mb-2 space-y-1' {...p} />,
+          ol: ({ ...p }) => <ol className='list-decimal pl-5 mb-2 space-y-1' {...p} />,
+          strong: ({ ...p }) => <strong className='font-bold text-main' {...p} />,
+          table: ({ ...p }) => (
+            <div className='overflow-x-auto my-3 rounded-lg border border-border-secondary/60'>
+              <table className='w-full border-collapse text-xs' {...p} />
+            </div>
+          ),
+          th: ({ ...p }) => <th className='border-b border-border-secondary/60 bg-background-secondary/40 p-2 font-bold text-left' {...p} />,
+          td: ({ ...p }) => <td className='border-b border-border-secondary/30 p-2' {...p} />,
+        }}
+      >
+        {content}
+      </ReactMarkdown>
     </div>
   )
 }
+
+// Hiển thị căn cứ pháp lý (citations) dạng chip nhỏ dưới câu trả lời
+function Citations({ items }: { items: Citation[] }) {
+  if (!items || items.length === 0) return null
+  return (
+    <div className='flex flex-wrap gap-1.5 mt-2'>
+      {items.map((c, i) => {
+        const label = [c.official_code, c.article_no && `Điều ${c.article_no}`, c.clause_no && `Khoản ${c.clause_no}`]
+          .filter(Boolean)
+          .join(' · ')
+        if (!label) return null
+        return (
+          <span
+            key={i}
+            title={c.quoted_text || ''}
+            className='inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/8 text-primary text-[10px] font-semibold border border-primary/15'
+          >
+            <FileText className='w-3 h-3' aria-hidden='true' />
+            {label}
+          </span>
+        )
+      })}
+    </div>
+  )
+}
+
+const STARTER_CATEGORIES = [...CHAT_STARTER_CATEGORIES]
 
 export default function ChatMessages({
   messages,
   isLoading,
   messagesEndRef,
-  onSelectCategory
+  onSelectCategory,
+  onConfirmDeep,
+  onDownloadAnalysis,
+  onSuggestLawyers
 }: ChatMessagesProps) {
 
   const { user } = useAuthStore()
+  const navigate = useNavigate()
+
+  // "Xem hồ sơ" → mở trang hồ sơ chi tiết của luật sư đó.
+  const handleViewLawyerProfile = (lawyerId: string) => {
+    navigate(ROUTE.USER.LAWYER_DETAIL.replace(':id', lawyerId))
+  }
+
+  // "Liên hệ" → mở khung chat luật sư, soạn sẵn prompt (kèm gợi ý đính kèm hồ sơ PDF).
+  const handleContactLawyer = (lawyerName: string) => {
+    const prefillMessage =
+      `Xin chào ${lawyerName}, tôi đang gặp một số vấn đề pháp lý và được hệ thống FairInsight ` +
+      `kết nối tới Luật sư. Tôi xin gửi kèm bản tổng hợp hồ sơ vụ việc (PDF) do trợ lý AI phân tích. ` +
+      `Rất mong Luật sư xem giúp và tư vấn hướng xử lý phù hợp. Tôi xin chân thành cảm ơn.`
+    navigate(ROUTE.USER.MESSAGES, { state: { lawyerName, prefillMessage } })
+  }
+
+  // Câu hỏi gốc của user (tin user ngay trước 1 bubble AI) — dùng để gửi lại khi
+  // bấm "Phân tích sâu".
+  const lastUserBefore = (index: number): string => {
+    for (let i = index - 1; i >= 0; i--) {
+      if (messages[i].sender === 'user') return messages[i].content
+    }
+    return ''
+  }
 
   return (
     <div className='flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 min-h-0'>
@@ -137,7 +140,7 @@ export default function ChatMessages({
           </div>
         </div>
       ) : (
-        messages.map((message) => {
+        messages.map((message, index) => {
           const isUser = message.sender === 'user'
           return (
             <div
@@ -185,13 +188,59 @@ export default function ChatMessages({
                       : 'bg-background-primary'
                   )}
                 >
-                  {/* Display text contents */}
-                  <div className={cn(
-                    'text-small font-sans',
-                    isUser ? 'whitespace-pre-line' : 'prose prose-slate max-w-none text-main'
-                  )}>
-                    {isUser ? message.content : renderStructuredMessage(message.content)}
-                  </div>
+                  {/* Display text contents — AI: markdown; user: plain */}
+                  {isUser ? (
+                    <div className='whitespace-pre-line text-small font-sans'>
+                      {message.content}
+                    </div>
+                  ) : (
+                    <AiMarkdown content={message.content} />
+                  )}
+
+                  {/* Căn cứ pháp lý (citations) */}
+                  {!isUser && <Citations items={message.citations || []} />}
+
+                  {/* Nút "Phân tích sâu" khi AI mời chuyển sang reasoning */}
+                  {!isUser && message.deepPending && onConfirmDeep && (
+                    <Button
+                      variant='default'
+                      size='sm'
+                      onClick={() => onConfirmDeep(lastUserBefore(index))}
+                      className='mt-3 text-xs font-semibold text-white gap-1.5'
+                    >
+                      <Sparkles className='w-3.5 h-3.5' aria-hidden='true' />
+                      Phân tích sâu vụ việc này
+                    </Button>
+                  )}
+
+                  {/* Sau khi reasoning ra kết luận → 2 nút: tải bản phân tích / gợi ý luật sư.
+                      Dựa vào mode (lưu trong localStorage) để tin cũ load lại vẫn hiện nút. */}
+                  {!isUser && (message.showPostActions || message.mode === 'deep_reasoning') && (
+                    <div className='mt-3 flex flex-wrap gap-2'>
+                      {onDownloadAnalysis && (
+                        <Button
+                          variant='outline'
+                          size='sm'
+                          onClick={() => onDownloadAnalysis(message.content)}
+                          className='text-xs font-semibold gap-1.5'
+                        >
+                          <Download className='w-3.5 h-3.5' aria-hidden='true' />
+                          Tải bản phân tích (PDF)
+                        </Button>
+                      )}
+                      {onSuggestLawyers && (
+                        <Button
+                          variant='default'
+                          size='sm'
+                          onClick={() => onSuggestLawyers(message.domain)}
+                          className='text-xs font-semibold text-white gap-1.5'
+                        >
+                          <Users className='w-3.5 h-3.5' aria-hidden='true' />
+                          Gợi ý luật sư
+                        </Button>
+                      )}
+                    </div>
+                  )}
 
                   {/* Attachments rendering inside chat bubble */}
                   {message.attachments && message.attachments.length > 0 && (
@@ -267,6 +316,7 @@ export default function ChatMessages({
                           <Button
                             variant='outline'
                             size='sm'
+                            onClick={() => handleViewLawyerProfile(lawyer.id)}
                             className='w-full text-xs font-semibold py-1.5 rounded-lg h-auto'
                           >
                             Xem hồ sơ
@@ -274,6 +324,7 @@ export default function ChatMessages({
                           <Button
                             variant='default'
                             size='sm'
+                            onClick={() => handleContactLawyer(lawyer.name)}
                             className='w-full text-xs font-semibold py-1.5 rounded-lg h-auto text-white'
                           >
                             Liên hệ

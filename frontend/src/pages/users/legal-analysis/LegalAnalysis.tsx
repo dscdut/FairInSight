@@ -5,11 +5,25 @@ import { Award, Loader2 } from 'lucide-react'
 import { FadeUp } from '@/components/animated/animated-component'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/core/lib/utils'
-import { lawApi } from '@/core/services/law.service'
+import { lawAiApi } from '@/core/services/law-ai.service'
 import { type Law } from '@/models/types/law.type'
 import { DocumentDetailDrawer } from '@/pages/admin/legal-documents/components/document-detail-drawer'
 import { DocumentFilters } from '@/pages/admin/legal-documents/components/document-filters'
 import { DocumentListTable } from '@/pages/admin/legal-documents/components/document-list-table'
+
+// Dãy số trang rút gọn: luôn hiện trang 1, trang cuối, và ±1 quanh trang hiện tại;
+// chèn '...' cho khoảng bị lược. Vd 79 trang, đang ở 6: [1, '...', 5, 6, 7, '...', 79].
+function getPageRange(current: number, total: number): (number | '...')[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
+  const pages: (number | '...')[] = [1]
+  const start = Math.max(2, current - 1)
+  const end = Math.min(total - 1, current + 1)
+  if (start > 2) pages.push('...')
+  for (let p = start; p <= end; p++) pages.push(p)
+  if (end < total - 1) pages.push('...')
+  pages.push(total)
+  return pages
+}
 
 export default function LegalAnalysis() {
   const [laws, setLaws] = useState<Law[]>([])
@@ -34,11 +48,11 @@ export default function LegalAnalysis() {
   const fetchLaws = useCallback(async () => {
     try {
       setIsLoading(true)
-      const res = await lawApi.listLaws({
+      const res = await lawAiApi.listLaws({
         page: currentPage,
         size: itemsPerPage,
         search: searchQuery || undefined,
-        status: statusFilter || undefined,
+        status: statusFilter && statusFilter !== 'ALL' ? statusFilter : undefined,
         issuedDate: issuedDateFilter || undefined
       })
       setLaws(res.items)
@@ -57,7 +71,7 @@ export default function LegalAnalysis() {
 
   const handleViewClick = async (law: Law) => {
     try {
-      const res = await lawApi.getLawById(law.id)
+      const res = (await lawAiApi.getLawById(law.id)) as any
       setActiveLawForDetail(res)
       setIsDetailOpen(true)
     } catch (error) {
@@ -133,20 +147,29 @@ export default function LegalAnalysis() {
                   >
                     Trước
                   </Button>
-                  {Array.from({ length: totalPages }).map((_, idx) => (
-                    <Button
-                      key={idx}
-                      size='sm'
-                      onClick={() => setCurrentPage(idx + 1)}
-                      variant={currentPage === idx + 1 ? 'default' : 'outline'}
-                      className={cn(
-                        'h-8 w-8 text-xs font-bold rounded-xl transition-all',
-                        currentPage === idx + 1 ? 'text-white' : 'text-text-primary border-border-primary'
-                      )}
-                    >
-                      {idx + 1}
-                    </Button>
-                  ))}
+                  {getPageRange(currentPage, totalPages).map((p, idx) =>
+                    p === '...' ? (
+                      <span
+                        key={`gap-${idx}`}
+                        className='h-8 w-8 flex items-center justify-center text-xs text-text-tertiary font-bold select-none'
+                      >
+                        …
+                      </span>
+                    ) : (
+                      <Button
+                        key={p}
+                        size='sm'
+                        onClick={() => setCurrentPage(p as number)}
+                        variant={currentPage === p ? 'default' : 'outline'}
+                        className={cn(
+                          'h-8 w-8 text-xs font-bold rounded-xl transition-all',
+                          currentPage === p ? 'text-white' : 'text-text-primary border-border-primary'
+                        )}
+                      >
+                        {p}
+                      </Button>
+                    )
+                  )}
                   <Button
                     variant='outline'
                     size='sm'

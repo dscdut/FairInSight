@@ -38,17 +38,23 @@ export const DocumentListRow: React.FC<DocumentListRowProps> = ({
 
   const latestVer = getLatestVersionName(law)
 
+  // Tên hiển thị = title (tên thuần trong DB) + số hiệu. DB lưu title sạch (không kèm
+  // số hiệu), nhưng cột "Tên văn bản" ghép lại cho đầy đủ như cách VBPL hiển thị.
+  const displayName = law.documentNumber
+    ? `${law.title} số ${law.documentNumber}`
+    : law.title
+
   return (
     <tr className='hover:bg-background-secondary/20 transition-all duration-200'>
       {/* Tên văn bản */}
-      <td className='px-6 py-4.5'>
+      <td className='px-6 py-5.5'>
         <div className='flex flex-col gap-0.5'>
           <button
             type='button'
             onClick={() => onView(law)}
             className='font-bold text-text-primary text-sm hover:text-primary transition-colors cursor-pointer text-left focus:outline-none'
           >
-            {law.title}
+            {displayName}
           </button>
           <span className='text-xs text-text-description font-medium'>
             {law.authorName ? `Ban hành bởi ${law.authorName}` : 'Tài liệu nội bộ'}
@@ -57,24 +63,24 @@ export const DocumentListRow: React.FC<DocumentListRowProps> = ({
       </td>
 
       {/* Số hiệu */}
-      <td className='px-6 py-4.5 font-semibold text-text-secondary'>
+      <td className='px-6 py-5.5 font-semibold text-text-secondary'>
         {law.documentNumber}
       </td>
 
       {/* Ngày hiệu lực */}
-      <td className='px-6 py-4.5 font-semibold text-text-secondary'>
+      <td className='px-6 py-5.5 font-semibold text-text-secondary'>
         {formatDate(law.effectiveDate)}
       </td>
 
       {/* Version */}
-      <td className='px-6 py-4.5 text-center'>
+      <td className='px-6 py-5.5 text-center'>
         <span className='inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-semibold text-text-secondary bg-background-secondary border border-border-secondary uppercase'>
           {latestVer}
         </span>
       </td>
 
       {/* Trạng thái */}
-      <td className='px-6 py-4.5 text-center'>
+      <td className='px-6 py-5.5 text-center'>
         <span
           className={cn(
             'inline-flex items-center justify-center px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide border',
@@ -88,7 +94,7 @@ export const DocumentListRow: React.FC<DocumentListRowProps> = ({
       </td>
 
       {/* Hành động */}
-      <td className='px-6 py-4.5'>
+      <td className='px-6 py-5.5'>
         <div className='flex items-center justify-center gap-3.5'>
           {/* View */}
           <button

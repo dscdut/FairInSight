@@ -59,8 +59,8 @@ export default function AdminSideBar() {
               <Crown className='w-6 h-6 text-white' />
             </div>
             <div className='flex flex-col'>
-              <h1 className='text-lg font-bold text-primary'>AdminPanel</h1>
-              <p className='text-xs text-text-description'>Management System</p>
+              <h1 className='text-lg font-bold text-primary'>{t('admin_panel')}</h1>
+              <p className='text-xs text-text-description'>{t('management_system')}</p>
             </div>
           </div>
         )}
