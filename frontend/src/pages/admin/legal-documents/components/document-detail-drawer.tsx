@@ -7,10 +7,11 @@ import { X, History, Clock, Save } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import config from '@/core/configs/env'
+import { lawAiApi } from '@/core/services/law-ai.service'
 import { lawApi } from '@/core/services/law.service'
 import { type Law, type LawVersion } from '@/models/types/law.type'
 
-import { DocumentDetailContent } from './document-detail-content'
+import { DocumentDetailContent, type MetadataDraft } from './document-detail-content'
 import { DocumentVersionItem } from './document-version-item'
 
 interface DocumentDetailDrawerProps {
@@ -20,6 +21,10 @@ interface DocumentDetailDrawerProps {
   onRestoreVersion?: (version: LawVersion) => void
   onSaveNewVersion?: (lawId: string, content: string, changeNote: string, sourceUrl?: string) => void
   readOnly?: boolean
+  // CHỈ admin: cho phép sửa metadata (tên, số hiệu, ngày, tóm tắt) qua nút bút chì.
+  allowMetadataEdit?: boolean
+  // Gọi sau khi lưu metadata thành công để parent reload danh sách.
+  onMetadataUpdated?: () => void
 }
 
 export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
@@ -29,6 +34,8 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
   onRestoreVersion,
   onSaveNewVersion,
   readOnly = false,
+  allowMetadataEdit = false,
+  onMetadataUpdated,
 }) => {
   const [selectedVersion, setSelectedVersion] = useState<LawVersion | null>(null)
 
@@ -50,6 +57,19 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
     error?: string
   }[]>([])
 
+  // --- State sửa metadata (admin, nút bút chì) ---
+  // isEditingMetadata: đang mở bảng sửa. metadataDraft: bản nháp các field admin gõ.
+  // isSavingMetadata: đang gọi API cập nhật.
+  const [isEditingMetadata, setIsEditingMetadata] = useState(false)
+  const [isSavingMetadata, setIsSavingMetadata] = useState(false)
+  const [metadataDraft, setMetadataDraft] = useState<MetadataDraft>({
+    title: '',
+    documentNumber: '',
+    issuedDate: '',
+    effectiveDate: '',
+    summary: '',
+  })
+
   // Initialize/reset states when drawer opens or law changes
   useEffect(() => {
     if (isOpen && law && law.versions && law.versions.length > 0) {
@@ -69,6 +89,8 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
     setIsPdfUpload(false)
     setPdfProgress([])
     setSourceUrl(null)
+    setIsEditingMetadata(false)
+    setIsSavingMetadata(false)
   }, [isOpen, law])
 
   // Sync state when selectedVersion changes

@@ -311,6 +311,7 @@ export const DocumentDetailContent: React.FC<DocumentDetailContentProps> = ({
               </Button>
             )}
           </div>
+          )}
 
           {/* Mode Selector Tabs (Shown only if both docx text and PDF url exist and not editing) */}
           {hasDocx && pdfUrl && !isEditing && (
