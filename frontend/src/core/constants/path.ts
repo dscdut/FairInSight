@@ -24,7 +24,8 @@ export const ROUTE = {
     SETTING: '/setting',
     PROFILE: '/profile',
     EDIT: '/profile/edit',
-    MESSAGES: '/messages'
+    MESSAGES: '/messages',
+    APPOINTMENT: '/appointment'
   },
   FORM_LIBRARY: '/form-library',
   ADMIN: {

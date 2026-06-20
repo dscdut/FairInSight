@@ -88,10 +88,10 @@ export default function LegalAnalysis() {
             <Award className='w-3.5 h-3.5' />
             Thư viện Pháp lý
           </span>
-          <h1 className='text-h1 font-bold text-text-primary mb-2'>
+          <h1 className='text-h2 text-text-primary mb-2'>
             Văn bản pháp luật
           </h1>
-          <p className='text-xs text-text-description font-semibold leading-relaxed'>
+          <p className='text-p text-text-description font-semibold leading-relaxed'>
             Tra cứu và xem nội dung các văn bản pháp quy trong hệ thống.
           </p>
         </FadeUp>
