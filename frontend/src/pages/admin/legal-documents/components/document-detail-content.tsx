@@ -56,6 +56,8 @@ interface DocumentDetailContentProps {
   onCancelMetadata?: () => void
   onSaveMetadata?: () => void
   isSavingMetadata?: boolean
+  // Có thay đổi so với bản gốc chưa — nút Lưu chỉ bật khi true.
+  isMetadataDirty?: boolean
   metadataDraft?: MetadataDraft
   setMetadataField?: (field: keyof MetadataDraft, value: string) => void
 }
@@ -85,6 +87,7 @@ export const DocumentDetailContent: React.FC<DocumentDetailContentProps> = ({
   onCancelMetadata,
   onSaveMetadata,
   isSavingMetadata = false,
+  isMetadataDirty = false,
   metadataDraft,
   setMetadataField,
 }) => {
@@ -173,22 +176,21 @@ export const DocumentDetailContent: React.FC<DocumentDetailContentProps> = ({
                   <Button
                     type='button'
                     variant='outline'
-                    size='sm'
                     onClick={onCancelMetadata}
                     disabled={isSavingMetadata}
-                    className='h-8.5 rounded-xl border-border-primary text-text-secondary hover:text-text-primary flex items-center gap-1.5 text-xs font-bold'
+                    className='h-11 px-5 rounded-xl border-border-primary text-text-secondary hover:text-text-primary flex items-center gap-2 text-sm font-bold'
                   >
-                    <X className='w-3.5 h-3.5' />
+                    <X className='w-4 h-4' />
                     Huỷ
                   </Button>
                   <Button
                     type='button'
-                    size='sm'
                     onClick={onSaveMetadata}
-                    disabled={isSavingMetadata}
-                    className='h-8.5 bg-primary text-white hover:opacity-90 rounded-xl flex items-center gap-1.5 text-xs font-bold disabled:opacity-50'
+                    disabled={isSavingMetadata || !isMetadataDirty}
+                    title={!isMetadataDirty ? 'Chưa có thay đổi nào để lưu' : undefined}
+                    className='h-11 px-6 bg-primary text-white hover:opacity-90 rounded-xl flex items-center gap-2 text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed'
                   >
-                    {isSavingMetadata ? <Loader2 className='w-3.5 h-3.5 animate-spin' /> : <Save className='w-3.5 h-3.5' />}
+                    {isSavingMetadata ? <Loader2 className='w-4 h-4 animate-spin' /> : <Save className='w-4 h-4' />}
                     Lưu
                   </Button>
                 </div>

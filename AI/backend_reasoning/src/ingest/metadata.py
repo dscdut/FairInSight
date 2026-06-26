@@ -86,11 +86,22 @@ class DocMeta:
 
 
 def _detect_type(text: str) -> str:
+    """Loại văn bản = pattern xuất hiện SỚM NHẤT theo vị trí trong head.
+
+    KHÔNG duyệt theo thứ tự pattern: Thông tư "Bãi bỏ..." có phần "Căn cứ Nghị định
+    số..." → nếu match theo thứ tự list (NGHỊ ĐỊNH trước THÔNG TƯ) sẽ ra decree SAI.
+    Tiêu đề loại VB ("THÔNG TƯ") luôn nằm TRÊN phần Căn cứ → chọn vị trí nhỏ nhất.
+    Hòa vị trí (vd "THÔNG TƯ LIÊN TỊCH" vs "THÔNG TƯ" cùng start) → giữ ưu tiên thứ
+    tự list (pattern cụ thể hơn đứng trước) nhờ so sánh '<' nghiêm.
+    """
     head = text[:1500]
+    best_pos: int | None = None
+    best_dt = DocType.OTHER.value
     for pat, dt in _TYPE_PATTERNS:
-        if pat.search(head):
-            return dt
-    return DocType.OTHER.value
+        m = pat.search(head)
+        if m and (best_pos is None or m.start() < best_pos):
+            best_pos, best_dt = m.start(), dt
+    return best_dt
 
 
 def _detect_issuer_scope(issuer: str) -> tuple[str, Optional[str]]:

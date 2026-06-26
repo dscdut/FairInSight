@@ -28,6 +28,10 @@ dependencies = [
     # --- Auth: verify JWT của BE Node (chung secret) để lấy user_id ---
     "pyjwt>=2.9.0",
     # --- Ingest: extraction / OCR ---
+    # torch/torchvision khai trực tiếp để [tool.uv.sources] ép được wheel +cpu
+    # (transitive qua easyocr/sentence-transformers thì uv không bind index).
+    "torch>=2.9.0",
+    "torchvision>=0.24.0",
     "pymupdf>=1.24.0",
     "easyocr>=1.7.0",
     "python-docx>=1.1.0",
@@ -53,6 +57,21 @@ build-backend = "hatchling.build"
 
 [tool.uv]
 package = true
+
+# --- torch CPU-only (index PyTorch +cpu) ---
+# Mặc định torch trên Linux (pypi) kéo nguyên cụm nvidia-cuda-*/cudnn/triton
+# (~11.6GB) — THỪA vì container chạy CPU (LLM trỏ ra ngoài qua env, reranker bge
+# chạy CPU). Ép torch/torchvision lấy wheel +cpu từ index PyTorch → image Docker
+# ~22GB còn ~4GB. Windows native không ảnh hưởng: torch trên Windows vốn đã
+# CPU-only (cuda.is_available()=False), index +cpu cũng có wheel win_amd64.
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+torchvision = { index = "pytorch-cpu" }
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]

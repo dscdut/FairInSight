@@ -109,3 +109,16 @@ uv run uvicorn main:app --host 0.0.0.0 --port 8000
 
 **Log:** chạy `uvicorn` ở terminal sẽ thấy log `[RETRIEVE]` (pool ứng viên), `[RERANK]`
 (điểm cross-encoder), `[LAW-BOOST]`, `top_k` đã chọn — tiện theo dõi RAG.
+
+### Chạy bằng Docker (dev)
+
+```bash
+# build image + chạy (đọc .env, mount src để reload nóng)
+docker compose -f docker-compose.dev.yml up --build
+# nền: thêm -d ; tắt: docker compose -f docker-compose.dev.yml down
+```
+
+Compose tự đổi `OLLAMA_*_BASE_URL` từ `localhost` sang `host.docker.internal` để
+container gọi ra Ollama `:11434` + tunnel Mac mini `:11500` đang chạy trên host
+(watchdog tunnel vẫn ở ngoài container). DB Supabase cloud gọi thẳng. OCR ép CPU
+(container không có GPU). Kiểm tra: `curl http://localhost:8000/health`.

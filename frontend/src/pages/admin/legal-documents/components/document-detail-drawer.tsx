@@ -69,6 +69,8 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
     effectiveDate: '',
     summary: '',
   })
+  // Bản gốc lúc mở bảng sửa — so với draft để biết có thay đổi chưa (bật/tắt nút Lưu).
+  const [metadataOriginal, setMetadataOriginal] = useState<MetadataDraft | null>(null)
 
   // Initialize/reset states when drawer opens or law changes
   useEffect(() => {
@@ -289,15 +291,24 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
   // Ngày cắt phần time (yyyy-MM-dd) cho input[type=date].
   const handleStartEditMetadata = () => {
     const t = latestVersion?.title ?? law.title
-    setMetadataDraft({
+    const initial: MetadataDraft = {
       title: t || '',
       documentNumber: latestVersion?.documentNumber || law.documentNumber || '',
       issuedDate: (latestVersion?.issuedDate || law.issuedDate || '').split('T')[0],
       effectiveDate: (latestVersion?.effectiveDate || law.effectiveDate || '').split('T')[0],
       summary: latestVersion?.content || law.content || '',
-    })
+    }
+    setMetadataDraft(initial)
+    setMetadataOriginal(initial) // mốc so sánh để bật nút Lưu khi có thay đổi
     setIsEditingMetadata(true)
   }
+
+  // Nút Lưu chỉ bật khi draft KHÁC bản gốc (có ít nhất 1 field bị sửa).
+  const isMetadataDirty =
+    !!metadataOriginal &&
+    (Object.keys(metadataDraft) as (keyof MetadataDraft)[]).some(
+      (k) => metadataDraft[k] !== metadataOriginal[k]
+    )
 
   const handleCancelMetadata = () => {
     setIsEditingMetadata(false)
@@ -421,6 +432,7 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
                 onCancelMetadata={handleCancelMetadata}
                 onSaveMetadata={handleSaveMetadata}
                 isSavingMetadata={isSavingMetadata}
+                isMetadataDirty={isMetadataDirty}
                 metadataDraft={metadataDraft}
                 setMetadataField={handleMetadataField}
               />

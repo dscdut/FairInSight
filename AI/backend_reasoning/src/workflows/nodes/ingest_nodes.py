@@ -116,12 +116,49 @@ def metadata_node(state: IngestState) -> IngestState:
     return state
 
 
+_ART_NUM = re.compile(r"(\d+)")
+
+
+def _check_article_continuity(drafts: list) -> list[str]:
+    """Cảnh báo nếu dãy Điều KHÔNG bắt đầu từ 1 hoặc bị đứt quãng.
+
+    Lưới an toàn chống mất-data THẦM LẶNG: OCR nhầm dấu chữ "Điều" (vd "Đỉều 1") làm
+    regex cắt điều trượt → rớt Điều đầu mà không báo. KHÔNG chặn ingest (có thể có lý
+    do hợp lệ) — chỉ cảnh báo để người duyệt biết mà kiểm. VBPL VN luôn đánh số Điều
+    liên tục từ Điều 1, nên thiếu đầu / đứt quãng = dấu hiệu OCR/cắt hỏng.
+    """
+    nums = []
+    for d in drafts:
+        if d.unit_type == "article" and d.article_no:
+            m = _ART_NUM.search(d.article_no)
+            if m:
+                nums.append(int(m.group(1)))
+    if not nums:
+        return []  # văn bản block phẳng (Công văn/Thông báo) — không có Điều là bình thường
+    nums = sorted(set(nums))
+    warns: list[str] = []
+    if nums[0] != 1:
+        warns.append(
+            f"unit_tree: KHÔNG bắt đầu từ Điều 1 (Điều nhỏ nhất = {nums[0]}) — "
+            f"nghi rớt Điều 1..{nums[0] - 1} do OCR/cắt hỏng, cần kiểm lại"
+        )
+    missing = [n for n in range(nums[0], nums[-1] + 1) if n not in nums]
+    if missing:
+        preview = ", ".join(map(str, missing[:10])) + ("..." if len(missing) > 10 else "")
+        warns.append(f"unit_tree: đứt quãng Điều — thiếu Điều {preview}")
+    return warns
+
+
 def unit_tree_node(state: IngestState) -> IngestState:
     """Gọi UnitTreeBuilder dựng cây Điều/Khoản/Điểm (hoặc block)."""
     drafts = build_tree(state.get("normalized_text") or "", doc_title=state["meta"].title)
     state["unit_drafts"] = drafts
+    cont_warns = _check_article_continuity(drafts)
+    if cont_warns:
+        state.setdefault("warnings", []).extend(cont_warns)
     _log(state, "unit_tree", n_units=len(drafts),
-         n_articles=sum(1 for d in drafts if d.unit_type == "article"))
+         n_articles=sum(1 for d in drafts if d.unit_type == "article"),
+         warns=len(cont_warns))
     return state
 
 

@@ -70,7 +70,12 @@ def build_fix2_prompt(easy_text: str, mupdf_text: str) -> str:
 # ===========================================================================
 
 # Cắt theo "Điều N". OCR trả ký tự tổ hợp (NFD) → PHẢI normalize NFC trước regex.
-_ARTICLE_SPLIT = re.compile(r"(?im)^\s*(?:Điều|Dieu|Ðiều|Điêu)\s+\d+")
+# OCR hay nhầm DẤU trong chữ "Điều" (vd đọc "Điều"→"Đỉều" i-hỏi, "Điêu"...) → liệt kê
+# 4 biến thể cố định là KHÔNG đủ, mất ranh giới Điều → cắt cụt. Dùng class biến thể
+# dấu cho i (iìíỉĩị) + e/ê (eèéẻẽẹêềếểễệ); đầu [ĐÐ] (U+0110/U+00D0) + ASCII "Dieu".
+_ARTICLE_SPLIT = re.compile(
+    r"(?im)^\s*(?:[ĐÐ][iìíỉĩị][eèéẻẽẹêềếểễệ]u|Dieu)\s+\d+"
+)
 # Một Điều quá DÀI (hiếm) tách theo Khoản ("1. ", "2. " đầu dòng) để không tràn batch.
 _CLAUSE_SPLIT = re.compile(r"(?m)^\s*(?=\d+\.\s)")
 
@@ -83,11 +88,19 @@ _BATCH_CHARS = int(3500 * _CHARS_PER_TOKEN)  # ~8750 ký tự input/batch
 
 
 def _split_articles(text: str) -> list[str]:
-    """Cắt text thành các đoạn bắt đầu 'Điều N'. Không thấy → cắt theo đoạn rỗng."""
+    """Cắt text thành các đoạn bắt đầu 'Điều N'. Không thấy → cắt theo đoạn rỗng.
+
+    GIỮ phần đầu trước Điều thứ nhất (header: số hiệu, tên, căn cứ) làm đoạn riêng —
+    KHÔNG vứt. Nếu OCR nhầm dấu chữ "Điều" của Điều 1 (vd "Đỉều 1") thì ranh giới đầu
+    nhảy xuống Điều 2; vứt text[:idxs[0]] sẽ mất luôn header + Điều 1 (mất data thầm lặng).
+    """
     text = unicodedata.normalize("NFC", text)
     idxs = [m.start() for m in _ARTICLE_SPLIT.finditer(text)]
     if len(idxs) >= 1:
         chunks = []
+        head = text[: idxs[0]].strip()
+        if head:
+            chunks.append(head)
         for i, s in enumerate(idxs):
             e = idxs[i + 1] if i + 1 < len(idxs) else len(text)
             chunks.append(text[s:e].strip())

@@ -1,0 +1,78 @@
+# =============================================================================
+# docker-compose.dev.yml — chạy AI backend_reasoning bằng 1 lệnh (DEV).
+#
+#   docker compose -f docker-compose.dev.yml up --build
+#
+# Mục đích: build image từ Dockerfile + chạy, ĐỌC .env như khi chạy uv local,
+# nhưng tự sửa 2 URL Ollama để container với ra host (xem ghi chú bên dưới).
+# Chỉ lo trong folder AI này — compose/ hạ tầng bên ngoài KỆ.
+#
+# --- VÌ SAO override OLLAMA_*_BASE_URL ---
+# .env để OLLAMA_BASE_URL/OLLAMA_CHAT_BASE_URL = http://localhost:1143x. Trong
+# container, "localhost" = chính container → KHÔNG thấy Ollama/tunnel trên máy
+# Windows. host.docker.internal trỏ về máy host (Docker Desktop proxy được tới
+# cả 127.0.0.1 của host), nên:
+#   - 11434  -> Ollama local (qwen3:8b + bge-m3 embedding)  [fallback B]
+#   - 11500  -> tunnel SSH Mac mini (gemma4 26B)            [chính A]
+# Watchdog tunnel vẫn chạy NGOÀI container như cũ — compose không quản nó.
+#
+# --- DB ---
+# .env trỏ Supabase cloud (host AWS từ xa) → container gọi thẳng, không cần đổi.
+# Nếu sau này đổi sang Postgres LOCAL trên host, sửa POSTGRES_HOST trong .env
+# thành host.docker.internal (đừng để localhost).
+# =============================================================================
+
+services:
+  ai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: fairinsight-ai:dev
+    container_name: fairinsight-ai
+    restart: unless-stopped
+
+    # Nguồn cấu hình chính: .env (y như chạy uv local). environment: ở dưới sẽ ĐÈ
+    # vài key cần thiết cho môi trường container.
+    env_file:
+      - .env
+
+    environment:
+      # Đè localhost -> host.docker.internal để thấy Ollama/tunnel trên host.
+      OLLAMA_BASE_URL: "http://host.docker.internal:11434"
+      OLLAMA_CHAT_BASE_URL: "http://host.docker.internal:11500"
+      # Bind & port cố định trong container.
+      HOST: "0.0.0.0"
+      PORT: "8000"
+      # Container KHÔNG có GPU NVIDIA -> EasyOCR chạy CPU (tránh lỗi tìm CUDA).
+      OCR_USE_GPU: "false"
+      OCR_SWAP_VRAM: "false"
+      # Reranker vốn đã CPU (đóng sẵn trong image) — giữ nguyên.
+
+    ports:
+      - "8000:8000"
+
+    # Cho phép container gọi về host trên cả Linux engine (Docker Desktop Win/Mac
+    # đã có sẵn host.docker.internal, dòng này để chắc chắn + chạy được trên Linux).
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    # DEV: mount mã nguồn để sửa code nóng (reload). KHÔNG mount .venv / .hf_cache
+    # (đã build sẵn trong image — đè vào sẽ mất reranker + deps).
+    volumes:
+      - ./src:/app/src
+      - ./main.py:/app/main.py
+
+    # Override CMD production -> bật --reload cho dev (uvicorn[standard] có sẵn).
+    command: >
+      uvicorn main:app
+      --host 0.0.0.0
+      --port 8000
+      --reload
+      --reload-dir src
+
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
