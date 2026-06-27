@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 
-import {  hero_bg } from '@/assets/images'
+import { landing_page_bg } from '@/assets/images'
 import { FloatAnimate } from '@/components/animated/float'
 import { Button } from '@/components/ui/button'
 
@@ -13,7 +13,7 @@ export const HeroSection = () => {
     <section id='dashboard' className='relative min-h-screen flex items-center justify-center overflow-hidden'>
       <div className='absolute inset-0 overflow-hidden'>
         <img
-          src={hero_bg}
+          src={landing_page_bg}
           alt=''
           className='w-full h-full object-cover dark:opacity-[0.07] pointer-events-none animate-hero-zoom'
           aria-hidden='true'

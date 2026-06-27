@@ -8,7 +8,7 @@ import { Link } from 'react-router-dom'
 import { type z } from 'zod'
 
 import { IconEye, IconNonEye } from '@/assets/icons'
-import { logo } from '@/assets/images'
+import { bg_login, logo } from '@/assets/images'
 import { FadeUp } from '@/components/animated/animated-component'
 import PasswordStrengthBar from '@/components/PasswordStrengthBar/PasswordStrengthBar'
 import { Button, FormControl, Form, FormField, FormItem, FormLabel, FormMessage, Input } from '@/components/ui'
@@ -55,7 +55,7 @@ export default function Register() {
   return (
     <div
       className='relative flex justify-center w-full min-h-screen bg-cover bg-center'
-      style={{ backgroundImage: "url('/bg.jpg')" }}
+      style={{ backgroundImage: `url(${bg_login})` }}
     >
       <div className='absolute inset-0 bg-slate-950/70 backdrop-blur-[2px]' />
 
