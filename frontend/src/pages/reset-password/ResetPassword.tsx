@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from 'react-router-dom'
 import { type z } from 'zod'
 
-import { logo } from '@/assets/images'
+import { bg_login, logo } from '@/assets/images'
 import { FadeUp } from '@/components/animated/animated-component'
 import PasswordStrengthBar from '@/components/PasswordStrengthBar/PasswordStrengthBar'
 import { Button, FormControl, Form, FormField, FormItem, FormLabel, FormMessage, Input } from '@/components/ui'
@@ -52,7 +52,7 @@ export default function ResetPassword() {
   return (
     <div
       className='relative flex min-h-screen items-center justify-center bg-cover bg-center'
-      style={{ backgroundImage: "url('/bg.jpg')" }}
+      style={{ backgroundImage: `url(${bg_login})` }}
     >
       <div className='absolute inset-0 bg-slate-950/70 backdrop-blur-[2px]' />
 
