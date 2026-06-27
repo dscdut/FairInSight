@@ -35,6 +35,7 @@ function mapAiToLaw(d: AiDocument): Law {
     id: d.id,
     title: d.title,
     content: d.summary || '', // tóm tắt (nếu có) cho drawer; danh sách thường rỗng → xem PDF
+    docType: d.doc_type || '', // loại VB (law/decree/circular...) — hiển thị badge ở danh sách
     documentNumber: d.official_code || '',
     issuedDate: d.issue_date || '',
     effectiveDate: d.effective_date || '',
@@ -94,6 +95,7 @@ export interface ConfirmLawPayload {
 export interface UpdateLawPayload {
   title?: string
   official_code?: string
+  doc_type?: string
   issue_date?: string
   effective_date?: string
   summary?: string
@@ -108,7 +110,9 @@ export const lawAiApi = {
     formData.append('client_id', clientId)
     const res = (await aiClient.post('/documents/preview', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
-      timeout: 120000 // OCR + LLM có thể lâu
+      // OCR file scan chạy CPU (không GPU) + LLM tóm tắt qua tunnel gemma4 → có thể >2 phút
+      // cho văn bản dài. 120s trước đây bị timeout dù BE vẫn xử lý xong. Cho 5 phút biên rộng.
+      timeout: 300000
     })) as PreviewLawResponse
     return res
   },

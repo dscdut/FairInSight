@@ -104,6 +104,23 @@ def _detect_type(text: str) -> str:
     return best_dt
 
 
+_DOC_TYPE_VALUES = {t.value for t in DocType}
+
+
+def normalize_doc_type(raw: str) -> str:
+    """Chuẩn hóa doc_type về enum value. Nhận CẢ enum ('law') lẫn nhãn VN ('Luật').
+
+    FE combobox gửi enum value (đã map sẵn); luồng cũ/LLM gửi nhãn tiếng Việt. Enum hợp
+    lệ trả thẳng; còn lại đẩy qua _detect_type (suy từ chữ 'LUẬT'/'NGHỊ ĐỊNH'...).
+    """
+    s = (raw or "").strip()
+    if not s:
+        return DocType.OTHER.value
+    if s in _DOC_TYPE_VALUES:
+        return s
+    return _detect_type(s)
+
+
 def _detect_issuer_scope(issuer: str) -> tuple[str, Optional[str]]:
     """Trả (issuer_scope, province) từ chuỗi issuer."""
     s = issuer or ""
@@ -271,7 +288,8 @@ def extract_metadata(
     if (ov.get("issuer") or "").strip():
         meta.issuer = ov["issuer"].strip()
     if (ov.get("doc_type") or "").strip():
-        meta.doc_type = _detect_type(ov["doc_type"])  # "Luật"->law, "Nghị định"->decree...
+        # FE combobox gửi enum ('law'); luồng cũ gửi nhãn VN ('Luật') → normalize nhận cả 2.
+        meta.doc_type = normalize_doc_type(ov["doc_type"])
     if (ov.get("title") or "").strip():
         meta.title = ov["title"].strip()
 

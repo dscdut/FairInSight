@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 
-import { Award, Loader2, CheckCircle2, XCircle, X } from 'lucide-react'
+import { Award, Loader2 } from 'lucide-react'
 
 import { FadeUp } from '@/components/animated/animated-component'
 import { Button } from '@/components/ui/button'
@@ -9,12 +9,14 @@ import isEqual from '@/core/configs/is-equal'
 import { cn } from '@/core/lib/utils'
 import { lawAiApi } from '@/core/services/law-ai.service'
 import { useAuthStore } from '@/core/store/features/auth/authStore'
+import { useIngestStore } from '@/core/store/features/ingest/useIngestStore'
 import { type Law } from '@/models/types/law.type'
 
 import { DocumentDetailDrawer } from './components/document-detail-drawer'
 import { DocumentFilters } from './components/document-filters'
 import { DocumentFormDrawer, type FormSubmitData } from './components/document-form-drawer'
 import { DocumentListTable } from './components/document-list-table'
+import { IngestTrackerTable } from './components/ingest-tracker-table'
 
 // Dãy số trang rút gọn: luôn hiện trang 1, trang cuối, và ±1 quanh trang hiện tại;
 // chèn '...' cho khoảng bị lược. Vd 79 trang, đang ở 6: [1, '...', 5, 6, 7, '...', 79].
@@ -54,14 +56,10 @@ export default function LegalDocumentsPage() {
   // Drawer thêm văn bản (CHỈ admin) — nạp KB qua backend_reasoning (lawAiApi.confirmLaw)
   const [isFormOpen, setIsFormOpen] = useState(false)
 
-  // Nạp KB chạy NỀN: confirm mất ~9 phút (full ingest LLM). Thay vì giữ drawer đơ,
-  // đóng drawer ngay rồi hiện pill nổi "đang nạp" để admin làm việc khác. Xong →
-  // pill thành công/lỗi + reload list. title chỉ để hiện trong pill cho dễ nhận.
-  const [ingest, setIngest] = useState<{
-    status: 'running' | 'success' | 'error'
-    title: string
-    message?: string // ghi đè nội dung lỗi (vd 409: văn bản đã tồn tại)
-  } | null>(null)
+  // Nạp KB chạy NỀN: confirm mất ~9 phút (full ingest LLM). Đóng drawer ngay rồi đẩy job
+  // vào ingest store — bảng "Tiến trình nạp" dưới list theo dõi (sống cả khi rời trang).
+  // Nhiều văn bản nạp song song = nhiều job. Store tự gọi confirmLaw + cập nhật trạng thái.
+  const startIngest = useIngestStore((s) => s.startIngest)
 
   // Guard FE: chỉ admin mới thấy nút thêm + gọi API import.
   // Lưu ý: BE cũng PHẢI chặn bằng JWT (role ADMIN) vì FE chỉ là phòng vệ lớp đầu.
@@ -240,38 +238,11 @@ export default function LegalDocumentsPage() {
       fields: formData.previewFields,
       force: !!formData.forceConfirmed
     }
-    // Đóng drawer + bật pill TRƯỚC khi gọi API → admin thoát ra ngoài ngay.
+    // Đóng drawer NGAY → admin thoát ra ngoài làm việc khác. Đẩy job vào store: store tự
+    // gọi confirmLaw nền + cập nhật trạng thái; thành công thì reload() danh sách.
     setIsFormOpen(false)
-    setIngest({ status: 'running', title: formData.title || 'Văn bản mới' })
-
-    // Fire-and-forget: không await, không throw (drawer đã đóng). Kết quả phản ánh
-    // qua pill. Lỗi BE/timeout → pill 'error' để admin biết nạp lại.
-    void lawAiApi
-      .confirmLaw(payload)
-      .then(() => {
-        setIngest({ status: 'success', title: formData.title || 'Văn bản mới' })
-        reload()
-      })
-      .catch((error) => {
-        console.error('Lỗi khi nạp văn bản vào KB:', error)
-        // 409 = văn bản đã tồn tại (trùng file đã nạp) → báo rõ thay vì "thất bại".
-        const status = (error as { response?: { status?: number } })?.response?.status
-        const detail = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-        setIngest({
-          status: 'error',
-          title: formData.title || 'Văn bản mới',
-          message: status === 409 ? (detail || 'Văn bản này đã có trong hệ thống.') : undefined
-        })
-      })
+    startIngest(payload, formData.title || 'Văn bản mới', reload)
   }
-
-  // Tự ẩn pill sau khi nạp xong (thành công 6s / lỗi giữ tới khi admin tự đóng).
-  useEffect(() => {
-    if (ingest?.status === 'success') {
-      const t = setTimeout(() => setIngest(null), 6000)
-      return () => clearTimeout(t)
-    }
-  }, [ingest])
 
   return (
     <main className='p-4 space-y-6 flex-1 flex flex-col'>
@@ -380,6 +351,10 @@ export default function LegalDocumentsPage() {
         )}
       </section>
 
+      {/* Bảng theo dõi nạp văn bản — chỉ admin, ẩn khi chưa nạp gì. Nguồn = ingest store
+          (sống khi rời trang rồi quay lại). Theo dõi được nhiều văn bản nạp song song. */}
+      {isAdmin && <IngestTrackerTable />}
+
       {/* Drawer — xem chi tiết. readOnly chặn sửa NỘI DUNG điều khoản; admin vẫn được
           sửa METADATA (tên/số hiệu/ngày/tóm tắt) qua nút bút chì (allowMetadataEdit). */}
       <DocumentDetailDrawer
@@ -399,57 +374,6 @@ export default function LegalDocumentsPage() {
           onSubmit={handleFormSubmit}
           law={null}
         />
-      )}
-
-      {/* Pill nạp KB chạy nền — nổi góc dưới-phải, admin thoát drawer vẫn thấy.
-          running: spinner; success: tick (tự ẩn); error: chữ X (admin tự đóng). */}
-      {ingest && (
-        <div className='fixed bottom-6 right-6 z-[60] max-w-sm'>
-          <div
-            className={cn(
-              'flex items-start gap-3 rounded-2xl border p-4 shadow-2xl bg-background-primary',
-              ingest.status === 'running' && 'border-primary/30',
-              ingest.status === 'success' && 'border-success-primary/30',
-              ingest.status === 'error' && 'border-error-primary/30'
-            )}
-          >
-            <div className='shrink-0 mt-0.5'>
-              {ingest.status === 'running' && <Loader2 className='w-5 h-5 text-primary animate-spin' />}
-              {ingest.status === 'success' && <CheckCircle2 className='w-5 h-5 text-success-primary' />}
-              {ingest.status === 'error' && <XCircle className='w-5 h-5 text-error-primary' />}
-            </div>
-            <div className='min-w-0 flex-1'>
-              <p className='text-xs font-bold text-text-primary'>
-                {ingest.status === 'running' && 'Đang nạp văn bản vào hệ thống...'}
-                {ingest.status === 'success' && 'Đã thêm văn bản thành công'}
-                {ingest.status === 'error' && (ingest.message ? 'Văn bản đã tồn tại' : 'Nạp văn bản thất bại')}
-              </p>
-              <p className='text-[11px] text-text-description font-semibold truncate mt-0.5'>
-                {ingest.title}
-              </p>
-              {ingest.status === 'running' && (
-                <p className='text-[10px] text-text-tertiary font-medium mt-1.5 leading-relaxed'>
-                  Quá trình này có thể mất vài phút (OCR, phân tích, nhúng dữ liệu).
-                  Bạn có thể tiếp tục thao tác khác.
-                </p>
-              )}
-              {ingest.status === 'error' && (
-                <p className='text-[10px] text-text-tertiary font-medium mt-1.5 leading-relaxed'>
-                  {ingest.message || 'Vui lòng thử tạo lại văn bản.'}
-                </p>
-              )}
-            </div>
-            {ingest.status !== 'running' && (
-              <button
-                type='button'
-                onClick={() => setIngest(null)}
-                className='shrink-0 text-text-tertiary hover:text-text-primary transition-colors'
-              >
-                <X className='w-4 h-4' />
-              </button>
-            )}
-          </div>
-        </div>
       )}
     </main>
   )

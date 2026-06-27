@@ -80,7 +80,12 @@ async def update_document(
     """
     from datetime import date as _date
 
-    from src.ingest.metadata import clean_title
+    from src.ingest.metadata import (
+        _assign_tier,
+        _doc_level,
+        clean_title,
+        normalize_doc_type,
+    )
 
     d = await document_repo.get_document(session, doc_id)
     if not d:
@@ -93,6 +98,20 @@ async def update_document(
     if title:
         # giữ quy ước: bỏ số hiệu của nó + viết hoa sau loại (dùng official_code mới nhất).
         d.title = clean_title(title, d.official_code)
+    # doc_type admin gửi là NHÃN tiếng Việt ("Nghị quyết") → map qua _detect_type ra enum.
+    # Đổi loại thì bậc hiệu lực (doc_level) + tier cũng đổi theo → tính lại từ scope hiện có.
+    dt_raw = (fields.get("doc_type") or "").strip()
+    if dt_raw:
+        from sqlalchemy import select
+
+        # issuer_scope KHÔNG nằm trong load_only(_LIST_COLS) của get_document → đọc d.issuer_scope
+        # sẽ lazy-load trong async đã đóng (MissingGreenlet). Query riêng cột này.
+        scope = await session.scalar(
+            select(Document.issuer_scope).where(Document.id == doc_id)
+        ) or ""
+        d.doc_type = normalize_doc_type(dt_raw)
+        d.doc_level = _doc_level(d.doc_type, scope, d.title or "")
+        d.tier, d.is_normative = _assign_tier(d.doc_type, d.official_code, scope)
     for key in ("issue_date", "effective_date"):
         raw = (fields.get(key) or "").strip()
         if raw:

@@ -50,7 +50,7 @@ export const DuplicateWarning: React.FC<DuplicateWarningProps> = ({
               </span>
             </div>
             <span className='shrink-0 text-[10px] font-extrabold text-warning-secondary bg-warning-primary/10 border border-warning-primary/20 rounded-lg px-2 py-1'>
-              {Math.round((c.score || 0) * 100)}%
+              {Math.round(c.score || 0)}%
             </span>
           </div>
         ))}

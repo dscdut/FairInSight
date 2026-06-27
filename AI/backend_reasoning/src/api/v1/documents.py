@@ -56,6 +56,7 @@ class UpdateDocumentRequest(BaseModel):
 
     title: Optional[str] = None
     official_code: Optional[str] = None
+    doc_type: Optional[str] = Field(None, description="Nhãn VN ('Luật') hoặc enum ('law')")
     issue_date: Optional[str] = Field(None, description="YYYY-MM-DD")
     effective_date: Optional[str] = Field(None, description="YYYY-MM-DD")
     summary: Optional[str] = None

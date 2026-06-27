@@ -258,17 +258,22 @@ def _apply_admin_fields(doc, fields: dict) -> None:
     title/official_code/doc_type/issuer là str; issue_date/effective_date là date.
     Chỉ ghi khi admin có giá trị → không xoá thông tin ingest đã có nếu admin để trống.
     """
-    from src.ingest.metadata import clean_title
+    from src.ingest.metadata import clean_title, normalize_doc_type
 
     str_map = {
         "official_code": "official_code",
-        "doc_type": "doc_type",
         "issuer": "issuer",
     }
     for src_key, col in str_map.items():
         val = (fields.get(src_key) or "").strip()
         if val:
             setattr(doc, col, val)
+    # doc_type: FE combobox gửi enum ('resolution'), luồng cũ/LLM gửi nhãn VN ('Nghị quyết').
+    # normalize_doc_type nhận cả 2 → enum chuẩn. Ghi thẳng nhãn thô sẽ lệch enum (FE badge +
+    # filter trật). tier/doc_level đã được ingest tính đúng từ meta_overrides nên không đụng.
+    dt = (fields.get("doc_type") or "").strip()
+    if dt:
+        doc.doc_type = normalize_doc_type(dt)
     # title qua clean_title (bỏ số hiệu của nó + viết hoa sau loại) — đúng quy ước.
     title = (fields.get("title") or "").strip()
     if title:

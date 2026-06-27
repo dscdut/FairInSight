@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react'
-import { createPortal } from 'react-dom'
+
 
 import axios from 'axios'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, History, Clock, Save } from 'lucide-react'
+import { createPortal } from 'react-dom'
 
 import { Button } from '@/components/ui/button'
 import config from '@/core/configs/env'
 import { lawAiApi } from '@/core/services/law-ai.service'
 import { lawApi } from '@/core/services/law.service'
 import { type Law, type LawVersion } from '@/models/types/law.type'
+
+import { DOC_TYPE_LABELS } from '../doc-type'
 
 import { DocumentDetailContent, type MetadataDraft } from './document-detail-content'
 import { DocumentVersionItem } from './document-version-item'
@@ -153,10 +156,14 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
     return date.toLocaleDateString('vi-VN', { hour: '2-digit', minute: '2-digit' })
   }
 
-  const getDocumentTypeLabel = (docNum: string, docTitle: string) => {
+  // Nhãn loại VB từ doc_type thật (DB). Fallback đoán theo số hiệu/tên cho data cũ
+  // chưa có doc_type. Hiển thị badge UPPERCASE ở header.
+  const getDocumentTypeLabel = (docType: string, docNum: string, docTitle: string) => {
+    const label = docType ? DOC_TYPE_LABELS[docType] : undefined
+    if (label) return label.toUpperCase()
+
     const numLower = (docNum || '').toLowerCase()
     const titleLower = (docTitle || '').toLowerCase()
-
     if (numLower.includes('tt-') || titleLower.includes('thông tư')) return 'THÔNG TƯ'
     if (numLower.includes('nd-') || numLower.includes('nđ-') || titleLower.includes('nghị định')) return 'NGHỊ ĐỊNH'
     if (numLower.includes('qd-') || numLower.includes('qđ-') || titleLower.includes('quyết định')) return 'QUYẾT ĐỊNH'
@@ -294,6 +301,7 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
     const initial: MetadataDraft = {
       title: t || '',
       documentNumber: latestVersion?.documentNumber || law.documentNumber || '',
+      docType: law.docType || '',
       issuedDate: (latestVersion?.issuedDate || law.issuedDate || '').split('T')[0],
       effectiveDate: (latestVersion?.effectiveDate || law.effectiveDate || '').split('T')[0],
       summary: latestVersion?.content || law.content || '',
@@ -331,6 +339,7 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
       await lawAiApi.updateLaw(law.id, {
         title: metadataDraft.title,
         official_code: metadataDraft.documentNumber,
+        doc_type: metadataDraft.docType || undefined,
         issue_date: metadataDraft.issuedDate || undefined,
         effective_date: metadataDraft.effectiveDate || undefined,
         summary: metadataDraft.summary,
@@ -383,7 +392,7 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
                 </h1>
                 <div className='flex items-center gap-4 text-xs mt-1.5'>
                   <span className='inline-flex items-center justify-center px-2.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-[#EBE5FC] text-[#5525CD]'>
-                    {getDocumentTypeLabel(selectedVersion?.documentNumber || law.documentNumber, selectedVersion?.title || law.title)}
+                    {getDocumentTypeLabel(law.docType || '', selectedVersion?.documentNumber || law.documentNumber, selectedVersion?.title || law.title)}
                   </span>
                   <div className='flex items-center gap-1.5 text-text-description font-semibold'>
                     <Clock className='w-4 h-4 text-text-tertiary' />

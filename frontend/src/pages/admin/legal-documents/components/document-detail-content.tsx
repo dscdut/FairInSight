@@ -4,9 +4,18 @@ import { Info, Globe, FileDown, Edit3, Eye, UploadCloud, FileText, Trash2, Loade
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/core/lib/utils'
 import { type Law, type LawVersion } from '@/models/types/law.type'
+
+import { DOC_TYPE_OPTIONS } from '../doc-type'
 
 import { MarkdownPreview } from './markdown-preview'
 import { PipelineLoader } from './pipeline-loader'
@@ -16,6 +25,7 @@ import { PipelineLoader } from './pipeline-loader'
 export interface MetadataDraft {
   title: string
   documentNumber: string
+  docType: string
   issuedDate: string
   effectiveDate: string
   summary: string
@@ -209,7 +219,7 @@ export const DocumentDetailContent: React.FC<DocumentDetailContentProps> = ({
                 />
               </div>
 
-              {/* Số hiệu & Ngày ban hành */}
+              {/* Số hiệu & Loại văn bản */}
               <div className='grid grid-cols-2 gap-4'>
                 <div>
                   <label className='block text-xs font-bold text-text-secondary mb-1.5'>
@@ -224,6 +234,37 @@ export const DocumentDetailContent: React.FC<DocumentDetailContentProps> = ({
                 </div>
                 <div>
                   <label className='block text-xs font-bold text-text-secondary mb-1.5'>
+                    Loại văn bản
+                  </label>
+                  <Select
+                    value={metadataDraft.docType || undefined}
+                    onValueChange={(v) => setMetadataField?.('docType', v)}
+                  >
+                    <SelectTrigger className='h-10 text-sm bg-background-secondary/30 border-border-secondary focus:bg-background-primary rounded-xl text-text-primary'>
+                      <SelectValue placeholder='Chọn loại văn bản' />
+                    </SelectTrigger>
+                    {/* z-[210] > drawer z-[201]: dropdown portal mặc định z-50 bị che dưới
+                        drawer. side=bottom + avoidCollisions=false: ÉP luôn mở XUỐNG dưới. */}
+                    <SelectContent
+                      className='z-[210]'
+                      position='popper'
+                      side='bottom'
+                      avoidCollisions={false}
+                    >
+                      {DOC_TYPE_OPTIONS.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>
+                          {o.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Ngày ban hành & Ngày hiệu lực */}
+              <div className='grid grid-cols-2 gap-4'>
+                <div>
+                  <label className='block text-xs font-bold text-text-secondary mb-1.5'>
                     Ngày ban hành
                   </label>
                   <Input
@@ -233,10 +274,6 @@ export const DocumentDetailContent: React.FC<DocumentDetailContentProps> = ({
                     className='h-10 text-sm bg-background-secondary/30 border-border-secondary focus:bg-background-primary rounded-xl text-text-primary'
                   />
                 </div>
-              </div>
-
-              {/* Ngày hiệu lực */}
-              <div className='grid grid-cols-2 gap-4'>
                 <div>
                   <label className='block text-xs font-bold text-text-secondary mb-1.5'>
                     Ngày hiệu lực

@@ -25,6 +25,7 @@ export const DocumentListTable: React.FC<DocumentListTableProps> = ({
         <thead className='bg-background-secondary/40 text-xs font-semibold uppercase text-text-secondary border-b border-border-secondary'>
           <tr>
             <th scope='col' className='px-6 py-4 font-bold'>Tên văn bản</th>
+            <th scope='col' className='px-6 py-4 font-bold whitespace-nowrap'>Loại văn bản</th>
             <th scope='col' className='px-6 py-4 font-bold whitespace-nowrap'>Số hiệu</th>
             <th scope='col' className='px-6 py-4 font-bold whitespace-nowrap'>Ngày hiệu lực</th>
             <th scope='col' className='px-6 py-4 font-bold text-center'>Version</th>
@@ -35,7 +36,7 @@ export const DocumentListTable: React.FC<DocumentListTableProps> = ({
         <tbody className='divide-y divide-border-secondary border-t border-border-secondary'>
           {laws.length === 0 ? (
             <tr>
-              <td colSpan={6} className='px-6 py-10 text-center text-text-tertiary'>
+              <td colSpan={7} className='px-6 py-10 text-center text-text-tertiary'>
                 Không tìm thấy văn bản pháp luật nào phù hợp.
               </td>
             </tr>

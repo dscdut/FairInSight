@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from 'react'
-import { createPortal } from 'react-dom'
+
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Info, ChevronDown, ChevronUp, RotateCcw, UploadCloud, FileText, Trash2, Loader2, Lock } from 'lucide-react'
+import { X, Info, ChevronDown, ChevronUp, RotateCcw, UploadCloud, FileText, Trash2, Loader2, Pencil } from 'lucide-react'
+import { createPortal } from 'react-dom'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import config from '@/core/configs/env'
 import { cn } from '@/core/lib/utils'
@@ -16,6 +24,8 @@ import {
 } from '@/core/services/law-ai.service'
 import { lawApi } from '@/core/services/law.service'
 import { type Law, type LawVersion } from '@/models/types/law.type'
+
+import { DOC_TYPE_OPTIONS, normalizeDocType } from '../doc-type'
 
 import { DuplicateWarning } from './duplicate-warning'
 import { MarkdownPreview } from './markdown-preview'
@@ -276,6 +286,7 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
       setEffectiveDate(normalizeDate(f.effective_date))
       setPreviewFields({
         ...f,
+        doc_type: normalizeDocType(f.doc_type),
         issue_date: normalizeDate(f.issue_date),
         effective_date: normalizeDate(f.effective_date),
       })
@@ -478,24 +489,30 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
                     <h3 className='text-xs font-bold text-text-tertiary uppercase tracking-widest flex items-center gap-2'>
                       Thông tin chi tiết
                       <span className='inline-flex items-center gap-1 text-[10px] font-bold text-text-tertiary normal-case tracking-normal bg-background-secondary/60 border border-border-secondary rounded-full px-2 py-0.5'>
-                        <Lock className='w-3 h-3' /> Tự động điền từ tài liệu
+                        <Pencil className='w-3 h-3' /> Tự động điền · có thể sửa lại
                       </span>
                     </h3>
 
-                    {/* Tiêu đề (lock) */}
+                    {/* Tiêu đề — CHO SỬA TAY. Đồng bộ previewFields để bước confirm gửi
+                        đúng giá trị admin nhập (BE đọc previewFields, không đọc state rời). */}
                     <div>
                       <label className='block text-xs font-bold text-text-secondary mb-1.5'>
                         Tiêu đề văn bản <span className='text-primary'>*</span>
                       </label>
                       <Input
                         value={title}
-                        readOnly
+                        onChange={(e) => {
+                          setTitle(e.target.value)
+                          setPreviewFields((prev) =>
+                            prev ? { ...prev, title: e.target.value } : prev
+                          )
+                        }}
                         placeholder='Đang trích xuất...'
-                        className='h-10 text-sm bg-background-secondary/40 border-border-secondary rounded-xl text-text-primary cursor-default'
+                        className='h-10 text-sm bg-background-secondary/30 border-border-secondary focus:bg-background-primary rounded-xl text-text-primary'
                       />
                     </div>
 
-                    {/* Số hiệu & Ngày ban hành (lock) */}
+                    {/* Số hiệu & Ngày ban hành — CHO SỬA TAY (sync previewFields) */}
                     <div className='grid grid-cols-2 gap-4'>
                       <div>
                         <label className='block text-xs font-bold text-text-secondary mb-1.5'>
@@ -503,9 +520,14 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
                         </label>
                         <Input
                           value={documentNumber}
-                          readOnly
+                          onChange={(e) => {
+                            setDocumentNumber(e.target.value)
+                            setPreviewFields((prev) =>
+                              prev ? { ...prev, official_code: e.target.value } : prev
+                            )
+                          }}
                           placeholder='—'
-                          className='h-10 text-sm bg-background-secondary/40 border-border-secondary rounded-xl text-text-primary cursor-default'
+                          className='h-10 text-sm bg-background-secondary/30 border-border-secondary focus:bg-background-primary rounded-xl text-text-primary'
                         />
                       </div>
                       <div>
@@ -515,8 +537,13 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
                         <Input
                           type='date'
                           value={issuedDate}
-                          readOnly
-                          className='h-10 text-sm bg-background-secondary/40 border-border-secondary rounded-xl text-text-primary cursor-default'
+                          onChange={(e) => {
+                            setIssuedDate(e.target.value)
+                            setPreviewFields((prev) =>
+                              prev ? { ...prev, issue_date: e.target.value } : prev
+                            )
+                          }}
+                          className='h-10 text-sm bg-background-secondary/30 border-border-secondary focus:bg-background-primary rounded-xl text-text-primary'
                         />
                       </div>
                     </div>
@@ -528,9 +555,6 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
                       <div>
                         <label className='block text-xs font-bold text-text-secondary mb-1.5'>
                           Ngày hiệu lực <span className='text-primary'>*</span>
-                          <span className='ml-1.5 text-[10px] font-semibold text-text-tertiary normal-case'>
-                            (có thể sửa)
-                          </span>
                         </label>
                         <Input
                           type='date'
@@ -543,6 +567,39 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
                           }}
                           className='h-10 text-sm bg-background-secondary/30 border-border-secondary focus:bg-background-primary rounded-xl text-text-primary'
                         />
+                      </div>
+                      {/* Loại văn bản — CHO SỬA TAY (sync previewFields). LLM suy từ ký
+                          hiệu nên hay đúng, nhưng admin chỉnh được nếu lệch. */}
+                      <div>
+                        <label className='block text-xs font-bold text-text-secondary mb-1.5'>
+                          Loại văn bản <span className='text-primary'>*</span>
+                        </label>
+                        <Select
+                          value={previewFields?.doc_type || undefined}
+                          onValueChange={(v) =>
+                            setPreviewFields((prev) => (prev ? { ...prev, doc_type: v } : prev))
+                          }
+                        >
+                          <SelectTrigger className='h-10 text-sm bg-background-secondary/30 border-border-secondary focus:bg-background-primary rounded-xl text-text-primary'>
+                            <SelectValue placeholder='Chọn loại văn bản' />
+                          </SelectTrigger>
+                          {/* z-[210] > drawer z-[201]: dropdown portal mặc định z-50 sẽ
+                              chui xuống dưới drawer → nâng lên trên. side=bottom +
+                              avoidCollisions=false: ÉP luôn mở XUỐNG dưới (radix mặc định
+                              tự lật lên khi gần cuối màn → tắt). */}
+                          <SelectContent
+                            className='z-[210]'
+                            position='popper'
+                            side='bottom'
+                            avoidCollisions={false}
+                          >
+                            {DOC_TYPE_OPTIONS.map((o) => (
+                              <SelectItem key={o.value} value={o.value}>
+                                {o.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
 
@@ -598,6 +655,15 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
                       </div>
                     )}
 
+                    {/* Cảnh báo trùng — đặt TRƯỚC tóm tắt để admin thấy ngay, quyết sớm */}
+                    {isSuspect && !forceConfirmed && (
+                      <DuplicateWarning
+                        candidates={duplicate?.candidates || []}
+                        onForceCreate={() => setForceConfirmed(true)}
+                        onCancel={handleRemoveFile}
+                      />
+                    )}
+
                     {/* Tóm tắt sơ bộ (read-only) */}
                     <div>
                       <label className='block text-xs font-bold text-text-secondary mb-1.5'>
@@ -613,15 +679,6 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
                         )}
                       </div>
                     </div>
-
-                    {/* Cảnh báo trùng */}
-                    {isSuspect && !forceConfirmed && (
-                      <DuplicateWarning
-                        candidates={duplicate?.candidates || []}
-                        onForceCreate={() => setForceConfirmed(true)}
-                        onCancel={handleRemoveFile}
-                      />
-                    )}
                   </div>
 
                   {/* Cột phải: tiến trình */}

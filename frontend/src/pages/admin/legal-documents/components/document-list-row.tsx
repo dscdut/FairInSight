@@ -5,6 +5,8 @@ import { Eye, Edit2 } from 'lucide-react'
 import { cn } from '@/core/lib/utils'
 import { type Law } from '@/models/types/law.type'
 
+import { DOC_TYPE_LABELS } from '../doc-type'
+
 interface DocumentListRowProps {
   law: Law
   onView: (law: Law) => void
@@ -60,6 +62,17 @@ export const DocumentListRow: React.FC<DocumentListRowProps> = ({
             {law.authorName ? `Ban hành bởi ${law.authorName}` : 'Tài liệu nội bộ'}
           </span>
         </div>
+      </td>
+
+      {/* Loại văn bản — badge phân loại (Luật/Nghị quyết/Thông tư...) */}
+      <td className='px-6 py-5.5 whitespace-nowrap'>
+        {law.docType && DOC_TYPE_LABELS[law.docType] ? (
+          <span className='inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-semibold text-primary bg-primary/10 border border-primary/20'>
+            {DOC_TYPE_LABELS[law.docType]}
+          </span>
+        ) : (
+          <span className='text-text-tertiary'>—</span>
+        )}
       </td>
 
       {/* Số hiệu — không xuống dòng, luôn nằm gọn 1 dòng */}
