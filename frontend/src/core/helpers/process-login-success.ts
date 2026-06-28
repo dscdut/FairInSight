@@ -15,6 +15,17 @@ const processLoginSuccess = (loginData: LoginApiResponse, navigate: NavigateFunc
 
   useAuthStore.getState().loginSuccess(loginData.data)
 
+  // Persist minimal profile fields locally so UI can show them immediately after login
+  try {
+    const savedUser = {
+      email: user.email,
+      fullName: user.fullName
+    }
+    localStorage.setItem('savedProfile', JSON.stringify(savedUser))
+  } catch (e) {
+    // ignore storage errors
+  }
+
   const targetRoute = isEqual(user.roleName, ROLE_ADMIN) ? `${ROUTE.ADMIN.ROOT}/${ROUTE.ADMIN.DASHBOARD}` : ROUTE.HOME
 
   navigate(targetRoute)

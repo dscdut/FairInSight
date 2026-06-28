@@ -32,7 +32,6 @@ export interface Subscription {
   planName?: string
 }
 
-
 // define the Account interface
 export interface Account {
   id?: string
@@ -48,6 +47,14 @@ export interface Account {
   location?: string
   subscription?: Subscription
   createdAt?: string
+}
+
+export interface UpdateProfileDto {
+  avatarUrl?: string
+  fullName?: string
+  phone?: string
+  dateOfBirth?: string
+  location?: string
 }
 
 // define the RegisterReponse interface

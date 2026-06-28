@@ -1,11 +1,13 @@
-import { 
+import {
   type Account,
   type LoginApiResponse,
   type LoginResponse,
   type RegisterReponse,
   type ResetPasswordReq,
   type SendEmailReq,
-  type VerifyOtpReq } from "../../interface/auth.interface"
+  type VerifyOtpReq,
+  type UpdateProfileDto
+} from '../../interface/auth.interface'
 
 export type AuthApi = {
   login: (params: Account) => Promise<LoginApiResponse>
@@ -18,5 +20,5 @@ export type AuthApi = {
   logout: (refresh_token: string) => Promise<void>
 
   getUserInfo: () => Promise<Account>
-  updateProfile: (params: Account) => Promise<Account>
+  updateProfile: (params: UpdateProfileDto) => Promise<UpdateProfileDto>
 }

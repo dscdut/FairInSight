@@ -14,4 +14,6 @@ export interface UserProfile extends User {
   phone?: string
   address?: string
   bio?: string
+  dateOfBirth?: string
+  location?: string
 }

@@ -14,7 +14,6 @@ const API_LOGOUT_URL = '/auth/logout'
 
 const API_USER = '/auth/me'
 
-
 export const createAuthApi = (client: AxiosInstance): AuthApi => ({
   // Auth
   login(params) {
@@ -46,7 +45,7 @@ export const createAuthApi = (client: AxiosInstance): AuthApi => ({
     return client.get(API_USER)
   },
   updateProfile(params) {
-    return client.put(API_USER, params)
+    return client.patch(API_USER, params)
   }
 })
 
