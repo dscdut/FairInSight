@@ -1,12 +1,14 @@
 import { useEffect } from 'react'
 
+import { Agentation } from 'agentation'
+
 import { ThemeProvider } from '@/app/providers/theme-provider'
 import AutoScrollToTop from '@/components/scroll/auto-scroll-to-top'
 import { scheduleTokenRefresh } from '@/core/shared/auth-refresh'
 import { getAccessTokenFromLS } from '@/core/shared/storage'
 import useRoutesElements from '@/hooks/routes/use-router-element'
+
 import '@/styles/theme.css'
-import { Agentation } from 'agentation'
 
 const App = () => {
   const router = useRoutesElements()

@@ -1,8 +1,8 @@
 import { create } from 'zustand'
 
 import { getPersistedAuth } from '@/core/shared/auth'
-import { clearLS, setToken, setUserToLS } from '@/core/shared/storage'
 import { clearTokenRefresh, scheduleTokenRefresh } from '@/core/shared/auth-refresh'
+import { clearLS, setToken, setUserToLS } from '@/core/shared/storage'
 import { type LoginResponse } from '@/models/interface/auth.interface'
 
 import { type AuthState, type AuthStore } from './types'

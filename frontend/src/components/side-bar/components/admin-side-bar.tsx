@@ -6,9 +6,9 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { adminSidebarLinks } from '@/core/constants/general.const'
 import { ROUTE } from '@/core/constants/path'
-import { type TSidebarLinks } from '@/models/types/general.type'
 import { cn } from '@/core/lib/utils'
 import useToggleSideBar from '@/core/store/features/sidebar'
+import { type TSidebarLinks } from '@/models/types/general.type'
 
 export default function AdminSideBar() {
   const { t } = useTranslation('navBar')
@@ -31,14 +31,6 @@ export default function AdminSideBar() {
     }
     return currentPath === routePath || currentPath.startsWith(`${routePath}/`)
   }, [location.pathname])
-
-  const toggleSubmenu = useCallback((menuTitle: string) => {
-    setExpandedMenus((prev) =>
-      prev.includes(menuTitle)
-        ? prev.filter((title) => title !== menuTitle)
-        : [...prev, menuTitle]
-    )
-  }, [])
 
   // Bấm menu cha: mở submenu VÀ điều hướng tới mục con đầu tiên (vd Phân tích → Tổng quan).
   const handleParentClick = useCallback(

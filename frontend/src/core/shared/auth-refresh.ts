@@ -2,8 +2,8 @@
 // Dùng axios RAW (không qua axios-client/ai-client) để tránh vòng lặp interceptor.
 import axios from 'axios'
 
-import config from '@/core/configs/env'
 import { LOGIN_ROUTE } from '@/core/configs/consts'
+import config from '@/core/configs/env'
 import {
   clearLS,
   getAccessTokenFromLS,

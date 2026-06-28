@@ -10,8 +10,8 @@ import LayoutSwitcher from '@/components/ui/LayoutSwitcher'
 import { cn } from '@/core/lib/utils'
 import { type ViewMode, type Template as TTemplate } from '@/models/types/form-library'
 
-import TemplateEditor from './TemplateEditor'
 import TemplatePreviewModal from './components/TemplatePreviewModal'
+import TemplateEditor from './TemplateEditor'
 
 export default function Template() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
