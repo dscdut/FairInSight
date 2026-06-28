@@ -68,6 +68,7 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
   const [metadataDraft, setMetadataDraft] = useState<MetadataDraft>({
     title: '',
     documentNumber: '',
+    docType: '',
     issuedDate: '',
     effectiveDate: '',
     summary: '',
