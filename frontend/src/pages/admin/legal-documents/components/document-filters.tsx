@@ -15,6 +15,7 @@ import {
 interface DocumentFiltersProps {
   searchQuery: string
   onSearchChange: (val: string) => void
+  onSearchEnter?: () => void
   statusFilter: string
   onStatusChange: (val: string) => void
   issuedDateFilter: string
@@ -25,6 +26,7 @@ interface DocumentFiltersProps {
 export const DocumentFilters: React.FC<DocumentFiltersProps> = ({
   searchQuery,
   onSearchChange,
+  onSearchEnter,
   statusFilter,
   onStatusChange,
   issuedDateFilter,
@@ -40,6 +42,10 @@ export const DocumentFilters: React.FC<DocumentFiltersProps> = ({
           <Input
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
+            onKeyDown={(e) => {
+              // Enter = tìm ngay (ô trống thì trả về danh sách mặc định).
+              if (e.key === 'Enter') onSearchEnter?.()
+            }}
             placeholder='Tìm tên văn bản, số hiệu...'
             className='pl-10 h-10 bg-background-secondary/30 border-border-secondary focus:bg-background-primary transition-all text-sm rounded-xl text-text-primary'
             icon={<Search className='w-4 h-4 text-text-tertiary absolute left-3 top-1/2 -translate-y-1/2' />}

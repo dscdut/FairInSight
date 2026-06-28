@@ -2,16 +2,18 @@ import { useState, useCallback } from 'react'
 
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Crown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { adminSidebarLinks } from '@/core/constants/general.const'
 import { ROUTE } from '@/core/constants/path'
 import { cn } from '@/core/lib/utils'
 import useToggleSideBar from '@/core/store/features/sidebar'
+import { type TSidebarLinks } from '@/models/types/general.type'
 
 export default function AdminSideBar() {
   const { t } = useTranslation('navBar')
   const location = useLocation()
+  const navigate = useNavigate()
   const { sidebarOpen, toggleSidebar } = useToggleSideBar()
   const [expandedMenus, setExpandedMenus] = useState<string[]>([])
 
@@ -30,13 +32,15 @@ export default function AdminSideBar() {
     return currentPath === routePath || currentPath.startsWith(`${routePath}/`)
   }, [location.pathname])
 
-  const toggleSubmenu = useCallback((menuTitle: string) => {
-    setExpandedMenus((prev) =>
-      prev.includes(menuTitle) 
-        ? prev.filter((title) => title !== menuTitle) 
-        : [...prev, menuTitle]
-    )
-  }, [])
+  // Bấm menu cha: mở submenu VÀ điều hướng tới mục con đầu tiên (vd Phân tích → Tổng quan).
+  const handleParentClick = useCallback(
+    (link: TSidebarLinks) => {
+      setExpandedMenus((prev) => (prev.includes(link.title) ? prev : [...prev, link.title]))
+      const firstChild = link.children?.[0]
+      if (firstChild) navigate(`${ROUTE.ADMIN.ROOT}/${firstChild.path}`)
+    },
+    [navigate]
+  )
 
   return (
     <aside
@@ -59,8 +63,8 @@ export default function AdminSideBar() {
               <Crown className='w-6 h-6 text-white' />
             </div>
             <div className='flex flex-col'>
-              <h1 className='text-lg font-bold text-primary'>AdminPanel</h1>
-              <p className='text-xs text-text-description'>Management System</p>
+              <h1 className='text-lg font-bold text-primary'>{t('admin_panel')}</h1>
+              <p className='text-xs text-text-description'>{t('management_system')}</p>
             </div>
           </div>
         )}
@@ -99,7 +103,7 @@ export default function AdminSideBar() {
               {/* Main Menu Item */}
               {link.children ? (
                 <button
-                  onClick={() => toggleSubmenu(link.title)}
+                  onClick={() => handleParentClick(link)}
                   className={cn(
                     'w-full flex items-center gap-4 rounded-xl text-small font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/50 group relative overflow-hidden',
                     sidebarOpen ? 'px-4 py-3' : 'px-3 py-3 justify-center',

@@ -12,7 +12,6 @@ interface LayoutMainProps {
 }
 
 const LayoutMain = ({ children }: LayoutMainProps) => {
-
   return (
     <div>
       <div className='flex min-h-screen'>

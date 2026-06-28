@@ -1,0 +1,22 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.git/
+.env
+# Mọi biến thể .env (.env.cloud.bak, .env.local...) — KHÔNG để secret vào image
+.env.*
+*.bak
+tests/
+*.log
+.hf_cache/
+data/
+data_work/
+*.csv
+# Rác/công cụ test — không thuộc image: backup title, script backfill/diag, output task
+title_backup_cloud*.json
+backfill_titles.py
+diag_*.py
+*.output
+out/
