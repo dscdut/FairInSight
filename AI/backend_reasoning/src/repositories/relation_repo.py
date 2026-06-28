@@ -12,6 +12,67 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.schema.models import Amendment, Document, Reference, Unit
 
 
+async def amendments_from_units(
+    session: AsyncSession, unit_ids: list[str]
+) -> list[Amendment]:
+    """Amendment mà NGUỒN (new_unit_id) nằm trong unit_ids — 'unit này ĐI sửa cái khác'.
+
+    Gồm cả bản CHƯA resolve (old_unit_id NULL) để hiện cạnh treo cho admin nối tay."""
+    if not unit_ids:
+        return []
+    rows = await session.scalars(
+        select(Amendment).where(Amendment.new_unit_id.in_(unit_ids))
+    )
+    return list(rows)
+
+
+async def references_from_units(
+    session: AsyncSession, unit_ids: list[str]
+) -> list[Reference]:
+    """Reference mà NGUỒN (from_unit_id) nằm trong unit_ids — 'unit này dẫn chiếu cái khác'.
+
+    Gồm cả bản CHƯA resolve (to_unit_id NULL) để hiện cạnh treo."""
+    if not unit_ids:
+        return []
+    rows = await session.scalars(
+        select(Reference).where(Reference.from_unit_id.in_(unit_ids))
+    )
+    return list(rows)
+
+
+async def references_to_units(
+    session: AsyncSession, unit_ids: list[str]
+) -> list[Reference]:
+    """Reference mà ĐÍCH (to_unit_id) nằm trong unit_ids — 'unit này ĐƯỢC cái khác dẫn chiếu'.
+
+    Chiều ngược: chỉ có khi đã resolve (to_unit_id phải trỏ thật)."""
+    if not unit_ids:
+        return []
+    rows = await session.scalars(
+        select(Reference).where(Reference.to_unit_id.in_(unit_ids))
+    )
+    return list(rows)
+
+
+async def units_brief(session: AsyncSession, unit_ids: list[str]) -> dict[str, dict]:
+    """Map unit_id → {doc_id, doc_title, official_code, article_no, clause_no} cho hiển thị.
+
+    Dùng để 'tô' thông tin đầu kia của quan hệ (1 query gộp, tránh N+1)."""
+    if not unit_ids:
+        return {}
+    rows = await session.execute(
+        select(Unit.id, Unit.document_id, Unit.article_no, Unit.clause_no,
+               Document.title, Document.official_code)
+        .join(Document, Unit.document_id == Document.id)
+        .where(Unit.id.in_(unit_ids))
+    )
+    out: dict[str, dict] = {}
+    for uid, doc_id, art, clause, title, code in rows.all():
+        out[uid] = dict(doc_id=doc_id, doc_title=title, official_code=code,
+                        article_no=art, clause_no=clause)
+    return out
+
+
 async def amendments_targeting_units(
     session: AsyncSession, unit_ids: list[str]
 ) -> list[Amendment]:

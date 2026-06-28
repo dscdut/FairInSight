@@ -6,6 +6,13 @@ import { Send, Paperclip, Image as ImageIcon, FileText, X, Scale, FileDown } fro
 import { Button, Textarea } from '@/components/ui'
 import { cn } from '@/core/lib/utils'
 
+// Giới hạn cứng độ dài câu hỏi: 3600 ký tự (~720 từ). Lý do: model chat num_ctx=8192
+// token, mà rổ căn cứ (evidence) đã ăn phần lớn cửa sổ → câu hỏi quá dài đẩy prompt
+// vượt trần, Ollama âm thầm cắt đầu → trả lời hỏng. Chặn ngay đầu vào cho an toàn.
+// Ngưỡng cảnh báo = 80% để người dùng biết mình sắp chạm trần.
+export const CHAT_MAX_CHARS = 3600
+const CHAT_WARN_CHARS = Math.floor(CHAT_MAX_CHARS * 0.8)
+
 interface Attachment {
   id: string
   name: string
@@ -53,6 +60,10 @@ export default function ChatInput({
     }
   }, [inputText])
 
+  const charCount = inputText.length
+  const overLimit = charCount > CHAT_MAX_CHARS
+  const nearLimit = charCount >= CHAT_WARN_CHARS
+
   const triggerFileInput = () => {
     fileInputRef.current?.click()
   }
@@ -64,6 +75,7 @@ export default function ChatInput({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
+      if (overLimit) return // vượt trần → chặn gửi bằng Enter
       onSubmit(e)
     }
   }
@@ -160,7 +172,14 @@ export default function ChatInput({
 
       {/* Input Form Box */}
       <form onSubmit={onSubmit} className='relative flex items-end gap-2'>
-        <div className='flex-1 relative border border-border-secondary rounded-xl bg-background-secondary shadow-inner focus-within:ring-1 focus-within:ring-primary transition-all'>
+        <div
+          className={cn(
+            'flex-1 relative border rounded-xl bg-background-secondary shadow-inner transition-all',
+            overLimit
+              ? 'border-error-primary focus-within:ring-1 focus-within:ring-error-primary'
+              : 'border-border-secondary focus-within:ring-1 focus-within:ring-primary'
+          )}
+        >
           {/* Textarea */}
           <Textarea
             ref={textareaRef}
@@ -207,11 +226,11 @@ export default function ChatInput({
         <Button
           type='submit'
           loading={isLoading}
-          disabled={!inputText.trim() && attachments.length === 0}
+          disabled={(!inputText.trim() && attachments.length === 0) || overLimit}
           aria-label='Gửi tin nhắn'
           className={cn(
             'h-11 w-11 rounded-xl font-medium shrink-0 shadow-sm transition-all flex items-center gap-2 duration-300 focus-visible:ring-1 focus-visible:ring-info focus-visible:outline-none',
-            (inputText.trim() || attachments.length > 0)
+            (inputText.trim() || attachments.length > 0) && !overLimit
               ? 'bg-primary text-white hover:bg-primary/50 shadow-md hover:scale-[1.02]'
               : 'bg-background-secondary text-text-description'
           )}
@@ -219,6 +238,22 @@ export default function ChatInput({
           {!isLoading && <Send className='w-4 h-4' aria-hidden='true' />}
         </Button>
       </form>
+
+      {/* Bộ đếm ký tự + cảnh báo vượt trần. Chỉ hiện khi gần/đã chạm trần để đỡ rối. */}
+      {nearLimit && (
+        <p
+          className={cn(
+            'text-xs text-right mt-1.5 leading-normal font-medium',
+            overLimit ? 'text-error-primary' : 'text-text-description'
+          )}
+          aria-live='polite'
+        >
+          {overLimit
+            ? `Câu hỏi quá dài (${charCount.toLocaleString('vi-VN')}/${CHAT_MAX_CHARS.toLocaleString('vi-VN')} ký tự). Vui lòng rút ngắn để gửi.`
+            : `${charCount.toLocaleString('vi-VN')}/${CHAT_MAX_CHARS.toLocaleString('vi-VN')} ký tự`}
+        </p>
+      )}
+
       <p className='text-xs text-text-description text-center mx-auto mt-2 leading-normal max-w-4xl'>
         Thông tin do AI cung cấp chỉ mang tính chất tham khảo. Vui lòng tư vấn luật sư cho các quyết định pháp lý quan trọng.
       </p>

@@ -16,7 +16,7 @@ import { formatTime } from '@/core/helpers/date-time'
 import { cn } from '@/core/lib/utils'
 import { exportAnalysisPdf } from '@/utils/pdfExport'
 
-import ChatInput from './components/ChatInput'
+import ChatInput, { CHAT_MAX_CHARS } from './components/ChatInput'
 import ChatMessages from './components/ChatMessages'
 import HistorySidebar from './components/HistorySidebar'
 
@@ -273,6 +273,7 @@ export default function AIChat() {
     e.preventDefault()
     if (!inputText.trim() && attachments.length === 0) return
     if (isLoading) return
+    if (inputText.length > CHAT_MAX_CHARS) return // guard cuối: chặn cứng nếu lách được UI
 
     const messageContent = inputText
     const userAttachments = [...attachments]

@@ -381,8 +381,9 @@ def resolve_relations(session: Session, doc: Document) -> int:
     def _resolve_by_name(name: str) -> tuple[Optional[str], str]:
         """Match luật đích theo TÊN (vd 'Luật Đầu tư'). Chuẩn hóa: bỏ dấu phụ + lower.
 
-        Nhiều bản cùng tên (Luật Đầu tư 2014/2020/2025) → chọn bản MỚI NHẤT theo
-        effective_date (luật sửa đổi thường sửa bản đang hiệu lực gần nhất).
+        Nhiều bản cùng tên (Luật Đầu tư 2014/2020/2025) → chọn bản ĐANG HIỆU LỰC tại
+        thời điểm văn bản sửa (doc) có hiệu lực, KHÔNG phải bản mới nhất tuyệt đối.
+        (Luật sửa đổi 2020 sửa bản đang hiệu lực lúc 2020, không sửa bản ban hành 2025.)
         """
         if not name or len(name) < 6:
             return None, "miss"
@@ -410,6 +411,14 @@ def resolve_relations(session: Session, doc: Document) -> int:
         pick = exact or good
         if not pick:
             return None, "miss"
+        # TRỤC THỜI GIAN: nhiều bản cùng tên → chọn bản hiệu lực TRƯỚC/ĐÚNG lúc văn bản
+        # sửa (doc) có hiệu lực, mới nhất trong số đó. Bản ban hành SAU không thể là đích.
+        if len(pick) > 1 and doc.effective_date:
+            in_force = [d for d in pick
+                        if d.effective_date and d.effective_date <= doc.effective_date]
+            if in_force:
+                in_force.sort(key=lambda d: d.effective_date, reverse=True)
+                return in_force[0].id, "ok"
         if len(pick) > 1 and not exact:
             return None, "ambiguous"  # nhiều luật tên gần giống → không nối bừa
         return pick[0].id, "ok"
@@ -501,8 +510,19 @@ def resolve_relations(session: Session, doc: Document) -> int:
             Amendment.old_ref_text.like("name:%"),
             Amendment.resolve_status == ResolveStatus.UNRESOLVED.value,
         )):
-            if _law_core(am.old_ref_text[5:]) == doc_core:
-                _set_am(am, doc.id)
+            if _law_core(am.old_ref_text[5:]) != doc_core:
+                continue
+            # TRỤC THỜI GIAN: doc (đích) chỉ là đích hợp lệ nếu hiệu lực TRƯỚC/ĐÚNG lúc
+            # văn bản sửa (nguồn am) có hiệu lực. Luật Xây dựng 2025 KHÔNG thể là đích
+            # của Luật sửa đổi 2020. Thiếu ngày 1 trong 2 → không chặn (fail-open).
+            src_doc = session.scalar(
+                select(Document).join(Unit, Unit.document_id == Document.id)
+                .where(Unit.id == am.new_unit_id).limit(1)
+            )
+            if (src_doc and src_doc.effective_date and doc.effective_date
+                    and doc.effective_date > src_doc.effective_date):
+                continue  # đích ban hành SAU nguồn sửa → phi lý thời gian, bỏ
+            _set_am(am, doc.id)
         for ref in session.scalars(select(Reference).where(
             Reference.to_ref_text.like("name:%"),
             Reference.resolve_status == ResolveStatus.UNRESOLVED.value,

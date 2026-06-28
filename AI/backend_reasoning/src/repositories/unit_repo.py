@@ -17,6 +17,31 @@ async def get_by_ids(session: AsyncSession, ids: list[str]) -> list[Unit]:
     return list(rows)
 
 
+async def tree_of_document(session: AsyncSession, doc_id: str) -> list[Unit]:
+    """Toàn bộ unit của 1 văn bản, sắp theo order_index (cây phẳng để FE tự gập)."""
+    rows = await session.scalars(
+        select(Unit).where(Unit.document_id == doc_id).order_by(Unit.order_index)
+    )
+    return list(rows)
+
+
+async def article_ancestor_id(session: AsyncSession, unit_id: str) -> Optional[str]:
+    """ID của ĐIỀU (article) chứa unit này. Nếu unit đã là Điều → trả chính nó.
+
+    Cây nông Điều>Khoản>Điểm: đi ngược parent tối đa 2 bước. Dùng để 'gộp lên Điều
+    cha' khi đọc quan hệ (amendment vốn gắn ở Điều, không ở Khoản/Điểm)."""
+    u = await session.get(Unit, unit_id)
+    for _ in range(3):  # tự thân + 2 cấp cha là đủ cho cây Điều>Khoản>Điểm
+        if u is None:
+            return None
+        if u.unit_type == "article":
+            return u.id
+        if not u.parent_unit_id:
+            return None
+        u = await session.get(Unit, u.parent_unit_id)
+    return None
+
+
 async def find_by_locator(
     session: AsyncSession,
     *,

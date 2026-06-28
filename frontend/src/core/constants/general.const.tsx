@@ -6,6 +6,7 @@ import {
   Home,
   Mail,
   MessageSquare,
+  Network,
   PieChart,
   Scale,
   Settings,
@@ -31,6 +32,12 @@ export const adminSidebarLinks: TSidebarLinks[] = [
     titleKey: 'legal',
     icon: <Scale className='w-5 h-5' />,
     path: ROUTE.ADMIN.LEGAL_DOCUMENTS
+  },
+  {
+    title: 'Tra cứu luật',
+    titleKey: 'law_inspect',
+    icon: <Network className='w-5 h-5' />,
+    path: ROUTE.ADMIN.LAW_INSPECT
   },
   {
     title: 'Phân tích',
