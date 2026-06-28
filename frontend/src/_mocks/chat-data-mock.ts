@@ -9,6 +9,13 @@ export interface Attachment {
   size?: string
 }
 
+export interface Citation {
+  official_code?: string
+  article_no?: string
+  clause_no?: string
+  quoted_text?: string
+}
+
 export interface Message {
   id: string
   sender: 'user' | 'ai'
@@ -16,6 +23,14 @@ export interface Message {
   timestamp: string
   attachments?: Attachment[]
   lawyers?: Lawyer[]
+  // --- AI BE ---
+  mode?: string | null          // lookup | deep_reasoning_pending | deep_reasoning | ...
+  citations?: Citation[]
+  domain?: string | null        // lĩnh vực (case_frame.main_domain) → map luật sư
+  // true khi AI mời xác nhận phân tích sâu → hiện nút "Phân tích sâu" ở bubble này
+  deepPending?: boolean
+  // true khi đây là kết luận deep reasoning → hiện 2 nút (tải phân tích / gợi ý luật sư)
+  showPostActions?: boolean
 }
 
 export interface ChatSession {
@@ -23,6 +38,8 @@ export interface ChatSession {
   title: string
   date: string
   messages: Message[]
+  // session_id do AI BE cấp (giữ ngữ cảnh hội thoại nhiều lượt)
+  aiSessionId?: string | null
 }
 
 

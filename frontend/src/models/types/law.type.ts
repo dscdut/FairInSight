@@ -29,6 +29,7 @@ export interface Law {
   id: string
   title: string
   content: string
+  docType?: string
   documentNumber: string
   issuedDate: string
   effectiveDate: string

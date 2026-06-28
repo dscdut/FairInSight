@@ -1,171 +1,33 @@
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect } from 'react'
 
 import dayjs from 'dayjs'
-import { Settings, Star, MapPin, Briefcase, Scale } from 'lucide-react'
+import { Settings } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 import {
   type Attachment,
   type ChatSession,
   DEFAULT_SESSION,
-  INITIAL_SESSIONS,
   type Message
 } from '@/_mocks/chat-data-mock'
-import { MOCK_LAWYERS_BY_CATEGORY } from '@/_mocks/lawyer.mock'
-import { requestAssistantReply } from '@/api/workspaceApi'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Avatar, AvatarImage, AvatarFallback, Button } from '@/components/ui'
-import { LAW_MAJORS } from '@/core/constants/law-major'
+import { sendChatAi } from '@/api/chatAiApi'
+import { fetchLawyers } from '@/api/lawyerApi'
 import { formatTime } from '@/core/helpers/date-time'
-import { getInitials } from '@/core/helpers/get-initials'
 import { cn } from '@/core/lib/utils'
-import { type Lawyer } from '@/models/lawyer/list-lawyer.type'
-import { LawyerContactDialog } from '@/pages/users/lawyer/components/LawyerContactDialog'
+import { exportAnalysisPdf } from '@/utils/pdfExport'
 
-import ChatInput from './components/ChatInput'
+import ChatInput, { CHAT_MAX_CHARS } from './components/ChatInput'
 import ChatMessages from './components/ChatMessages'
 import HistorySidebar from './components/HistorySidebar'
 
-const detectCategoryFromSession = (session: ChatSession, currentMessage: string): string => {
-  const textToAnalyze = (session.title + ' ' + currentMessage + ' ' + session.messages.map(m => m.content).join(' ')).toLowerCase()
-  if (textToAnalyze.includes('đất') || textToAnalyze.includes('ranh giới') || textToAnalyze.includes('sổ đỏ')) {
-    return LAW_MAJORS.LAND
-  }
-  if (textToAnalyze.includes('hôn nhân') || textToAnalyze.includes('ly hôn') || textToAnalyze.includes('gia đình') || textToAnalyze.includes('con cái')) {
-    return LAW_MAJORS.FAMILY_LONG
-  }
-  if (textToAnalyze.includes('hình sự') || textToAnalyze.includes('tội') || textToAnalyze.includes('bị cáo') || textToAnalyze.includes('bào chữa')) {
-    return LAW_MAJORS.CRIMINAL
-  }
-  if (textToAnalyze.includes('dân sự') || textToAnalyze.includes('thừa kế') || textToAnalyze.includes('đại diện')) {
-    return LAW_MAJORS.CIVIL
-  }
-  if (textToAnalyze.includes('lao động') || textToAnalyze.includes('sa thải') || textToAnalyze.includes('lương') || textToAnalyze.includes('bảo hiểm')) {
-    return LAW_MAJORS.LABOR
-  }
-  if (textToAnalyze.includes('doanh nghiệp') || textToAnalyze.includes('công ty') || textToAnalyze.includes('thương mại') || textToAnalyze.includes('m&a')) {
-    return LAW_MAJORS.BUSINESS
-  }
-  return LAW_MAJORS.UNKNOWN
-}
-
-const parseBasicMarkdown = (text: string): string => {
-  let res = text
-  // Escape HTML to prevent injection and breakages
-  res = res
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-  
-  // Headers (e.g. ### Header -> <h3>Header</h3>)
-  res = res.replace(/^### (.*$)/gim, '<h3 style="font-size: 14px; font-weight: bold; margin-top: 14px; margin-bottom: 6px; color: #111827;">$1</h3>')
-  res = res.replace(/^## (.*$)/gim, '<h2 style="font-size: 16px; font-weight: bold; margin-top: 16px; margin-bottom: 8px; color: #111827;">$1</h2>')
-  res = res.replace(/^# (.*$)/gim, '<h1 style="font-size: 18px; font-weight: bold; margin-top: 20px; margin-bottom: 10px; color: #111827;">$1</h1>')
-  
-  // Bold (e.g. **text** -> <strong>text</strong>)
-  res = res.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-  res = res.replace(/__(.*?)__/g, '<strong>$1</strong>')
-  
-  // Italic (e.g. *text* -> <em>text</em>)
-  res = res.replace(/\*(.*?)\*/g, '<em>$1</em>')
-  res = res.replace(/_(.*?)_/g, '<em>$1</em>')
-  
-  // Lists (- item -> <li>item</li>)
-  const lines = res.split('\n')
-  let inList = false
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim()
-    if (line.startsWith('- ') || line.startsWith('* ')) {
-      const content = line.substring(2)
-      if (!inList) {
-        lines[i] = '<ul style="margin: 8px 0; padding-left: 20px;">\n<li style="margin-bottom: 4px;">' + content + '</li>'
-        inList = true
-      } else {
-        lines[i] = '<li style="margin-bottom: 4px;">' + content + '</li>'
-      }
-    } else {
-      if (inList) {
-        lines[i] = '</ul>\n' + lines[i]
-        inList = false
-      }
-    }
-  }
-  if (inList) {
-    lines.push('</ul>')
-  }
-  res = lines.join('\n')
-
-  // Line breaks
-  res = res.replace(/\n/g, '<br />')
-  
-  return res
-}
-
-const convertMarkdownToHtml = (content: string): string => {
-  const tomTatRegex = /\[TÓM TẮT\]:?([\s\S]*?)(?=\[(?:CĂN CỨ|LƯU Ý)\]|$)/i
-  const canCuRegex = /\[CĂN CỨ\]:?([\s\S]*?)(?=\[(?:TÓM TẮT|LƯU Ý)\]|$)/i
-  const luuYRegex = /\[LƯU Ý\]:?([\s\S]*?)(?=\[(?:TÓM TẮT|CĂN CỨ)\]|$)/i
-
-  const hasTomTat = tomTatRegex.test(content)
-  const hasCanCu = canCuRegex.test(content)
-  const hasLuuY = luuYRegex.test(content)
-
-  if (!hasTomTat && !hasCanCu && !hasLuuY) {
-    return parseBasicMarkdown(content)
-  }
-
-  const firstSectionIdx = Math.min(
-    ...[
-      content.search(/\[TÓM TẮT\]/i),
-      content.search(/\[CĂN CỨ\]/i),
-      content.search(/\[LƯU Ý\]/i)
-    ].filter((idx) => idx >= 0)
-  )
-
-  const prefix = firstSectionIdx > 0 ? content.slice(0, firstSectionIdx).trim() : ''
-  const tomTatMatch = content.match(tomTatRegex)
-  const canCuMatch = content.match(canCuRegex)
-  const luuYMatch = content.match(luuYRegex)
-
-  const tomTatText = tomTatMatch ? tomTatMatch[1].trim() : ''
-  const canCuText = canCuMatch ? canCuMatch[1].trim() : ''
-  const luuYText = luuYMatch ? luuYMatch[1].trim() : ''
-
-  let htmlResult = ''
-  if (prefix) {
-    htmlResult += `<div style="margin-bottom: 12px;">${parseBasicMarkdown(prefix)}</div>`
-  }
-  if (tomTatText) {
-    htmlResult += `
-      <div style="margin-bottom: 16px; padding: 16px; border: 1px solid rgba(13, 148, 136, 0.3); background-color: rgba(240, 253, 250, 0.4); border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-        <div style="display: flex; align-items: center; gap: 8px; color: #0d9488; font-weight: bold; font-size: 12px; text-transform: uppercase; margin-bottom: 8px;">
-          <span>📋 TÓM TẮT</span>
-        </div>
-        <div style="font-size: 13px; line-height: 1.6; color: #111827;">${parseBasicMarkdown(tomTatText)}</div>
-      </div>
-    `
-  }
-  if (canCuText) {
-    htmlResult += `
-      <div style="margin-bottom: 16px; padding: 16px; border: 1px solid rgba(79, 70, 229, 0.3); background-color: rgba(245, 243, 255, 0.4); border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-        <div style="display: flex; align-items: center; gap: 8px; color: #4f46e5; font-weight: bold; font-size: 12px; text-transform: uppercase; margin-bottom: 8px;">
-          <span>⚖️ CĂN CỨ PHÁP LÝ</span>
-        </div>
-        <div style="font-size: 13px; line-height: 1.6; color: #111827;">${parseBasicMarkdown(canCuText)}</div>
-      </div>
-    `
-  }
-  if (luuYText) {
-    htmlResult += `
-      <div style="margin-bottom: 16px; padding: 16px; border: 1px solid rgba(217, 119, 6, 0.3); background-color: rgba(254, 243, 199, 0.4); border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-        <div style="display: flex; align-items: center; gap: 8px; color: #d97706; font-weight: bold; font-size: 12px; text-transform: uppercase; margin-bottom: 8px;">
-          <span>⚠️ LƯU Ý</span>
-        </div>
-        <div style="font-size: 13px; line-height: 1.6; color: #111827;">${parseBasicMarkdown(luuYText)}</div>
-      </div>
-    `
-  }
-
-  return htmlResult
-}
+// Phiên rỗng khởi đầu (không còn mock hội thoại cũ)
+const makeEmptySession = (): ChatSession => ({
+  id: 'session-1',
+  title: 'Yêu cầu phân tích mới',
+  date: '',
+  messages: [],
+  aiSessionId: null
+})
 
 export default function AIChat() {
   const [sessions, setSessions] = useState<ChatSession[]>(() => {
@@ -173,13 +35,20 @@ export default function AIChat() {
       const saved = localStorage.getItem('legal_ai_chat_sessions')
       if (saved) {
         try {
-          return JSON.parse(saved)
+          const parsed = JSON.parse(saved)
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            // Dọn phiên rỗng tích lũy (do bấm "tạo mới" nhiều lần): giữ TỐI ĐA 1 phiên rỗng.
+            const nonEmpty = parsed.filter((s: ChatSession) => s.messages.length > 0)
+            const oneEmpty = parsed.find((s: ChatSession) => s.messages.length === 0)
+            const cleaned = oneEmpty ? [oneEmpty, ...nonEmpty] : nonEmpty
+            return cleaned.length > 0 ? cleaned : [makeEmptySession()]
+          }
         } catch (e) {
           console.error('Failed to parse sessions from localStorage', e)
         }
       }
     }
-    return INITIAL_SESSIONS
+    return [makeEmptySession()]
   })
   const [activeSessionId, setActiveSessionId] = useState<string>(() => {
     if (typeof window !== 'undefined') {
@@ -192,6 +61,9 @@ export default function AIChat() {
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
+  const location = useLocation()
+  const navigate = useNavigate()
+
   // UI responsive control
   const [isHistoryOpen, setIsHistoryOpen] = useState<boolean>(false)
 
@@ -201,10 +73,6 @@ export default function AIChat() {
   const [legalDomain, setLegalDomain] = useState<string>('All')
   const [isActiveOnly, setIsActiveOnly] = useState<boolean>(true)
   const [isConfigOpen, setIsConfigOpen] = useState<boolean>(false)
-
-  // Lawyer list and contact dialog states
-  const [isLawyerListOpen, setIsLawyerListOpen] = useState<boolean>(false)
-  const [selectedContactLawyer, setSelectedContactLawyer] = useState<Lawyer | null>(null)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -257,6 +125,15 @@ export default function AIChat() {
 
   // Start a new clean session (client state only)
   const handleNewChat = () => {
+    // Chống spam: đã có sẵn 1 phiên RỖNG (chưa chat gì) → dùng lại nó, không tạo thêm.
+    const emptySession = sessions.find((s) => s.messages.length === 0)
+    if (emptySession) {
+      setActiveSessionId(emptySession.id)
+      setInputText('')
+      setAttachments([])
+      setIsHistoryOpen(false)
+      return
+    }
     const newId = `session-${Date.now()}`
     const newSession: ChatSession = {
       id: newId,
@@ -270,6 +147,17 @@ export default function AIChat() {
     setAttachments([])
     setIsHistoryOpen(false)
   }
+
+  // Khi điều hướng vào với cờ newChat (vd: bấm "Phân tích pháp lý" ở dashboard),
+  // luôn tạo một cuộc trò chuyện mới thay vì mở lại phiên cũ.
+  useEffect(() => {
+    if (location.state?.newChat) {
+      handleNewChat()
+      // Xoá state để F5/back không tạo phiên mới lặp lại.
+      navigate(location.pathname, { replace: true, state: {} })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state])
 
   // Delete a session from history
   const handleDeleteSession = (id: string, e: React.MouseEvent) => {
@@ -311,120 +199,69 @@ export default function AIChat() {
     }
   }
 
-  const submitPrompt = async (userMessageContent: string, userAttachments: Attachment[] = []) => {
-    if (isLoading) return
-
-    const userMessageId = `msg-user-${Date.now()}`
+  // Gọi AI BE thật. deepConfirmed=true khi user bấm "Phân tích sâu" (gửi lại câu
+  // tình huống với cờ để vào luồng reasoning).
+  const callAi = async (messageContent: string, userAttachments: Attachment[], deepConfirmed: boolean) => {
     const timestamp = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
 
     const newUserMsg: Message = {
-      id: userMessageId,
+      id: `msg-user-${Date.now()}`,
       sender: 'user',
-      content: userMessageContent,
+      content: messageContent,
       timestamp,
       attachments: userAttachments
     }
 
-    // Update session with User Message
+    // Thêm tin user + auto đặt tên phiên theo câu đầu
     setSessions((prev) =>
       prev.map((s) => {
-        if (s.id === activeSessionId) {
-          // If it was default empty name, auto-name it based on input
-          const newTitle = s.title === 'Yêu cầu phân tích mới' && userMessageContent.trim()
-            ? (userMessageContent.trim().length > 30 ? userMessageContent.trim().slice(0, 30) + '...' : userMessageContent.trim())
-            : s.title
-          return {
-            ...s,
-            title: newTitle,
-            messages: [...s.messages, newUserMsg]
-          }
-        }
-        return s
+        if (s.id !== activeSessionId) return s
+        const newTitle = s.title === 'Yêu cầu phân tích mới' && messageContent.trim()
+          ? (messageContent.trim().length > 30 ? messageContent.trim().slice(0, 30) + '...' : messageContent.trim())
+          : s.title
+        return { ...s, title: newTitle, messages: [...s.messages, newUserMsg] }
       })
     )
-
     setIsLoading(true)
 
-    // Call real RAG Assistant Query API
     try {
-      const history = activeSession.messages.map((m) => ({
-        role: (m.sender === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
-        content: m.content
-      }))
-
-      const reply = await requestAssistantReply(
-        userMessageContent,
-        'low',
-        history,
-        docSummary || null,
-        activeSessionId,
-        topK,
-        legalDomain,
-        isActiveOnly
-      )
-
-      // Retain lawyer recommendation overlay if user explicitly asks for it
-      let recommendedLawyers = undefined
-      const lowerInput = userMessageContent.toLowerCase().trim()
-      const isRequestingLawyers = 
-        lowerInput === 'có' || 
-        lowerInput === 'co' || 
-        lowerInput.includes('tôi muốn tìm kiếm luật sư') || 
-        lowerInput.includes('tôi muốn tìm luật sư') || 
-        lowerInput.includes('tìm luật sư') || 
-        lowerInput.includes('gợi ý luật sư') || 
-        lowerInput.includes('có, tôi muốn') ||
-        lowerInput.includes('có tôi muốn') ||
-        (lowerInput.includes('có') && (lowerInput.includes('muốn') || lowerInput.includes('luật sư') || lowerInput.includes('gợi ý')))
-
-      if (isRequestingLawyers) {
-        const category = detectCategoryFromSession(activeSession, userMessageContent)
-        const rawLawyers = MOCK_LAWYERS_BY_CATEGORY[category] || MOCK_LAWYERS_BY_CATEGORY['Tôi không chắc lĩnh vực']
-        recommendedLawyers = rawLawyers.map((l) => ({
-          id: l.id,
-          name: l.fullName,
-          avatar: l.avatar || '',
-          specialty: l.specializations.join(', ')
-        }))
-      }
+      const res = await sendChatAi({
+        message: messageContent,
+        session_id: activeSession.aiSessionId ?? null,
+        deep_confirmed: deepConfirmed,
+      })
 
       const aiMessage: Message = {
-        id: reply.id || `msg-ai-${Date.now()}`,
+        id: `msg-ai-${Date.now()}`,
         sender: 'ai',
-        content: reply.content,
+        content: res.answer || '(Không có nội dung trả về)',
         timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-        lawyers: recommendedLawyers
+        mode: res.mode,
+        citations: res.citations,
+        domain: res.domain,
+        deepPending: res.mode === 'deep_reasoning_pending',
+        // Sau khi reasoning ra kết luận (deep_reasoning) → hiện 2 nút hành động.
+        showPostActions: res.mode === 'deep_reasoning',
       }
 
       setSessions((prev) =>
-        prev.map((s) => {
-          if (s.id === activeSessionId) {
-            return {
-              ...s,
-              messages: [...s.messages, aiMessage]
-            }
-          }
-          return s
-        })
+        prev.map((s) =>
+          s.id === activeSessionId
+            ? { ...s, aiSessionId: res.session_id, messages: [...s.messages, aiMessage] }
+            : s
+        )
       )
-    } catch (error) {
-      console.error('Error fetching AI response:', error)
+    } catch (err) {
       const errMessage: Message = {
         id: `msg-ai-err-${Date.now()}`,
         sender: 'ai',
-        content: 'Có lỗi xảy ra khi kết nối tới trợ lý AI. Vui lòng kiểm tra lại kết nối mạng hoặc thử lại sau.',
-        timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+        content: `⚠️ Xin lỗi, hệ thống AI đang gặp sự cố. Bạn thử lại sau giúp nhé.\n\n_(${err instanceof Error ? err.message : 'lỗi không xác định'})_`,
+        timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
       }
       setSessions((prev) =>
-        prev.map((s) => {
-          if (s.id === activeSessionId) {
-            return {
-              ...s,
-              messages: [...s.messages, errMessage]
-            }
-          }
-          return s
-        })
+        prev.map((s) =>
+          s.id === activeSessionId ? { ...s, messages: [...s.messages, errMessage] } : s
+        )
       )
     } finally {
       setIsLoading(false)
@@ -436,195 +273,66 @@ export default function AIChat() {
     e.preventDefault()
     if (!inputText.trim() && attachments.length === 0) return
     if (isLoading) return
+    if (inputText.length > CHAT_MAX_CHARS) return // guard cuối: chặn cứng nếu lách được UI
 
-    const promptText = inputText
-    const promptAttachments = [...attachments]
-
-    // Reset Input form state
+    const messageContent = inputText
+    const userAttachments = [...attachments]
     setInputText('')
     setAttachments([])
-
-    await submitPrompt(promptText, promptAttachments)
+    await callAi(messageContent, userAttachments, false)
   }
 
-  // Handle lawyer suggestion click
-  const handleRequestLawyer = () => {
-    setIsLawyerListOpen(true)
+  // User bấm "Phân tích sâu" sau khi AI mời → gửi lại câu hỏi gốc với deep_confirmed
+  const handleConfirmDeep = async (originalQuestion: string) => {
+    if (isLoading) return
+    await callAi(originalQuestion, [], true)
   }
 
-  // Handle packaging session messages and exporting to PDF
-  const handleExportPdf = () => {
-    if (!activeSession || activeSession.messages.length === 0) {
-      alert('Không có nội dung tin nhắn để xuất PDF.')
-      return
+  // Tải bản phân tích về máy dạng PDF — client-side (html2pdf), không cần BE.
+  const handleDownloadAnalysis = async (content: string) => {
+    try {
+      await exportAnalysisPdf(content, { title: 'Bản phân tích pháp lý' })
+    } catch (err) {
+      console.error('Xuất PDF lỗi', err)
     }
-
-    const printWindow = window.open('', '_blank')
-    if (!printWindow) {
-      alert('Không thể mở cửa sổ in. Vui lòng tắt trình chặn pop-up của trình duyệt.')
-      return
-    }
-
-    const dateStr = activeSession.date || new Date().toLocaleString('vi-VN')
-    const title = activeSession.title || 'Phân tích Pháp lý'
-
-    // Generate conversation HTML
-    const conversationHtml = activeSession.messages.map((msg) => {
-      const isUser = msg.sender === 'user'
-      const senderName = isUser ? 'Khách hàng' : 'Trợ lý Pháp lý AI'
-      const colorStyle = isUser 
-        ? 'background-color: #f3f4f6; border-left: 4px solid #9ea2ae;' 
-        : 'background-color: #ffffff; border-left: 4px solid #b81d24;'
-      const bodyContent = convertMarkdownToHtml(msg.content)
-      return `
-        <div style="margin-bottom: 24px; padding: 16px; border-radius: 8px; ${colorStyle} page-break-inside: avoid;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 11px; color: #4d5461; font-weight: bold;">
-            <span>${senderName}</span>
-            <span>${msg.timestamp}</span>
-          </div>
-          <div style="font-size: 13px; color: #111827; line-height: 1.6;">
-            ${bodyContent}
-          </div>
-        </div>
-      `
-    }).join('')
-
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>${title} - LegalAI</title>
-          <style>
-            @page {
-              size: A4;
-              margin: 20mm;
-            }
-            body {
-              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-              margin: 0;
-              padding: 0;
-              color: #111827;
-              background-color: #ffffff;
-              line-height: 1.5;
-            }
-            .header {
-              border-bottom: 2px solid #b81d24;
-              padding-bottom: 12px;
-              margin-bottom: 24px;
-              display: flex;
-              justify-content: space-between;
-              align-items: flex-end;
-            }
-            .header-left h1 {
-              font-size: 20px;
-              color: #b81d24;
-              margin: 0 0 4px 0;
-              text-transform: uppercase;
-              letter-spacing: 0.5px;
-              font-weight: bold;
-            }
-            .header-left p {
-              font-size: 11px;
-              color: #4d5461;
-              margin: 0;
-            }
-            .header-right {
-              text-align: right;
-              font-size: 11px;
-              color: #4d5461;
-            }
-            .doc-title {
-              font-size: 22px;
-              font-weight: bold;
-              color: #111827;
-              margin: 0 0 12px 0;
-              text-align: center;
-            }
-            .doc-meta {
-              font-size: 12px;
-              color: #4d5461;
-              margin-bottom: 32px;
-              text-align: center;
-            }
-            .footer {
-              margin-top: 40px;
-              padding-top: 16px;
-              border-top: 1px solid #e5e7ea;
-              font-size: 10px;
-              color: #6d717f;
-              text-align: center;
-              page-break-inside: avoid;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div class="header-left">
-              <h1>LegalAI</h1>
-              <p>Hệ thống Trợ lý Pháp lý thông minh</p>
-            </div>
-            <div class="header-right">
-              <div>Ngày tạo: ${dateStr}</div>
-              <div>Mã phiên: ${activeSession.id}</div>
-            </div>
-          </div>
-          
-          <h2 class="doc-title">${title}</h2>
-          <div class="doc-meta">
-            Bản ghi nội dung làm việc và phân tích pháp lý tự động bởi Trợ lý AI
-          </div>
-
-          <div class="content">
-            ${conversationHtml}
-          </div>
-
-          <div class="footer">
-            <p style="margin: 0 0 4px 0; font-weight: bold;">Tuyên bố miễn trừ trách nhiệm</p>
-            <p style="margin: 0;">Thông tin do LegalAI cung cấp chỉ mang tính chất tham khảo học thuật và tra cứu. Vui lòng tham khảo ý kiến của luật sư hoặc chuyên gia pháp lý có thẩm quyền trước khi đưa ra các quyết định pháp lý quan trọng.</p>
-          </div>
-
-          <script>
-            window.onload = function() {
-              setTimeout(function() {
-                window.print();
-                window.close();
-              }, 300);
-            };
-          </script>
-        </body>
-      </html>
-    `)
-    printWindow.document.close()
   }
 
-  // Gather unique attachments from current session messages and input attachments
-  const uniqueSessionAttachments = useMemo(() => {
-    const allSessionAttachments = [
-      ...(activeSession.messages.flatMap(m => m.attachments || [])),
-      ...attachments
-    ]
-    const list: Attachment[] = []
-
-    // Add the packaged chat history PDF representation automatically if there are messages
-    if (activeSession.messages.length > 0) {
-      const safeTitle = activeSession.title.trim().replace(/[^a-zA-Z0-9\s_]/g, '').replace(/\s+/g, '_')
-      list.push({
-        id: 'chat-pdf-report',
-        name: `Báo_cáo_phân_tích_${safeTitle || 'chi_tiet'}.pdf`,
-        size: 'Tự động tạo',
-        type: 'file'
-      })
-    }
-
-    const seenFiles = new Set<string>()
-    for (const att of allSessionAttachments) {
-      const key = `${att.name}-${att.size}`
-      if (!seenFiles.has(key)) {
-        seenFiles.add(key)
-        list.push(att)
+  // Gợi ý luật sư: gọi Node BE lấy luật sư THẬT theo lĩnh vực → render card vào 1 tin AI mới.
+  const handleSuggestLawyers = async (domain?: string | null) => {
+    if (isLoading) return
+    setIsLoading(true)
+    try {
+      const lawyers = await fetchLawyers(domain)
+      const aiMessage: Message = {
+        id: `msg-lawyers-${Date.now()}`,
+        sender: 'ai',
+        content: lawyers.length
+          ? 'Dưới đây là các luật sư phù hợp mà mình tìm thấy cho bạn:'
+          : 'Hiện chưa có luật sư phù hợp trong hệ thống. Bạn thử lại sau nhé.',
+        timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        lawyers,
       }
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.id === activeSessionId ? { ...s, messages: [...s.messages, aiMessage] } : s
+        )
+      )
+    } catch (err) {
+      const errMessage: Message = {
+        id: `msg-lawyers-err-${Date.now()}`,
+        sender: 'ai',
+        content: `⚠️ Không lấy được danh sách luật sư.\n\n_(${err instanceof Error ? err.message : 'lỗi không xác định'})_`,
+        timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+      }
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.id === activeSessionId ? { ...s, messages: [...s.messages, errMessage] } : s
+        )
+      )
+    } finally {
+      setIsLoading(false)
     }
-    return list
-  }, [activeSession.messages, activeSession.title, attachments])
+  }
 
   return (
     <div className='flex flex-col h-[calc(100vh-100px)] w-full overflow-hidden animate-in fade-in-50 duration-300'>
@@ -734,6 +442,9 @@ export default function AIChat() {
             isLoading={isLoading}
             messagesEndRef={messagesEndRef}
             onSelectCategory={handleSelectStarterCategory}
+            onConfirmDeep={handleConfirmDeep}
+            onDownloadAnalysis={handleDownloadAnalysis}
+            onSuggestLawyers={handleSuggestLawyers}
           />
 
           {/* Form Input Area */}
@@ -745,9 +456,6 @@ export default function AIChat() {
             onAttach={handleAttach}
             onSubmit={handleSubmit}
             isLoading={isLoading}
-            onRequestLawyer={handleRequestLawyer}
-            onExportPdf={handleExportPdf}
-            showSuggestions={activeSession.messages.length > 0}
           />
         </div>
 
@@ -784,117 +492,6 @@ export default function AIChat() {
           </>
         )}
       </div>
-
-      {/* Dialog Danh sách Luật sư phù hợp */}
-      <Dialog open={isLawyerListOpen} onOpenChange={setIsLawyerListOpen}>
-        <DialogContent className='max-w-2xl max-h-[85vh] overflow-y-auto p-6 bg-background-primary border border-border-secondary rounded-2xl shadow-xl'>
-          <DialogHeader className='border-b border-border-secondary pb-4 mb-4'>
-            <DialogTitle className='text-xl font-extrabold text-main flex items-center gap-2'>
-              <Scale className='w-6 h-6 text-primary' />
-              <span>Gợi ý Luật sư Phù hợp</span>
-            </DialogTitle>
-            <DialogDescription className='text-xs text-text-description mt-1'>
-              Tìm thấy {(() => {
-                const activeCat = detectCategoryFromSession(activeSession, '')
-                const rawLawyers = MOCK_LAWYERS_BY_CATEGORY[activeCat] || MOCK_LAWYERS_BY_CATEGORY[LAW_MAJORS.UNKNOWN]
-                return rawLawyers.length
-              })()} luật sư chuyên khoa liên quan đến lĩnh vực: <strong className='text-primary'>{detectCategoryFromSession(activeSession, '')}</strong>
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className='space-y-4'>
-            {(MOCK_LAWYERS_BY_CATEGORY[detectCategoryFromSession(activeSession, '')] || MOCK_LAWYERS_BY_CATEGORY[LAW_MAJORS.UNKNOWN]).map((lawyer) => (
-              <div
-                key={lawyer.id}
-                className='flex flex-col sm:flex-row gap-4 p-4 border border-border-secondary rounded-xl bg-background-tertiary hover:border-primary/30 transition-all duration-200 shadow-sm'
-              >
-                {/* Avatar & Name */}
-                <div className='flex flex-row sm:flex-col items-center gap-3 sm:w-[150px] shrink-0 text-center'>
-                  <Avatar className='w-16 h-16 rounded-full border border-border-secondary shadow-sm'>
-                    <AvatarImage src={lawyer.avatar || ''} alt={lawyer.fullName} />
-                    <AvatarFallback className='bg-primary text-white font-bold text-lg'>
-                      {getInitials(lawyer.fullName)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className='text-left sm:text-center min-w-0'>
-                    <h4 className='text-sm font-bold text-main truncate w-full'>{lawyer.fullName}</h4>
-                    <span className='inline-block text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full mt-1'>
-                      Luật sư
-                    </span>
-                  </div>
-                </div>
-
-                {/* Main Lawyer Profile Details */}
-                <div className='flex-1 min-w-0 flex flex-col justify-between'>
-                  <div className='space-y-2'>
-                    {/* Specialty & Location */}
-                    <div className='flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-description font-medium'>
-                      <div className='flex items-center gap-1.5'>
-                        <Briefcase className='w-3.5 h-3.5 text-text-tertiary' />
-                        <span>Chuyên môn: <strong className='text-main'>{lawyer.specializations.join(', ')}</strong></span>
-                      </div>
-                      <div className='flex items-center gap-1.5'>
-                        <MapPin className='w-3.5 h-3.5 text-text-tertiary' />
-                        <span>Khu vực: <strong className='text-main'>{lawyer.city}</strong></span>
-                      </div>
-                    </div>
-
-                    {/* Stats */}
-                    <div className='flex items-center gap-4 text-xs font-semibold'>
-                      <div className='flex items-center gap-1 text-yellow-500'>
-                        <Star className='w-4 h-4 fill-yellow-500' />
-                        <span>{lawyer.averageRating} / 5.0</span>
-                      </div>
-                      <div className='text-text-description'>
-                        Thành công: <strong className='text-main'>{lawyer.successfulCases} vụ</strong>
-                      </div>
-                    </div>
-
-                    {/* Brief Bio */}
-                    <p className='text-xs text-text-description leading-relaxed italic border-l-2 border-border-secondary pl-3 mt-2 line-clamp-2'>
-                      {lawyer.bio}
-                    </p>
-                  </div>
-
-                  {/* Actions */}
-                  <div className='flex justify-end gap-2 mt-4 sm:mt-2'>
-                    <Button
-                      variant='outline'
-                      size='sm'
-                      onClick={() => alert(`Đang xem hồ sơ của Luật sư ${lawyer.fullName}`)}
-                      className='text-xs font-bold'
-                    >
-                      Xem hồ sơ
-                    </Button>
-                    <Button
-                      variant='default'
-                      size='sm'
-                      onClick={() => {
-                        setIsLawyerListOpen(false)
-                        setSelectedContactLawyer(lawyer)
-                      }}
-                      className='text-xs font-bold text-white bg-primary hover:bg-primary/90'
-                    >
-                      Liên hệ ngay
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog Liên hệ */}
-      <LawyerContactDialog
-        lawyer={selectedContactLawyer}
-        isOpen={selectedContactLawyer !== null}
-        onOpenChange={(open) => {
-          if (!open) setSelectedContactLawyer(null)
-        }}
-        initialAttachments={uniqueSessionAttachments}
-        onPreviewChatPdf={handleExportPdf}
-      />
     </div>
   )
 }

@@ -10,6 +10,7 @@ import LayoutSwitcher from '@/components/ui/LayoutSwitcher'
 import { cn } from '@/core/lib/utils'
 import { type ViewMode, type Template as TTemplate } from '@/models/types/form-library'
 
+import TemplatePreviewModal from './components/TemplatePreviewModal'
 import TemplateEditor from './TemplateEditor'
 
 export default function Template() {
@@ -17,6 +18,8 @@ export default function Template() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('Tất cả')
   const [selectedTemplate, setSelectedTemplate] = useState<TTemplate | null>(null)
+  // Biểu mẫu đang xem trước sơ bộ (popup) — khác selectedTemplate (mở editor).
+  const [previewTemplate, setPreviewTemplate] = useState<TTemplate | null>(null)
 
   const categories = ['Tất cả', ...Array.from(new Set(mockTemplates.map((t) => t.category)))]
 
@@ -122,7 +125,22 @@ export default function Template() {
       </motion.div>
 
       {/* Template Grid */}
-      <FormGrid templates={filteredTemplates} viewMode={viewMode} onSelect={setSelectedTemplate} />
+      <FormGrid
+        templates={filteredTemplates}
+        viewMode={viewMode}
+        onSelect={setSelectedTemplate}
+        onPreview={setPreviewTemplate}
+      />
+
+      {/* Xem trước sơ bộ — popup; "Sử dụng" trong popup sẽ mở editor */}
+      <TemplatePreviewModal
+        template={previewTemplate}
+        onClose={() => setPreviewTemplate(null)}
+        onUse={(tpl) => {
+          setPreviewTemplate(null)
+          setSelectedTemplate(tpl)
+        }}
+      />
     </div>
   )
 }

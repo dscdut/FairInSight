@@ -5,8 +5,8 @@ import { DASHBOARD_ACTIVITY, DASHBOARD_DATA } from '@/_mocks/data-dashboard'
 import { RECENT_DOCUMENTS, FEATURED_UPDATE } from '@/_mocks/recent.document.mock'
 import { FadeUp } from '@/components/animated/animated-component'
 import { Button } from '@/components/ui'
+import { ROUTE } from '@/core/constants/path'
 import { useAuthStore } from '@/core/store/features/auth/authStore'
-
 
 export default function MainMenu() {
   const user = useAuthStore((state) => state.user)
@@ -43,11 +43,11 @@ export default function MainMenu() {
               </div>
 
               <Button
-                onClick={() => navigate('/chat-ai')}
                 size='lg'
+                onClick={() => navigate(ROUTE.USER.CHAT_AI, { state: { newChat: true } })}
                 className='group/btn relative mt-6 bg-gradient-to-r from-primary to-rose-500 text-white font-semibold rounded-full border border-white/20 shadow-[0_4px_20px_rgba(184,29,36,0.25)] hover:shadow-[0_8px_30px_rgba(244,63,94,0.4)] hover:scale-[1.03] active:scale-95 transition-all duration-300 z-10 flex items-center gap-2 cursor-pointer'
               >
-                <span>Phân tích ngay</span>
+                <span>Phân tích pháp lý</span>
               </Button>
             </div>
 

@@ -4,12 +4,12 @@ import { AUTH_ENDPOINTS } from '@/core/configs/consts'
 import config from '@/core/configs/env'
 import isEqual from '@/core/configs/is-equal'
 import { authApi } from '@/core/services/auth.service'
+import { forceLogout } from '@/core/shared/auth-refresh'
 import {
   getAccessTokenFromLS,
   getRefreshTokenFromLS,
-  removeAccessTokenFromLS,
-  removeRefreshTokenFromLS,
-  setAccessTokenToLS
+  setAccessTokenToLS,
+  setRefreshTokenToLS
 } from '@/core/shared/storage'
 
 const controllers = new Map<string, AbortController>()
@@ -104,21 +104,23 @@ axiosClient.interceptors.response.use(
       try {
         const refresh_token = getRefreshTokenFromLS()
         if (!refresh_token) {
-          removeAccessTokenFromLS()
-          removeRefreshTokenFromLS()
           processQueue(new Error('Phiên đăng nhập hết hạn, vui lòng đăng nhập lại'), null)
+          forceLogout() // không còn refresh token → đá về /login
           return Promise.reject(error)
         }
 
-        const { accessToken } = await authApi.refreshToken(refresh_token)
+        // Node BE ROTATE token: refresh trả CẢ accessToken + refreshToken mới (refresh
+        // token cũ bị upsert ghi đè). PHẢI lưu cả 2 — nếu chỉ lưu access thì lần refresh
+        // sau dùng refresh token cũ đã vô hiệu → fail → đá ra login sớm (trước 7 ngày).
+        const { accessToken, refreshToken } = await authApi.refreshToken(refresh_token)
         setAccessTokenToLS(accessToken)
+        if (refreshToken) setRefreshTokenToLS(refreshToken)
         originalRequest.headers.Authorization = `Bearer ${accessToken}`
         processQueue(null, accessToken)
         return axiosClient(originalRequest)
       } catch (refreshError) {
         processQueue(refreshError, null)
-        removeAccessTokenFromLS()
-        removeRefreshTokenFromLS()
+        forceLogout() // refresh token hết 7 ngày / bị revoke → đá về /login
         return Promise.reject(error)
       } finally {
         isRefreshing = false
