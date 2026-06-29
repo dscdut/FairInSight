@@ -1,8 +1,9 @@
-import { ROLE_ADMIN } from '@/core/configs/consts'
+import { ROLE_ADMIN, ROLE_LAWYER } from '@/core/configs/consts'
 import isEqual from '@/core/configs/is-equal'
 import { useAuthStore } from '@/core/store/features/auth/authStore'
 
 import AdminTopBar from './components/admin-top-bar'
+import LawyerTopBar from './components/lawyer-top-bar'
 import UserTopBar from './components/user-top-bar'
 
 const TopBar = () => {
@@ -18,8 +19,9 @@ const TopBar = () => {
   }
 
   const isAdmin = isEqual(user?.roleName, ROLE_ADMIN)
+  const isLawyer = isEqual(user?.roleName, ROLE_LAWYER)
 
-  return isAdmin ? <AdminTopBar /> : <UserTopBar />
+  return isAdmin ? <AdminTopBar /> : isLawyer ? <LawyerTopBar /> : <UserTopBar />
 }
 
 export default TopBar
