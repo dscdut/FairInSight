@@ -74,8 +74,10 @@ export const adminSidebarLinks: TSidebarLinks[] = [
     path: ROUTE.ADMIN.USERS,
     children: [
       {
-        title: 'Tất cả người dùng',
-        path: 'users/all'
+        // title: 'Tất cả người dùng',
+        // path: 'users/all'
+        title: 'All Users',
+        path: 'users'
       },
       {
         title: 'Đang hoạt động',
