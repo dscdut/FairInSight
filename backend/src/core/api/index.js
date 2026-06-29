@@ -8,6 +8,7 @@ import { DocumentResolver } from 'core/api/document';
 import { HandlerResolver } from '../../packages/handler/HandlerResolver';
 import { AuthResolver } from './auth/auth.resolver';
 import { LawResolver } from './law/law.resolver';
+import { DraftResolver } from './draft/draft.resolver';
 
 export const ModuleResolver = HandlerResolver
     .builder()
@@ -20,6 +21,8 @@ export const ModuleResolver = HandlerResolver
         UploadResolver,
         LawResolver,
         TemplateResolver,
-        DocumentResolver
+        DocumentResolver,
+        DraftResolver
     ]);
+
 
