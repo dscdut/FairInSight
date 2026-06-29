@@ -34,6 +34,10 @@ class Amendment(Base, TimestampMixin):
     old_ref_text: Mapped[Optional[str]] = mapped_column(Text)  # số hiệu đích "31/2024/QH15"
     # "Điều N" của văn bản đích (nếu câu nêu rõ) → resolve tới đúng Điều, không chỉ Điều 1
     target_article: Mapped[Optional[str]] = mapped_column(String(20))
+    # Khoản/Điểm đích khi lệnh nêu rõ ("sửa khoản 3 Điều 102", "điểm b khoản 1 Điều 25")
+    # → resolve XUỐNG đúng Khoản/Điểm con, không gắn cả Điều cha. NULL = tác động cả Điều.
+    target_clause: Mapped[Optional[str]] = mapped_column(String(20))
+    target_point: Mapped[Optional[str]] = mapped_column(String(20))
 
     amendment_type: Mapped[str] = mapped_column(String(15), nullable=False)  # AmendmentType
     effective_date: Mapped[Optional[date]] = mapped_column(Date)  # ngày sửa đổi có hiệu lực

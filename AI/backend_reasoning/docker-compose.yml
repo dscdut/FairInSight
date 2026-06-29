@@ -1,0 +1,44 @@
+# Chạy AI backend_reasoning trên server.
+#   docker compose up -d --build
+# Cấu hình DB / 9router / JWT / Cloudinary lấy từ .env (xem .env.example).
+# Embed bge-m3 + reranker đóng sẵn trong image (CPU). Chat LLM qua 9router (HTTPS).
+
+services:
+  ai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: fairinsight-ai
+    container_name: fairinsight-ai
+    restart: always
+
+    env_file:
+      - .env
+
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "8000"
+      EMBED_LOCAL: "true"
+      USE_NINE_ROUTER: "true"
+      OCR_USE_GPU: "false"
+      OCR_SWAP_VRAM: "false"
+
+    ports:
+      - "8000:8000"
+
+    # Mở khi DB chạy trên chính host server (ngoài compose). DB cloud thì không cần.
+    # extra_hosts:
+    #   - "host.docker.internal:host-gateway"
+
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"

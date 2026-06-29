@@ -29,6 +29,7 @@ class IngestState(TypedDict, total=False):
     extract_method: Optional[str]      # digital | ocr | hybrid | skip_scan
     raw_text: Optional[str]
     normalized_text: Optional[str]
+    marked_text: Optional[str]         # 4b: text đã chèn @@ART/@@CL/@@PT (cho unit_tree)
     meta: Optional[dict]               # DocMeta dạng dict
     unit_drafts: list[dict]            # UnitDraft dạng dict (temp_id, parent_temp_id...)
     chunk_drafts: list[dict]
