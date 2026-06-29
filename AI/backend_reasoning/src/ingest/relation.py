@@ -57,6 +57,8 @@ class RelationDraft:
     confidence: float
     target_article: Optional[str] = None    # "Điều N" của văn bản đích (nếu nêu rõ)
     target_law_name: Optional[str] = None    # tên luật đích (khi VB sửa đổi nêu TÊN, không số hiệu)
+    target_clause: Optional[str] = None     # Khoản đích (hạ granularity, None = cả Điều)
+    target_point: Optional[str] = None      # Điểm đích
 
 
 @dataclass

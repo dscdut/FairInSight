@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Info, ChevronDown, ChevronUp, RotateCcw, UploadCloud, FileText, Trash2, Loader2, Pencil } from 'lucide-react'
+import { X, Info, ChevronDown, ChevronUp, RotateCcw, UploadCloud, FileText, Trash2, Loader2, Pencil, CheckCircle2, AlertTriangle, Link2 } from 'lucide-react'
 import { createPortal } from 'react-dom'
 
 import { Button } from '@/components/ui/button'
@@ -19,6 +19,8 @@ import config from '@/core/configs/env'
 import { cn } from '@/core/lib/utils'
 import {
   lawAiApi,
+  type CompareCheck,
+  type CompareReport,
   type DuplicateCandidate,
   type PreviewLawFields,
 } from '@/core/services/law-ai.service'
@@ -106,6 +108,12 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
   } | null>(null)
   const [forceConfirmed, setForceConfirmed] = useState(false) // admin bấm "Vẫn tạo"
 
+  // ---- Luồng cào VBPL (tùy chọn) ----
+  // Admin dán link vbpl.vn → BE cào toàn văn (cấu trúc Điều/Khoản mạnh hơn OCR),
+  // đối chiếu với PDF (compare). Link trống → nạp PDF như cũ.
+  const [vbplUrl, setVbplUrl] = useState('')
+  const [compare, setCompare] = useState<CompareReport | null>(null)
+
   // Initialize form values
   useEffect(() => {
     if (isOpen) {
@@ -143,6 +151,8 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
       setPreviewFields(null)
       setDuplicate(null)
       setForceConfirmed(false)
+      setVbplUrl('')
+      setCompare(null)
     }
   }, [isOpen, law])
 
@@ -157,6 +167,16 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
       document.body.style.overflow = ''
     }
   }, [isOpen])
+
+  // Link VBPL hợp lệ: .../vbpl.vn/van-ban/chi-tiet/<slug>--<ItemID>. Rỗng = OK (PDF cũ).
+  // Khớp BE services/vbpl.parse_vbpl_url để FE cảnh báo sớm, không chờ round-trip.
+  const isVbplUrlValid = (url: string): boolean => {
+    const s = url.trim()
+    if (!s) return true // không dán = hợp lệ (nạp PDF như cũ)
+    const m = s.toLowerCase().match(/vbpl\.vn\/van-ban\/chi-tiet\/.*--([0-9]+|[0-9a-f-]{36})(?:[/?#]|$)/)
+    return !!m
+  }
+  const vbplUrlError = vbplUrl.trim() !== '' && !isVbplUrlValid(vbplUrl)
 
   // Chuẩn hóa ngày từ LLM về dạng yyyy-MM-dd cho input[type=date].
   const normalizeDate = (raw?: string) => {
@@ -199,7 +219,7 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
     }
   }
 
-  // === ADD-NEW: PDF -> /preview (KHÔNG ghi KB). Trích metadata + tóm tắt + check trùng. ===
+  // Chọn file PDF tay → validate rồi chạy preview (lõi chung với nút "Tải từ VBPL").
   const handlePreviewUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -207,7 +227,34 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
       alert('Chỉ chấp nhận tệp PDF (.pdf).')
       return
     }
+    if (vbplUrl.trim() && !isVbplUrlValid(vbplUrl)) {
+      alert('Link VBPL không đúng định dạng. Vui lòng dán link dạng https://vbpl.vn/van-ban/chi-tiet/... hoặc để trống.')
+      return
+    }
+    await runPreview(file)
+  }
 
+  // Nút "Tải PDF từ VBPL": link hợp lệ → BE proxy tải PDF gốc → chạy preview như file tay.
+  const [isFetchingVbplPdf, setIsFetchingVbplPdf] = useState(false)
+  const handleFetchVbplPdf = async () => {
+    if (!isVbplUrlValid(vbplUrl) || !vbplUrl.trim()) {
+      alert('Vui lòng dán link VBPL hợp lệ trước khi tải PDF.')
+      return
+    }
+    setIsFetchingVbplPdf(true)
+    try {
+      const file = await lawAiApi.fetchVbplPdf(vbplUrl.trim())
+      await runPreview(file)
+    } catch (error: unknown) {
+      const errorMsg = (error as { response?: { data?: { detail?: string } }; message?: string }).response?.data?.detail || (error as { message?: string }).message || 'Không tải được PDF từ VBPL. Văn bản có thể chưa có PDF gốc — vui lòng tải PDF lên thủ công.'
+      alert(errorMsg)
+    } finally {
+      setIsFetchingVbplPdf(false)
+    }
+  }
+
+  // === ADD-NEW: PDF -> /preview (KHÔNG ghi KB). Trích metadata + tóm tắt + check trùng. ===
+  const runPreview = async (file: File) => {
     setUploadingFileName(file.name)
     setIsPdfUpload(true)
     setIsUploading(true)
@@ -268,7 +315,8 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
     }, 1400)
 
     try {
-      const res = await lawAiApi.previewLaw(file, clientId)
+      const res = await lawAiApi.previewLaw(file, clientId, vbplUrl)
+      setCompare(res.compare || null)
 
       // Trích xuất xong -> đánh dấu các bước phân tích hoàn tất.
       setPdfProgress((prev) =>
@@ -339,6 +387,8 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
       setDuplicate(null)
       setForceConfirmed(false)
       setPdfProgress([])
+      setCompare(null)
+      // KHÔNG xoá vbplUrl: admin gỡ PDF để thử lại thường vẫn dùng cùng link.
     }
   }
 
@@ -461,6 +511,51 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
                 /* IDLE: 1 box upload chiếm nguyên drawer, chỉ nhận PDF */
                 <div className='flex-1 flex items-center justify-center p-8 overflow-y-auto'>
                   <div className='w-full max-w-xl'>
+                    {/* Ô link VBPL (tùy chọn) — dán trước, rồi mới chọn PDF. Có link hợp lệ
+                        → cào toàn văn từ VBPL (cấu trúc mạnh hơn), PDF để đối chiếu + lưu. */}
+                    <div className='mb-5'>
+                      <label className='block text-xs font-bold text-text-secondary mb-1.5'>
+                        Link VBPL <span className='text-text-tertiary font-semibold normal-case'>(tùy chọn — ưu tiên cào toàn văn)</span>
+                      </label>
+                      <Input
+                        value={vbplUrl}
+                        onChange={(e) => setVbplUrl(e.target.value)}
+                        placeholder='https://vbpl.vn/van-ban/chi-tiet/...'
+                        className={cn(
+                          'h-10 text-sm bg-background-secondary/30 border-border-secondary focus:bg-background-primary rounded-xl text-text-primary',
+                          vbplUrlError && 'border-error-primary focus:border-error-primary'
+                        )}
+                      />
+                      <p className={cn(
+                        'text-[11px] font-semibold mt-1.5',
+                        vbplUrlError ? 'text-error-primary' : 'text-text-tertiary'
+                      )}>
+                        {vbplUrlError
+                          ? 'Link không đúng dạng vbpl.vn/van-ban/chi-tiet/...--<mã>. Sửa lại hoặc để trống.'
+                          : 'Để trống = nạp từ PDF như thường. Có link hợp lệ = lấy toàn văn từ VBPL, PDF dùng để đối chiếu.'}
+                      </p>
+                      {/* Tải PDF gốc từ VBPL → khỏi tự tìm file. Văn bản nào không có PDF
+                          gốc thì BE báo lỗi, admin tải tay như thường. */}
+                      {vbplUrl.trim() && !vbplUrlError && (
+                        <Button
+                          type='button'
+                          variant='outline'
+                          onClick={handleFetchVbplPdf}
+                          disabled={isFetchingVbplPdf}
+                          className='mt-2.5 h-9 text-xs font-bold rounded-xl border-primary/40 text-primary hover:bg-primary/5 flex items-center gap-2'
+                        >
+                          {isFetchingVbplPdf
+                            ? <Loader2 className='w-4 h-4 animate-spin' />
+                            : <UploadCloud className='w-4 h-4' />}
+                          {isFetchingVbplPdf ? 'Đang tải PDF từ VBPL...' : 'Tải PDF gốc từ VBPL'}
+                        </Button>
+                      )}
+                    </div>
+                    <div className='flex items-center gap-3 my-4'>
+                      <div className='flex-1 h-px bg-border-secondary' />
+                      <span className='text-[10px] font-bold text-text-tertiary uppercase'>hoặc</span>
+                      <div className='flex-1 h-px bg-border-secondary' />
+                    </div>
                     <h3 className='text-xs font-bold text-text-tertiary uppercase tracking-widest mb-4 text-center'>
                       Tải lên văn bản pháp luật (PDF)
                     </h3>
@@ -654,6 +749,9 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
                         />
                       </div>
                     )}
+
+                    {/* Đối chiếu VBPL ↔ PDF (chỉ hiện khi dán link VBPL). Cảnh báo, không chặn. */}
+                    {compare && <VbplCompare compare={compare} />}
 
                     {/* Cảnh báo trùng — đặt TRƯỚC tóm tắt để admin thấy ngay, quyết sớm */}
                     {isSuspect && !forceConfirmed && (
@@ -1054,5 +1152,84 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
       )}
     </AnimatePresence>,
     document.body
+  )
+}
+
+// Bảng đối chiếu text cào VBPL ↔ metadata LLM rút từ PDF (số hiệu/loại/tên). CHỈ cảnh
+// báo: metadata PDF scan hay sai nên lệch không có nghĩa văn bản sai; nguồn chân lý =
+// VBPL. Admin nhìn để yên tâm "đúng văn bản" trước khi xác nhận.
+const FIELD_LABELS: Record<CompareCheck['field'], string> = {
+  official_code: 'Số hiệu',
+  doc_type: 'Loại văn bản',
+  title: 'Tên văn bản',
+}
+
+const VbplCompare: React.FC<{ compare: CompareReport }> = ({ compare }) => {
+  // VBPL fetch lỗi → BE lùi về PDF; báo cho admin biết toàn văn dùng PDF (không cào).
+  if (compare.error) {
+    return (
+      <div className='flex gap-3 bg-warning-primary/10 p-4 rounded-2xl border border-warning-primary/20'>
+        <AlertTriangle className='w-4.5 h-4.5 text-warning-secondary shrink-0 mt-0.5' />
+        <div className='text-[11px] text-warning-secondary leading-normal font-semibold'>
+          <p className='font-bold mb-0.5'>Không lấy được dữ liệu từ VBPL</p>
+          <p>{compare.error}</p>
+          <p className='mt-1 text-text-tertiary'>Hệ thống sẽ nạp từ PDF như thường.</p>
+        </div>
+      </div>
+    )
+  }
+
+  const allMatch = compare.overall_match
+  return (
+    <div className={cn(
+      'rounded-2xl border p-4',
+      allMatch
+        ? 'bg-success-primary/5 border-success-primary/20'
+        : 'bg-warning-primary/5 border-warning-primary/20'
+    )}>
+      <div className='flex items-center gap-2 mb-3'>
+        <Link2 className='w-4 h-4 text-primary' />
+        <span className='text-xs font-bold text-text-primary uppercase tracking-wide'>
+          Đối chiếu VBPL ↔ PDF
+        </span>
+        <span className={cn(
+          'ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full',
+          allMatch
+            ? 'bg-success-primary/10 text-success-primary'
+            : 'bg-warning-primary/10 text-warning-secondary'
+        )}>
+          {allMatch ? 'Khớp' : 'Có điểm lệch'}
+        </span>
+      </div>
+      <div className='space-y-2'>
+        {compare.checks.map((c) => (
+          <div key={c.field} className='flex items-start gap-2 text-[11px]'>
+            {c.match
+              ? <CheckCircle2 className='w-3.5 h-3.5 text-success-primary shrink-0 mt-0.5' />
+              : <AlertTriangle className='w-3.5 h-3.5 text-warning-secondary shrink-0 mt-0.5' />}
+            <div className='min-w-0 flex-1'>
+              <span className='font-bold text-text-secondary'>{FIELD_LABELS[c.field]}</span>
+              {typeof c.score === 'number' && (
+                <span className='text-text-tertiary font-semibold'> · {c.score}%</span>
+              )}
+              <div className='text-text-tertiary font-medium mt-0.5 break-words'>
+                <span className='text-primary font-semibold'>VBPL:</span> {c.vbpl || '—'}
+              </div>
+              {!c.match && (
+                <div className='text-text-tertiary font-medium break-words'>
+                  <span className='text-text-secondary font-semibold'>PDF:</span> {c.pdf || '—'}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      {!allMatch && (
+        <p className='text-[10px] text-text-tertiary font-semibold mt-3 leading-normal'>
+          Lệch không hẳn là sai — metadata đọc từ PDF (nhất là bản scan) thường kém chính xác.
+          Toàn văn lấy từ VBPL. Kiểm tra rồi xác nhận nếu đúng văn bản.
+        </p>
+      )}
+    </div>
   )
 }

@@ -75,6 +75,16 @@ class Settings(BaseSettings):
     # --- LLM: Gemini (API, dự phòng) ---
     GEMINI_API_KEY: Optional[str] = None
 
+    # --- LLM: 9router (OpenAI-format proxy: Groq/Gemini/NVIDIA) ---
+    # Bật USE_NINE_ROUTER=true để chat/ingest gọi 9router thay Ollama. Tắt = giữ
+    # nguyên đường Ollama (CHAT_PROVIDERS) để còn dùng ssh mac-mini gemma4.
+    NINE_ROUTER_URL: str = ""
+    NINE_ROUTER_API_KEY: str = ""
+    NINE_ROUTER_MODEL: str = "groq/llama-3.3-70b-versatile"
+    USE_NINE_ROUTER: bool = False
+    # Giới hạn OUTPUT token/request. llama-3.3-70b chịu 8192 (qwen3-32b thì 413, hạ 4096).
+    NINE_ROUTER_MAX_TOKENS: int = 8192
+
     # --- Auth: verify JWT do BE Node (FairInSight) phát hành ---
     # CHUNG secret + thuật toán với BE Node để decode access_token, lấy payload.id
     # làm user_id. Mặc định khớp .env BE Node (JWT_SECRET=123456, HS256).
@@ -87,6 +97,13 @@ class Settings(BaseSettings):
     CLOUDINARY_NAME: str = ""
     CLOUDINARY_KEY: str = ""
     CLOUDINARY_SECRET: str = ""
+
+    # --- VBPL (Cơ sở dữ liệu quốc gia về pháp luật) ---
+    # Luồng admin thêm văn bản có thể dán link vbpl.vn → cào toàn văn + metadata
+    # (cấu trúc Điều/Khoản mạnh hơn OCR). Base là API gateway công khai của VBPL;
+    # endpoint chi tiết: {VBPL_API_BASE}/{ItemID}. Tách config để dễ đổi khi VBPL
+    # chuyển host (hiện là môi trường "bientap").
+    VBPL_API_BASE: str = "https://vbpl-bientap-gateway.moj.gov.vn/api/qtdc/public/doc"
 
     @property
     def CHAT_URL(self) -> str:

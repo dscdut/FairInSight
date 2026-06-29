@@ -30,6 +30,9 @@ class Reference(Base, TimestampMixin):
     to_ref_text: Mapped[Optional[str]] = mapped_column(Text)  # số hiệu đích khi chưa resolve
     # "Điều N" của văn bản đích (nếu nêu rõ) → resolve tới đúng Điều
     target_article: Mapped[Optional[str]] = mapped_column(String(20))
+    # Khoản/Điểm đích nếu dẫn chiếu nêu rõ ("khoản 1 Điều 2") → resolve sâu hơn Điều.
+    target_clause: Mapped[Optional[str]] = mapped_column(String(20))
+    target_point: Mapped[Optional[str]] = mapped_column(String(20))
 
     ref_type: Mapped[str] = mapped_column(String(20), nullable=False)  # RefType
     method: Mapped[str] = mapped_column(String(15), default=ExtractMethod.RULE.value, nullable=False)

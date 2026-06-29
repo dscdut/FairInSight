@@ -72,6 +72,21 @@ export interface DuplicateCandidate {
   score: number
 }
 
+// Đối chiếu text cào VBPL vs metadata LLM rút từ PDF (chỉ cảnh báo, không chặn).
+export interface CompareCheck {
+  field: 'official_code' | 'doc_type' | 'title'
+  vbpl: string | null
+  pdf: string | null
+  match: boolean
+  score?: number
+}
+
+export interface CompareReport {
+  overall_match?: boolean
+  checks: CompareCheck[]
+  error?: string // VBPL fetch lỗi -> lùi về PDF, hiện thông báo
+}
+
 export interface PreviewLawResponse {
   client_id: string
   cloudinary_url: string
@@ -82,6 +97,7 @@ export interface PreviewLawResponse {
     top_score: number
     candidates: DuplicateCandidate[]
   }
+  compare?: CompareReport | null // chỉ có khi dán link VBPL hợp lệ
 }
 
 export interface ConfirmLawPayload {
@@ -102,12 +118,27 @@ export interface UpdateLawPayload {
 }
 
 export const lawAiApi = {
-  // POST /api/v1/documents/preview (multipart: file, client_id)
+  // GET /api/v1/documents/vbpl-pdf?url=... → tải PDF gốc từ VBPL (BE proxy), trả File
+  // để dùng y như file admin tự chọn. Tên PDF trên VBPL không theo quy luật nên BE đọc
+  // từ JSON; FE chỉ cần link. responseType=blob để lấy nhị phân (không bị unwrap .data).
+  async fetchVbplPdf(vbplUrl: string): Promise<File> {
+    const blob = (await aiClient.get('/documents/vbpl-pdf', {
+      params: { url: vbplUrl },
+      responseType: 'blob',
+      timeout: 180000 // PDF scan VBPL ~4-5MB qua proxy
+    })) as unknown as Blob
+    // Cloudinary/preview cần đuôi .pdf; tên hiển thị lấy từ header nếu có, fallback chung.
+    return new File([blob], 'vbpl-document.pdf', { type: 'application/pdf' })
+  },
+
+  // POST /api/v1/documents/preview (multipart: file, client_id, vbpl_url?)
   // Không ghi gì vào KB ở bước này — chỉ trích xuất + check trùng.
-  async previewLaw(file: File, clientId: string): Promise<PreviewLawResponse> {
+  // vbplUrl (tùy chọn): link vbpl.vn hợp lệ → BE cào toàn văn + đối chiếu với PDF.
+  async previewLaw(file: File, clientId: string, vbplUrl?: string): Promise<PreviewLawResponse> {
     const formData = new FormData()
     formData.append('file', file)
     formData.append('client_id', clientId)
+    if (vbplUrl && vbplUrl.trim()) formData.append('vbpl_url', vbplUrl.trim())
     const res = (await aiClient.post('/documents/preview', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
       // OCR file scan chạy CPU (không GPU) + LLM tóm tắt qua tunnel gemma4 → có thể >2 phút

@@ -42,13 +42,45 @@ _TARGET_CODE = re.compile(r"(\d{1,4}/(?:19|20)\d{2}/[A-Za-zĐ][0-9A-Za-zĐ\-]*)"
 
 # Câu-LỆNH (text đã flatten). 2 dạng:
 #  A) "Điều N được sửa đổi/bổ sung/thay thế/bãi bỏ ..."
-#  B) "<verb> ... [khoản/điểm ...] Điều N ..." — verb đứng trước, Điều ở cuối cụm
+#  B) "<verb> <đoạn-phạm-vi> Điều N ..." — verb đứng trước, Điều ở cuối cụm
 #     (vd "Bãi bỏ khoản 5 Điều 5", "sửa đổi điểm b khoản 1 Điều 79", "Thay thế Điều 40").
+# group: 1=art(A) | 2=verb(B) 3=đoạn-phạm-vi(B) 4=art(B). Đoạn-phạm-vi chứa "khoản/điểm"
+# (nếu có) để hạ granularity xuống Khoản/Điểm — xem _scope_targets.
 _CMD_LINE = re.compile(
-    r"Điều\s+(\d+[a-zđ]?)\b[^.]{0,40}?(được\s+(?:sửa đổi|bổ sung|thay thế|bãi bỏ|sửa))"
-    r"|(sửa đổi|bổ sung|thay thế|bãi bỏ)(?:[^.]{0,45}?)?\bĐiều\s+(\d+[a-zđ]?)\b",
+    r"Điều\s+(\d+[a-zđ]?)\b[^.]{0,40}?(?:được\s+(?:sửa đổi|bổ sung|thay thế|bãi bỏ|sửa))"
+    r"|(sửa đổi|bổ sung|thay thế|bãi bỏ)([^.]{0,55}?)\bĐiều\s+(\d+[a-zđ]?)\b",
     re.I,
 )
+
+# Trong đoạn-phạm-vi: "khoản N", "điểm x". Dùng để xác định Khoản/Điểm đích.
+_SCOPE_CLAUSE = re.compile(r"khoản\s+(\d+[a-zđ]?)", re.I)
+_SCOPE_POINT = re.compile(r"điểm\s+([a-zđ]\d?)", re.I)
+# "vào sau/trước khoản M" = BỔ SUNG đơn vị MỚI (chưa tồn tại) → nối ở mức Điều, không
+# trỏ Khoản M (đó là mốc chèn, không phải đích bị sửa).
+_INSERT_POS = re.compile(r"vào\s+(?:sau|trước)", re.I)
+
+
+def _scope_targets(seg: Optional[str]) -> tuple[Optional[str], Optional[str]]:
+    """Từ đoạn-phạm-vi giữa verb và 'Điều N' → (clause, point) đích, hoặc (None, None).
+
+    Trả (None, None) khi tác động CẢ ĐIỀU: "một số khoản/điểm", nhiều khoản ("khoản 2 và
+    khoản 3"), hoặc bổ sung đơn vị mới ("khoản 3 vào sau khoản 2"). Trả (clause, point)
+    khi nêu DUY NHẤT một khoản (kèm điểm nếu có): "khoản 3" → ('3', None); "điểm b khoản
+    1" → ('1', 'b').
+    """
+    s = seg or ""
+    if not s.strip():
+        return None, None
+    if _INSERT_POS.search(s) or re.search(r"một số", s, re.I):
+        return None, None  # bổ sung mới / nhiều đơn vị → mức Điều
+    clauses = _SCOPE_CLAUSE.findall(s)
+    points = _SCOPE_POINT.findall(s)
+    # nhiều khoản/điểm khác nhau ("khoản 2 và khoản 3") → mức Điều (không trỏ lẻ)
+    if len(set(clauses)) > 1 or len(set(points)) > 1:
+        return None, None
+    clause = clauses[0] if clauses else None
+    point = points[0] if points else None
+    return clause, point
 
 
 def _flatten(s: str) -> str:
@@ -99,6 +131,8 @@ class AmendCommand:
     target_law: str
     target_code: Optional[str]
     evidence_text: str
+    target_clause: Optional[str] = None  # Khoản đích ("khoản 3 Điều 102" → '3')
+    target_point: Optional[str] = None   # Điểm đích ("điểm b khoản 1 Điều 25" → 'b')
 
 
 def split_amend_blocks(text: str) -> list[tuple[AmendBlock, str]]:
@@ -135,19 +169,28 @@ def _clean_law_name(name: str) -> str:
     return re.sub(r"\s+", " ", name).strip()
 
 
-def _candidate_commands(block_text: str) -> list[tuple[str, str]]:
-    """Lọc câu-lệnh ngắn trong khối → list (article_no, evidence_line). Rule, rẻ."""
-    out: list[tuple[str, str]] = []
-    seen: set[str] = set()
+def _candidate_commands(block_text: str) -> list[tuple[str, str, Optional[str], Optional[str]]]:
+    """Lọc câu-lệnh ngắn trong khối → list (article, evidence, clause, point). Rule, rẻ.
+
+    clause/point = Khoản/Điểm đích nếu lệnh nêu DUY NHẤT một đơn vị con (None = cả Điều).
+    Dedup theo (article, clause, point): cùng Điều nhưng khác Khoản → giữ cả hai (Điều 102
+    khoản 3 ≠ Điều 102 khoản 5). Cùng đích trùng lặp → bỏ.
+    """
+    out: list[tuple[str, str, Optional[str], Optional[str]]] = []
+    seen: set[tuple[str, Optional[str], Optional[str]]] = set()
     for m in _CMD_LINE.finditer(block_text):
         art = m.group(1) or m.group(4)  # dạng A: group1, dạng B: group4
         if not art or not _ARTICLE_OK.match(art):
             continue
-        if art in seen:
+        clause = point = None
+        if m.group(4):  # dạng B có đoạn-phạm-vi (group3) giữa verb và Điều
+            clause, point = _scope_targets(m.group(3))
+        key = (art, clause, point)
+        if key in seen:
             continue
-        seen.add(art)
+        seen.add(key)
         s = max(0, m.start() - 15)
-        out.append((art, block_text[s:m.end() + 25].strip()))
+        out.append((art, block_text[s:m.end() + 25].strip(), clause, point))
     return out
 
 
@@ -173,7 +216,7 @@ def parse_amend_commands(text: str, doc_title: str = "") -> list[AmendCommand]:
             continue
         law_name = block.target_law_name or _law_from_title(doc_title)
         # gọi LLM 1 lần cho cả khối (các câu đánh số)
-        lines = "\n".join(f"{i}. {ev}" for i, (_, ev) in enumerate(cands))
+        lines = "\n".join(f"{i}. {ev}" for i, (_, ev, _, _) in enumerate(cands))
         actions: dict[int, str] = {}
         try:
             res = llm.complete_json_sync(_PROMPT.format(lines=lines[:2500]), system=_SYS)
@@ -184,13 +227,15 @@ def parse_amend_commands(text: str, doc_title: str = "") -> list[AmendCommand]:
                     actions[idx] = _ACTION_TO_TYPE[act]
         except Exception:  # noqa: BLE001 — LLM lỗi → fallback verb cho mọi câu
             pass
-        for i, (art, ev) in enumerate(cands):
+        for i, (art, ev, clause, point) in enumerate(cands):
             out.append(AmendCommand(
                 target_article=art,
                 amendment_type=actions.get(i) or _fallback_type(ev),
                 target_law=law_name,
                 target_code=block.target_code,
                 evidence_text=ev[:300],
+                target_clause=clause,
+                target_point=point,
             ))
     return out
 

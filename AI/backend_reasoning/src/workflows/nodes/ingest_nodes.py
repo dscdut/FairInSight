@@ -93,6 +93,38 @@ def llm_fix_node(state: IngestState) -> IngestState:
     return state
 
 
+def structure_markup_node(state: IngestState) -> IngestState:
+    """Node 4b — đánh dấu ranh giới Điều/Khoản/Điểm (@@ART/@@CL/@@PT) trước unit_tree.
+
+    Chạy SAU metadata (cần is_amendment_doc để bật quy tắc nhúng). Ghi `marked_text`
+    riêng — KHÔNG đụng normalized_text (vẫn text sạch lưu DB). unit_tree ưu tiên marked_text.
+
+    VB SỬA ĐỔI dùng RULE (deterministic, không cần LLM) → CHẠY kể cả offline. VB thường
+    dùng LLM → bỏ qua khi nguồn json/digital (cấu trúc sạch) hoặc offline (không có LLM).
+    """
+    from src.services import structure_markup
+
+    meta = state.get("meta")
+    is_amend = bool(getattr(meta, "is_amendment_doc", False))
+    # VB thường cần LLM → skip nếu json/digital/offline. VB sửa đổi (rule) thì không skip.
+    if not is_amend and (
+        state.get("extract_method") in ("json", "digital") or not state.get("do_embed", True)
+    ):
+        _log(state, "structure_markup", skipped=True, method=state.get("extract_method"))
+        return state
+    text = state.get("normalized_text") or ""
+    marked, stats = structure_markup.markup_structure(
+        text, title=getattr(meta, "title", ""), is_amendment=is_amend
+    )
+    state["marked_text"] = marked
+    if stats.get("n_fallback"):
+        state.setdefault("warnings", []).append(
+            f"structure_markup: {stats['n_fallback']}/{stats['n_batches']} batch fallback regex"
+        )
+    _log(state, "structure_markup", **stats)
+    return state
+
+
 def metadata_node(state: IngestState) -> IngestState:
     """Gọi MetadataExtractor (rule tier/province/effective_date).
 
@@ -150,13 +182,20 @@ def _check_article_continuity(drafts: list) -> list[str]:
 
 
 def unit_tree_node(state: IngestState) -> IngestState:
-    """Gọi UnitTreeBuilder dựng cây Điều/Khoản/Điểm (hoặc block)."""
-    drafts = build_tree(state.get("normalized_text") or "", doc_title=state["meta"].title)
+    """Gọi UnitTreeBuilder dựng cây Điều/Khoản/Điểm (hoặc block).
+
+    Ưu tiên marked_text (node 4b đã đánh dấu ranh giới) → cắt cây THEO MARKER, không
+    đoán bằng regex (chống Điều-nhúng giả ở luật sửa đổi). Không có marked_text (json/
+    digital/offline) → build_tree tự fallback regex trên normalized_text như cũ.
+    """
+    marked = state.get("marked_text")
+    src_text = marked or (state.get("normalized_text") or "")
+    drafts = build_tree(src_text, doc_title=state["meta"].title, marked=bool(marked))
     state["unit_drafts"] = drafts
     cont_warns = _check_article_continuity(drafts)
     if cont_warns:
         state.setdefault("warnings", []).extend(cont_warns)
-    _log(state, "unit_tree", n_units=len(drafts),
+    _log(state, "unit_tree", n_units=len(drafts), mode="marker" if marked else "regex",
          n_articles=sum(1 for d in drafts if d.unit_type == "article"),
          warns=len(cont_warns))
     return state
@@ -259,6 +298,7 @@ def _cmd_to_draft(cmd):
         target_code=cmd.target_code or "", evidence_text=cmd.evidence_text,
         confidence=0.9, target_article=cmd.target_article,
         target_law_name=cmd.target_law or None,
+        target_clause=cmd.target_clause, target_point=cmd.target_point,
     )
 
 
