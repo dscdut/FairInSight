@@ -165,6 +165,8 @@ def publish(
                 session.add(Amendment(
                     new_unit_id=anchor, old_unit_id=None, old_ref_text=ref_text,
                     target_article=r.target_article,
+                    target_clause=getattr(r, "target_clause", None),
+                    target_point=getattr(r, "target_point", None),
                     amendment_type=r.rel_type, diff_summary=r.evidence_text,
                     method="llm" if law_name else "rule", confidence=r.confidence,
                     resolve_status=ResolveStatus.UNRESOLVED.value,
@@ -174,6 +176,8 @@ def publish(
                 session.add(Reference(
                     from_unit_id=anchor, to_unit_id=None, to_ref_text=r.target_code,
                     target_article=r.target_article,
+                    target_clause=getattr(r, "target_clause", None),
+                    target_point=getattr(r, "target_point", None),
                     ref_type=r.rel_type, method="rule", confidence=r.confidence,
                     evidence_text=r.evidence_text,
                     resolve_status=ResolveStatus.UNRESOLVED.value,
@@ -314,25 +318,49 @@ def attach_tags(session: Session, doc: Document, suggestion) -> int:
     return n
 
 
-def _resolve_unit(session: Session, doc_id: str, article: Optional[str]) -> tuple[Optional[str], str]:
-    """Trả (unit_id, precision) cho quan hệ tới văn bản doc_id.
+def _resolve_unit(
+    session: Session, doc_id: str, article: Optional[str],
+    clause: Optional[str] = None, point: Optional[str] = None,
+) -> tuple[Optional[str], str]:
+    """Trả (unit_id, precision) cho quan hệ tới văn bản doc_id, LẶN XUỐNG Khoản/Điểm.
 
-    precision: 'article' = nối ĐÚNG Điều nêu rõ; 'document' = nối Điều đại diện
-    (không nêu Điều cụ thể); 'miss' = nêu Điều N nhưng KHÔNG có trong văn bản
-    → KHÔNG nối bừa (giữ treo để review, tránh trỏ sai Điều).
+    precision: 'point'/'clause'/'article' = nối ĐÚNG cấp nêu rõ; 'document' = nối Điều
+    đại diện (không nêu Điều); 'miss' = nêu Điều N nhưng KHÔNG có trong văn bản → KHÔNG
+    nối bừa (giữ treo để review).
+
+    Khoản/Điểm: tìm trong CHÍNH Điều đích (theo article_no + clause_no + point_label).
+    Không tìm thấy Khoản/Điểm con (vd luật đích chỉ embed mức Điều, hoặc đánh số lệch) →
+    HẠ về Điều cha (precision='article') thay vì miss — vẫn nối đúng Điều, không mất quan hệ.
     """
     if article:
-        u = session.scalar(
+        art = session.scalar(
             select(Unit).where(
                 Unit.document_id == doc_id,
                 Unit.unit_type == UnitType.ARTICLE.value,
                 Unit.article_no == article,
             ).limit(1)
         )
-        if u:
-            return u.id, "article"
-        # nêu rõ Điều N nhưng không tìm thấy → KHÔNG fallback (tránh nối sai)
-        return None, "miss"
+        if not art:
+            # nêu rõ Điều N nhưng không tìm thấy → KHÔNG fallback (tránh nối sai)
+            return None, "miss"
+        # lặn xuống ĐIỂM (cần cả clause để định vị đúng) → KHOẢN → ĐIỀU
+        if clause and point:
+            u = session.scalar(select(Unit).where(
+                Unit.document_id == doc_id, Unit.unit_type == UnitType.POINT.value,
+                Unit.article_no == article, Unit.clause_no == clause,
+                Unit.point_label == point,
+            ).limit(1))
+            if u:
+                return u.id, "point"
+        if clause:
+            u = session.scalar(select(Unit).where(
+                Unit.document_id == doc_id, Unit.unit_type == UnitType.CLAUSE.value,
+                Unit.article_no == article, Unit.clause_no == clause,
+            ).limit(1))
+            if u:
+                return u.id, "clause"
+        # không có Khoản/Điểm con khớp → hạ về Điều cha (vẫn đúng Điều)
+        return art.id, "article"
     # không nêu Điều cụ thể → nối Điều đầu (đại diện văn bản)
     u = session.scalar(
         select(Unit).where(
@@ -427,7 +455,9 @@ def resolve_relations(session: Session, doc: Document) -> int:
     # giữ treo + đẩy review (tránh nối sai Điều, nguy hiểm với pháp luật).
     def _set_ref(ref, tdoc):
         nonlocal resolved
-        tid, prec = _resolve_unit(session, tdoc, ref.target_article)
+        tid, prec = _resolve_unit(
+            session, tdoc, ref.target_article, ref.target_clause, ref.target_point
+        )
         if tid:
             ref.to_unit_id = tid
             ref.resolve_status = ResolveStatus.RESOLVED.value
@@ -454,16 +484,18 @@ def resolve_relations(session: Session, doc: Document) -> int:
         # supplement = bổ sung Điều MỚI → Điều đích có thể chưa tồn tại là ĐÚNG.
         # Chỉ nối nếu tìm thấy; không thấy thì để treo, KHÔNG báo miss (không phải lỗi).
         is_supplement = am.amendment_type == AmendmentType.SUPPLEMENT.value
-        tid, prec = _resolve_unit(session, tdoc, am.target_article)
+        tid, prec = _resolve_unit(
+            session, tdoc, am.target_article, am.target_clause, am.target_point
+        )
         if tid:
             am.old_unit_id = tid
             am.resolve_status = ResolveStatus.RESOLVED.value
             resolved += 1
-            # CHỈ áp tác động hiệu lực khi nối ĐÚNG Điều được nêu rõ (prec='article').
-            # "Sửa đổi MỘT SỐ ĐIỀU của Luật B" (không nêu Điều) → prec='document' →
-            # nối Điều đại diện để biết quan hệ, NHƯNG KHÔNG đánh dấu Điều 1 amended
-            # (Điều 1 không hề bị sửa — đánh bừa là sai pháp lý + gây nhiễu retrieval).
-            if prec == "article":
+            # Áp tác động hiệu lực khi nối ĐÚNG đơn vị nêu rõ (Điều/Khoản/Điểm). "Sửa khoản
+            # 3 Điều 102" → prec='clause' → đánh dấu CHÍNH Khoản 3 (không cả Điều 102).
+            # "Sửa đổi MỘT SỐ ĐIỀU của Luật B" (không nêu Điều) → prec='document' → chỉ nối
+            # Điều đại diện để biết quan hệ, KHÔNG đánh dấu (tránh báo sai Điều bị sửa).
+            if prec in ("article", "clause", "point"):
                 _apply_effect_to_old_unit(session, am, tid)
         elif prec == "miss" and not is_supplement:
             _queue_review_miss(session, doc, am.old_ref_text, am.target_article)
