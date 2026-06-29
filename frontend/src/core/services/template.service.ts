@@ -37,14 +37,16 @@ function mapTemplateFromBackend(t: BackendTemplate): Template {
     fileUrl: t.file_url
   }
 }
+const API_TEMPLATES = '/templates'
+const API_TEMPLATE_DETAIL = (id: string) => `/templates/${id}`
 
 export const createTemplateApi = (client: AxiosInstance) => ({
   async listTemplates() {
-    const res = (await client.get('/templates')) as BackendTemplate[]
+    const res = (await client.get(API_TEMPLATES)) as BackendTemplate[]
     return (res || []).map(mapTemplateFromBackend) as Template[]
   },
   async getTemplateById(id: string) {
-    const res = (await client.get(`/templates/${id}`)) as BackendTemplate
+    const res = (await client.get(API_TEMPLATE_DETAIL(id))) as BackendTemplate
     return mapTemplateFromBackend(res)
   }
 })

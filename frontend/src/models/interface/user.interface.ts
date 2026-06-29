@@ -5,4 +5,5 @@ export interface UserResponseType {
   fullName: string
   email: string
   roleName: RoleSystem
+  status?: string
 }

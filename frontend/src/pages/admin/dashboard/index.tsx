@@ -30,7 +30,7 @@ export default function Dashboard() {
             <span className='h-1.5 w-1.5 rounded-full bg-white animate-pulse' />
             FairInsights Admin Portal
           </span>
-          <h1 className='py-4 text-h1 tracking-tight text-main'>
+          <h1 className='py-4 text-h2 tracking-tight text-main'>
             Mừng trở lại, {user?.fullName || 'Admin'}!
           </h1>
         </FadeUp>
