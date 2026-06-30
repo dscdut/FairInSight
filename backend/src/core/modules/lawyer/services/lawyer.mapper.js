@@ -102,7 +102,6 @@ export const mapLawyerDetail = user => {
                 avatarUrl: user.avatar_url ?? null,
                 avatar: user.avatar_url ?? null,
                 name: user.full_name,
-                role: (user.roles?.name || 'lawyer').toLowerCase(),
                 roleName: (user.roles?.name || 'lawyer').toUpperCase(),
                 bio,
                 averageRating: lawyerDetails.rating_avg || 0,
