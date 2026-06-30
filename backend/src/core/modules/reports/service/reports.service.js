@@ -12,35 +12,35 @@ class Service {
         this.repository = ReportsRepository;
     }
 
-    async getReports(getReportsDto) {
+    async listReports(listReportsDto) {
         let allStatus = ["pending", "processing", "resolved"];
-        if (allStatus.indexOf(getReportsDto.status) == -1) {
+        if (allStatus.indexOf(listReportsDto.status) == -1) {
             throw new BadRequestException("Invalid Status value");
         }
 
-        let startDate = getReportsDto.startDate
-            ? new Date(getReportsDto.startDate).toISOString()
+        let startDate = listReportsDto.startDate
+            ? new Date(listReportsDto.startDate).toISOString()
             : null;
-        let endDate = getReportsDto.endDate
-            ? new Date(getReportsDto.endDate).toISOString()
+        let endDate = listReportsDto.endDate
+            ? new Date(listReportsDto.endDate).toISOString()
             : null;
         
         if (startDate > endDate) {
             throw new BadRequestException("startDate must be before endDate");
         }
 
-        let reports = await this.repository.getReportsByDateAndStatus(getReportsDto.status, startDate, endDate);
-        reports = reports.slice((getReportsDto.page - 1) * getReportsDto.limit, getReportsDto.page * getReportsDto.limit);
+        let reports = await this.repository.getReportsByDateAndStatus(listReportsDto.status, startDate, endDate);
+        reports = reports.slice((listReportsDto.page - 1) * listReportsDto.limit, listReportsDto.page * listReportsDto.limit);
         return {
             data: {
                 items: {
                     reports: reports,
                 },
                 pagination: {
-                    page: getReportsDto.page,
-                    limit: getReportsDto.limit,
+                    page: listReportsDto.page,
+                    limit: listReportsDto.limit,
                     total: reports.length,
-                    totalPages: reports.length / getReportsDto.limit,
+                    totalPages: Math.ceil(reports.length / listReportsDto.limit),
                 }
             }
         };
@@ -67,6 +67,23 @@ class Service {
                 month: getReportsStatsDto.month,
                 newReports: reports.length,
                 resolved: resolvedReports
+            }
+        };
+    }
+
+    async getReportsHistory(getReportsHistoryDto) {
+        let reports = await this.repository.getReportsHistory(parseInt(getReportsHistoryDto.page), parseInt(getReportsHistoryDto.limit));
+        return {
+            data: {
+                items: {
+                    reports: reports,
+                },
+                pagination: {
+                    page: parseInt(getReportsHistoryDto.page),
+                    limit: parseInt(getReportsHistoryDto.limit),
+                    total: reports.length,
+                    totalPages: Math.ceil(reports.length / parseInt(getReportsHistoryDto.limit)),
+                }
             }
         };
     }

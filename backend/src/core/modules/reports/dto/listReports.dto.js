@@ -1,7 +1,7 @@
 import { ApiDocument } from 'core/config/swagger.config';
 import { SwaggerDocument } from 'packages/swagger';
 
-ApiDocument.addModel('GetReportsDto', {
+ApiDocument.addModel('ListReportsDto', {
     page: SwaggerDocument.ApiProperty({ type: 'string' }),
     limit: SwaggerDocument.ApiProperty({ type: 'string' }),
     status: SwaggerDocument.ApiProperty({ type: 'string' }),
@@ -9,7 +9,7 @@ ApiDocument.addModel('GetReportsDto', {
     endDate: SwaggerDocument.ApiProperty({ type: 'string' }),
 });
 
-export const GetReportsDto = body => ({
+export const ListReportsDto = body => ({
     page: body.page,
     limit: body.limit,
     status: body.status,

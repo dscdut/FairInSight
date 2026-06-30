@@ -1,2 +1,3 @@
-export * from './getReports.interceptor';
+export * from './listReports.interceptor';
 export * from './getReportsStats.interceptor';
+export * from './getReportsHistory.interceptor';

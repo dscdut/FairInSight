@@ -7,7 +7,7 @@ import { authMiddleware } from 'core/modules/auth/middleware/auth.middleware';
 import { uploadMediaSwagger } from 'core/common/swagger';
 import { MediaInterceptor } from 'core/modules/document';
 import { hasAdminRole } from 'core/modules/auth/guard';
-import { GetReportsParams, GetReportsStatsParams } from 'core/common/swagger/reportFilter';
+import { ListReportsParams, GetReportsStatsParams, GetReportsHistoryParams } from 'core/common/swagger/reportFilter';
 
 export const ReportsResolver = Module.builder()
     .addPrefix({
@@ -19,9 +19,9 @@ export const ReportsResolver = Module.builder()
         {
             route: '/',
             method: 'get',
-            params: GetReportsParams,
+            params: ListReportsParams,
             guards: [hasAdminRole],
-            controller: ReportsController.getReports,
+            controller: ReportsController.listReports,
             preAuthorization: true,
         },
         {
@@ -30,6 +30,14 @@ export const ReportsResolver = Module.builder()
             params: GetReportsStatsParams,
             guards: [hasAdminRole],
             controller: ReportsController.getReportsStats,
+            preAuthorization: true,
+        },
+        {
+            route: '/history',
+            method: 'get',
+            params: GetReportsHistoryParams,
+            guards: [hasAdminRole],
+            controller: ReportsController.getReportsHistory,
             preAuthorization: true,
         },
     ]);
