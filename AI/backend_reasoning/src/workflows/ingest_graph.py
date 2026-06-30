@@ -13,6 +13,7 @@ Graph CHỈ điều phối; logic ở nodes/ingest_nodes.py → src/ingest/* + p
 
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 
 from langgraph.graph import END, START, StateGraph
@@ -22,11 +23,17 @@ from src.workflows.nodes import ingest_nodes as N
 from src.workflows.states.ingest_state import IngestState
 
 
+def _compute_checksum(path: str, raw_text: str | None) -> str:
+    """Checksum chống trùng: theo NỘI DUNG text (nguồn JSON/VBPL có raw_text) hoặc
+    theo BYTES file (PDF/DOCX). Dùng chung prepare_node + cleanup để khớp chính xác."""
+    if raw_text is not None:
+        return hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
+    return publisher.checksum(Path(path))
+
+
 def prepare_node(state: IngestState) -> IngestState:
     """Chống trùng file + tạo source_files. Quyết định có chạy tiếp không."""
     from src.data.sync_session import SyncSessionLocal
-
-    import hashlib
 
     from src.schema.models import SourceFile
 
@@ -43,11 +50,8 @@ def prepare_node(state: IngestState) -> IngestState:
             return state
 
     with SyncSessionLocal() as session:
-        if is_json:
-            # checksum theo nội dung text (chống trùng record JSON)
-            csum = hashlib.sha256((state.get("raw_text") or "").encode("utf-8")).hexdigest()
-        else:
-            csum = publisher.checksum(Path(state["path"]))
+        csum = _compute_checksum(state["path"], state.get("raw_text"))
+        state["checksum"] = csum  # giữ lại cho cleanup khi pipeline lỗi giữa chừng
         dup = publisher.find_duplicate(session, csum)
         if dup:
             # MỒ CÔI: pipeline chết SAU prepare nhưng TRƯỚC publish → source_file kẹt
@@ -166,6 +170,52 @@ def build_ingest_graph():
 ingest_graph = build_ingest_graph()
 
 
+def _cleanup_orphan_source_file(checksum: str) -> None:
+    """Xoá source_file MỒ CÔI khi pipeline chết giữa chừng (vd hết API key / 429).
+
+    publish_node là bước DUY NHẤT ghi DB và chạy CUỐI — nên lỗi LLM ở các node giữa
+    (llm_fix/structure_markup/relation_judge/tagging) xảy ra TRƯỚC publish: document/
+    units/chunks CHƯA được ghi. Thứ duy nhất sót là dòng source_files (status='parsing')
+    mà prepare_node đã commit riêng để chống trùng. Không gỡ → checksum kẹt, lần nạp lại
+    bị chặn ("đã nạp nhưng query không thấy"). Gỡ NGAY = DB sạch như chưa từng nạp.
+
+    GUARD KÉP (an toàn tuyệt đối): chỉ xoá khi status != 'completed' VÀ thực sự 0
+    document — không bao giờ đụng văn bản đã nạp xong (documents.source_file_id là
+    SET NULL → xoá nhầm sẽ làm mồ côi document thật). review_items con CASCADE.
+    """
+    from sqlalchemy import select
+
+    from src.data.sync_session import SyncSessionLocal
+    from src.schema.models import Document, SourceFile
+
+    with SyncSessionLocal() as session:
+        sf = publisher.find_duplicate(session, checksum)
+        if not sf:
+            return
+        has_doc = session.scalar(
+            select(Document.id).where(Document.source_file_id == sf.id).limit(1)
+        )
+        if sf.ingest_status != "completed" and has_doc is None:
+            session.delete(sf)
+            session.commit()
+
+
+def _invoke_with_cleanup(state: IngestState) -> IngestState:
+    """Chạy graph; nếu pipeline raise (hết API key / 429 / lỗi LLM) → xoá source_file
+    mồ côi rồi re-raise để route báo lỗi rõ. Checksum tính TRƯỚC invoke (deterministic,
+    khớp prepare_node) để cleanup tìm đúng dòng kể cả khi state không trả về."""
+    try:
+        return ingest_graph.invoke(state)
+    except Exception:
+        try:
+            _cleanup_orphan_source_file(
+                _compute_checksum(state["path"], state.get("raw_text"))
+            )
+        except Exception:  # noqa: BLE001 — cleanup lỗi không che lỗi gốc
+            pass
+        raise
+
+
 def run_ingest(
     path: str,
     *,
@@ -197,7 +247,7 @@ def run_ingest(
         "max_pages": max_pages,
         "status": "completed",
     }
-    return ingest_graph.invoke(state)
+    return _invoke_with_cleanup(state)
 
 
 def run_ingest_json(jdoc, *, do_embed: bool = True) -> IngestState:
@@ -215,4 +265,4 @@ def run_ingest_json(jdoc, *, do_embed: bool = True) -> IngestState:
         "allow_ocr": False,
         "status": "completed",
     }
-    return ingest_graph.invoke(state)
+    return _invoke_with_cleanup(state)

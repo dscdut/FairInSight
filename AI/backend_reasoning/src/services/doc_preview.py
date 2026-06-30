@@ -134,10 +134,19 @@ async def preview(
     """
     # public_id PHẢI kết thúc ".pdf": Cloudinary raw suy content-type từ đuôi URL.
     # Không có .pdf → serve application/octet-stream → browser TẢI VỀ, iframe trắng.
-    up = cloudinary.upload_law_pdf(
-        file_bytes, public_id=_pdf_public_id(filename, client_id), overwrite=True
-    )
-    cloudinary_url = up["secure_url"]
+    # Cloudinary có thể từ chối (file > giới hạn gói free 10MB...) → KHÔNG chặn cả
+    # luồng: với nguồn VBPL (text cào), PDF gốc chỉ để đối chiếu/xem lại, không bắt
+    # buộc. Fail thì cloudinary_url=None + cảnh báo, nạp vẫn chạy bằng text VBPL.
+    cloudinary_warning = None
+    pdf_is_external = False  # True khi pdf_url là link ngoài (VBPL) → FE mở tab mới, không iframe
+    try:
+        up = cloudinary.upload_law_pdf(
+            file_bytes, public_id=_pdf_public_id(filename, client_id), overwrite=True
+        )
+        cloudinary_url = up["secure_url"]
+    except Exception as exc:  # noqa: BLE001 — không chặn preview/nạp khi Cloudinary lỗi
+        cloudinary_url = None
+        cloudinary_warning = f"Không lưu được PDF lên Cloudinary: {exc}"
 
     # Trích trang ĐẦU (tiêu đề/số hiệu) + trang CUỐI (điều khoản hiệu lực) để LLM đọc.
     tmp = Path(tempfile.gettempdir()) / f"preview_{client_id}_{Path(filename).name}"
@@ -163,6 +172,17 @@ async def preview(
             scraped_text = vbpl_module.extract_text(data)
             compare = vbpl_module.build_compare_report(vbpl_fields, pdf_fields)
             fields = vbpl_fields  # nguồn chân lý = VBPL (cấu trúc mạnh hơn)
+            # PDF không lưu được Cloudinary (file to) → fallback link PDF gốc VBPL để FE
+            # mở tab mới xem (KHÔNG nhúng iframe được vì VBPL serve octet-stream).
+            if not cloudinary_url:
+                vbpl_pdf_url = vbpl_module.pdf_download_url(item_id, data)
+                if vbpl_pdf_url:
+                    cloudinary_url = vbpl_pdf_url
+                    pdf_is_external = True
+                    cloudinary_warning = (
+                        (cloudinary_warning or "") + " — Dùng link PDF gốc trên VBPL "
+                        "(mở tab mới, không xem inline được)."
+                    )
         except Exception as exc:  # noqa: BLE001 — VBPL lỗi thì lùi về PDF, không chặn
             compare = {"error": f"Không lấy được dữ liệu VBPL: {exc}", "checks": []}
             scraped_text = None
@@ -197,6 +217,8 @@ async def preview(
         "summary": summary,
         "duplicate": duplicate,
         "compare": compare,  # None nếu không dùng VBPL
+        "cloudinary_warning": cloudinary_warning,  # != None khi PDF không lưu được (file to...)
+        "pdf_is_external": pdf_is_external,  # True: cloudinary_url là link VBPL → FE mở tab mới
     }
 
 
@@ -252,7 +274,7 @@ def confirm(
     # extractor filename-first + breadcrumb chunk lấy tên này → tránh "confirm_file_xxx".
     code = ((fields or {}).get("official_code") or "").strip()
     safe = __import__("re").sub(r"[^A-Za-z0-9_-]+", "_", code).strip("_")
-    stem = safe or (Path(cloudinary_url).stem or "document")
+    stem = safe or (Path(cloudinary_url).stem if cloudinary_url else "") or "document"
 
     if scraped_text:
         # Luồng VBPL: text đã sạch → nạp thẳng, bỏ OCR. path = pseudo filename để
@@ -264,6 +286,11 @@ def confirm(
         )
     else:
         # Luồng PDF cũ: tải PDF Cloudinary về file tạm → OCR + fix.
+        if not cloudinary_url:
+            raise ValueError(
+                "Không thể nạp: PDF chưa lưu được lên Cloudinary (file quá lớn?) và "
+                "không có text VBPL để thay thế. Dùng link vbpl.vn hoặc PDF nhỏ hơn."
+            )
         resp = httpx.get(cloudinary_url, timeout=60.0, follow_redirects=True)
         resp.raise_for_status()
         tmp = Path(tempfile.gettempdir()) / f"{stem}.pdf"
