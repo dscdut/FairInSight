@@ -5,6 +5,7 @@ import { LawyerResolver } from 'core/api/lawyer/lawyer.resolver';
 import { UploadResolver } from 'core/api/upload';
 import { TemplateResolver } from 'core/api/template';
 import { DocumentResolver } from 'core/api/document';
+import { DraftResolver } from 'core/api/draft';
 import { HandlerResolver } from '../../packages/handler/HandlerResolver';
 import { AuthResolver } from './auth/auth.resolver';
 import { LawResolver } from './law/law.resolver';
@@ -20,6 +21,7 @@ export const ModuleResolver = HandlerResolver
         UploadResolver,
         LawResolver,
         TemplateResolver,
-        DocumentResolver
+        DocumentResolver,
+        DraftResolver
     ]);
 
