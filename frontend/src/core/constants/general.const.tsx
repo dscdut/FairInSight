@@ -6,6 +6,7 @@ import {
   Home,
   Mail,
   MessageSquare,
+  Network,
   PieChart,
   Scale,
   Settings,
@@ -28,9 +29,15 @@ export const adminSidebarLinks: TSidebarLinks[] = [
   },
   {
     title: 'Văn bản pháp luật',
-    titleKey: 'Legal Document',
+    titleKey: 'legal',
     icon: <Scale className='w-5 h-5' />,
     path: ROUTE.ADMIN.LEGAL_DOCUMENTS
+  },
+  {
+    title: 'Tra cứu luật',
+    titleKey: 'law_inspect',
+    icon: <Network className='w-5 h-5' />,
+    path: ROUTE.ADMIN.LAW_INSPECT
   },
   {
     title: 'Phân tích',
@@ -67,174 +74,176 @@ export const adminSidebarLinks: TSidebarLinks[] = [
     path: ROUTE.ADMIN.USERS,
     children: [
       {
+        // title: 'Tất cả người dùng',
+        // path: 'users/all'
         title: 'All Users',
-        path: 'users/all'
+        path: 'users'
       },
       {
-        title: 'Active Users',
+        title: 'Đang hoạt động',
         path: 'users/active'
       },
       {
-        title: 'Inactive Users',
+        title: 'Ngừng hoạt động',
         path: 'users/inactive'
       },
       {
-        title: 'User Roles',
+        title: 'Vai trò',
         path: 'users/roles'
       },
       {
-        title: 'Permissions',
+        title: 'Phân quyền',
         path: 'users/permissions'
       }
     ]
   },
   {
-    title: 'E-Commerce',
+    title: 'Thương mại điện tử',
     icon: <ShoppingCart className='w-5 h-5' />,
     path: 'ecommerce',
     children: [
       {
-        title: 'Orders',
+        title: 'Đơn hàng',
         path: 'ecommerce/orders'
       },
       {
-        title: 'Products',
+        title: 'Sản phẩm',
         path: 'ecommerce/products'
       },
       {
-        title: 'Categories',
+        title: 'Danh mục',
         path: 'ecommerce/categories'
       },
       {
-        title: 'Inventory',
+        title: 'Kho hàng',
         path: 'ecommerce/inventory'
       },
       {
-        title: 'Coupons',
+        title: 'Mã giảm giá',
         path: 'ecommerce/coupons'
       }
     ]
   },
   {
-    title: 'Content',
+    title: 'Nội dung',
     icon: <FileText className='w-5 h-5' />,
     path: 'content',
     children: [
       {
-        title: 'Blog Posts',
+        title: 'Bài viết',
         path: 'content/posts'
       },
       {
-        title: 'Pages',
+        title: 'Trang',
         path: 'content/pages'
       },
       {
-        title: 'Media Library',
+        title: 'Thư viện media',
         path: 'content/media'
       },
       {
-        title: 'Comments',
+        title: 'Bình luận',
         path: 'content/comments'
       }
     ]
   },
   {
-    title: 'Payments',
+    title: 'Thanh toán',
     icon: <CreditCard className='w-5 h-5' />,
     path: 'payments',
     children: [
       {
-        title: 'Transactions',
+        title: 'Giao dịch',
         path: 'payments/transactions'
       },
       {
-        title: 'Payment Methods',
+        title: 'Phương thức thanh toán',
         path: 'payments/methods'
       },
       {
-        title: 'Refunds',
+        title: 'Hoàn tiền',
         path: 'payments/refunds'
       },
       {
-        title: 'Invoices',
+        title: 'Hóa đơn',
         path: 'payments/invoices'
       }
     ]
   },
   {
-    title: 'Calendar',
+    title: 'Lịch',
     icon: <Calendar className='w-5 h-5' />,
     path: 'calendar'
   },
   {
-    title: 'Messages',
+    title: 'Tin nhắn',
     icon: <Mail className='w-5 h-5' />,
     path: 'messages',
     children: [
       {
-        title: 'Inbox',
+        title: 'Hộp thư đến',
         path: 'messages/inbox'
       },
       {
-        title: 'Sent',
+        title: 'Đã gửi',
         path: 'messages/sent'
       },
       {
-        title: 'Drafts',
+        title: 'Bản nháp',
         path: 'messages/drafts'
       },
       {
-        title: 'Templates',
+        title: 'Mẫu tin nhắn',
         path: 'messages/templates'
       }
     ]
   },
   {
-    title: 'Reports',
+    title: 'Báo cáo',
     icon: <TrendingUp className='w-5 h-5' />,
     path: 'reports',
     children: [
       {
-        title: 'Sales Reports',
+        title: 'Báo cáo doanh thu',
         path: 'reports/sales'
       },
       {
-        title: 'User Reports',
+        title: 'Báo cáo người dùng',
         path: 'reports/users'
       },
       {
-        title: 'Financial Reports',
+        title: 'Báo cáo tài chính',
         path: 'reports/financial'
       },
       {
-        title: 'System Reports',
+        title: 'Báo cáo hệ thống',
         path: 'reports/system'
       }
     ]
   },
   {
-    title: 'Settings',
+    title: 'Cài đặt',
     icon: <Settings className='w-5 h-5' />,
     path: 'settings',
     children: [
       {
-        title: 'General',
+        title: 'Chung',
         path: 'settings/general'
       },
       {
-        title: 'Security',
+        title: 'Bảo mật',
         path: 'settings/security'
       },
       {
-        title: 'Notifications',
+        title: 'Thông báo',
         path: 'settings/notifications'
       },
       {
-        title: 'Integrations',
+        title: 'Tích hợp',
         path: 'settings/integrations'
       },
       {
-        title: 'Backup',
+        title: 'Sao lưu',
         path: 'settings/backup'
       }
     ]

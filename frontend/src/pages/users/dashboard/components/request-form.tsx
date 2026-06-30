@@ -1,25 +1,32 @@
 import { ChevronDown, Paperclip } from 'lucide-react'
 import { useForm } from 'react-hook-form';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { Button, Card, CardContent } from '@/components/ui'
 import { REQUEST_FORM_CATEGORIES } from '@/core/constants/law-major';
+import { ROUTE } from '@/core/constants/path';
 import { type AnalysisRequest } from '@/core/store/features/analyze-request/type';
 import { useRequestStore } from '@/core/store/features/analyze-request/useRequestStore';
 
 
 export default function RequestForm() {
 
-  const submit = useRequestStore((state) => state.submitRequest)  
+  const submit = useRequestStore((state) => state.submitRequest)
+  const navigate = useNavigate()
   const { register, handleSubmit } = useForm<AnalysisRequest>();
-  
+
+  const onSubmit = async (data: AnalysisRequest) => {
+    await submit(data)
+    navigate(ROUTE.USER.CHAT_AI)
+  }
+
   return (
     <div className="w-full space-y-4 animate-in fade-in-50 duration-200">
       <p className="text-p text-text-description">Mô tả chi tiết vấn đề của bạn để Trợ lý AI bóc tách cấu trúc dữ liệu luật liên quan.</p>
 
       <Card className="border-0 shadow-sm bg-background-primary rounded-2xl">
         <CardContent className="pt-6">
-          <form onSubmit={handleSubmit(submit)} className="space-y-5">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             {/* Tên vụ việc */}
             <div className="space-y-2">
               <label className="text-text-description font-semibold text-small block">Tên vụ việc</label>

@@ -1,15 +1,29 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 
 import { Award, Loader2 } from 'lucide-react'
 
 import { FadeUp } from '@/components/animated/animated-component'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/core/lib/utils'
-import { lawApi } from '@/core/services/law.service'
+import { lawAiApi } from '@/core/services/law-ai.service'
 import { type Law } from '@/models/types/law.type'
 import { DocumentDetailDrawer } from '@/pages/admin/legal-documents/components/document-detail-drawer'
 import { DocumentFilters } from '@/pages/admin/legal-documents/components/document-filters'
 import { DocumentListTable } from '@/pages/admin/legal-documents/components/document-list-table'
+
+// Dãy số trang rút gọn: luôn hiện trang 1, trang cuối, và ±1 quanh trang hiện tại;
+// chèn '...' cho khoảng bị lược. Vd 79 trang, đang ở 6: [1, '...', 5, 6, 7, '...', 79].
+function getPageRange(current: number, total: number): (number | '...')[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
+  const pages: (number | '...')[] = [1]
+  const start = Math.max(2, current - 1)
+  const end = Math.min(total - 1, current + 1)
+  if (start > 2) pages.push('...')
+  for (let p = start; p <= end; p++) pages.push(p)
+  if (end < total - 1) pages.push('...')
+  pages.push(total)
+  return pages
+}
 
 export default function LegalAnalysis() {
   const [laws, setLaws] = useState<Law[]>([])
@@ -30,15 +44,21 @@ export default function LegalAnalysis() {
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [activeLawForDetail, setActiveLawForDetail] = useState<Law | null>(null)
 
-  // Fetch Laws from API
+  // HYBRID (giống admin): hiện trang 1 server-side ngay, song song ngầm tải HẾT danh
+  // sách → tải xong thì đổi trang/search/filter tức thì (FE tự cắt). DB cloud Tokyo mạng
+  // chậm nên 1 lần chờ < nhiều lần chờ mỗi khi đổi trang.
+  const [allLaws, setAllLaws] = useState<Law[] | null>(null)
+  const allLoaded = allLaws !== null
+
+  // Fetch trang hiện tại (server-side) — CHỈ khi chưa tải hết.
   const fetchLaws = useCallback(async () => {
     try {
       setIsLoading(true)
-      const res = await lawApi.listLaws({
+      const res = await lawAiApi.listLaws({
         page: currentPage,
         size: itemsPerPage,
         search: searchQuery || undefined,
-        status: statusFilter || undefined,
+        status: statusFilter && statusFilter !== 'ALL' ? statusFilter : undefined,
         issuedDate: issuedDateFilter || undefined
       })
       setLaws(res.items)
@@ -52,17 +72,52 @@ export default function LegalAnalysis() {
   }, [currentPage, searchQuery, statusFilter, issuedDateFilter])
 
   useEffect(() => {
-    fetchLaws()
-  }, [fetchLaws])
+    if (!allLoaded) fetchLaws()
+  }, [fetchLaws, allLoaded])
 
-  const handleViewClick = async (law: Law) => {
-    try {
-      const res = await lawApi.getLawById(law.id)
-      setActiveLawForDetail(res)
-      setIsDetailOpen(true)
-    } catch (error) {
-      console.error('Lỗi khi tải chi tiết văn bản:', error)
+  // Ngầm tải HẾT 1 lần (mount).
+  useEffect(() => {
+    let cancelled = false
+    lawAiApi
+      .listAllLaws()
+      .then((items) => {
+        if (!cancelled) setAllLaws(items)
+      })
+      .catch((e) => {
+        if (!cancelled) console.error('Lỗi tải toàn bộ (giữ server-side):', e)
+      })
+    return () => {
+      cancelled = true
     }
+  }, [])
+
+  // Lọc client-side khi đã tải hết.
+  const filteredAll = useMemo(() => {
+    if (!allLaws) return []
+    const q = searchQuery.trim().toLowerCase()
+    return allLaws.filter((l) => {
+      if (q && !`${l.title} ${l.documentNumber}`.toLowerCase().includes(q)) return false
+      if (statusFilter && statusFilter !== 'ALL' && l.status !== statusFilter) return false
+      if (issuedDateFilter && (l.issuedDate || '').slice(0, 10) < issuedDateFilter) return false
+      return true
+    })
+  }, [allLaws, searchQuery, statusFilter, issuedDateFilter])
+
+  // Nguồn hiển thị + tổng: tải hết → cắt client-side; chưa → server-side.
+  const pagedLaws = allLoaded
+    ? filteredAll.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+    : laws
+  const effTotalCount = allLoaded ? filteredAll.length : totalCount
+  const effTotalPages = allLoaded
+    ? Math.max(1, Math.ceil(filteredAll.length / itemsPerPage))
+    : totalPages
+
+  // Mở drawer NGAY với data đã có trong row (đã đủ: title/số hiệu/ngày/pdf_url) — KHÔNG
+  // chờ getLawById (detail trả cùng DTO list nên chờ round-trip cloud Tokyo là vô ích →
+  // trước đây "ấn chi tiết rất lâu"). iframe PDF tự load trong drawer.
+  const handleViewClick = (law: Law) => {
+    setActiveLawForDetail(law)
+    setIsDetailOpen(true)
   }
 
   return (
@@ -111,17 +166,18 @@ export default function LegalAnalysis() {
         ) : (
           <>
             <DocumentListTable
-              laws={laws}
+              laws={pagedLaws}
               onView={handleViewClick}
               readOnly={true}
             />
 
             {/* Table Pagination */}
-            {totalCount > itemsPerPage && (
+            {effTotalCount > itemsPerPage && (
               <div className='flex items-center justify-between p-5 bg-background-primary border-t border-border-secondary rounded-b-2xl mt-auto'>
                 <p className='text-xs text-text-description font-semibold'>
                   Hiển thị {(currentPage - 1) * itemsPerPage + 1} -{' '}
-                  {Math.min(currentPage * itemsPerPage, totalCount)} của {totalCount} văn bản
+                  {Math.min(currentPage * itemsPerPage, effTotalCount)} của {effTotalCount} văn bản
+                  {!allLoaded && <span className='ml-1 text-text-tertiary'>(đang tải thêm…)</span>}
                 </p>
                 <div className='flex gap-2.5'>
                   <Button
@@ -133,25 +189,34 @@ export default function LegalAnalysis() {
                   >
                     Trước
                   </Button>
-                  {Array.from({ length: totalPages }).map((_, idx) => (
-                    <Button
-                      key={idx}
-                      size='sm'
-                      onClick={() => setCurrentPage(idx + 1)}
-                      variant={currentPage === idx + 1 ? 'default' : 'outline'}
-                      className={cn(
-                        'h-8 w-8 text-xs font-bold rounded-xl transition-all',
-                        currentPage === idx + 1 ? 'text-white' : 'text-text-primary border-border-primary'
-                      )}
-                    >
-                      {idx + 1}
-                    </Button>
-                  ))}
+                  {getPageRange(currentPage, effTotalPages).map((p, idx) =>
+                    p === '...' ? (
+                      <span
+                        key={`gap-${idx}`}
+                        className='h-8 w-8 flex items-center justify-center text-xs text-text-tertiary font-bold select-none'
+                      >
+                        …
+                      </span>
+                    ) : (
+                      <Button
+                        key={p}
+                        size='sm'
+                        onClick={() => setCurrentPage(p as number)}
+                        variant={currentPage === p ? 'default' : 'outline'}
+                        className={cn(
+                          'h-8 w-8 text-xs font-bold rounded-xl transition-all',
+                          currentPage === p ? 'text-white' : 'text-text-primary border-border-primary'
+                        )}
+                      >
+                        {p}
+                      </Button>
+                    )
+                  )}
                   <Button
                     variant='outline'
                     size='sm'
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((p) => Math.min(effTotalPages, p + 1))}
+                    disabled={currentPage === effTotalPages}
                     className='h-8 px-3 text-xs border-border-primary text-text-primary font-bold hover:bg-background-secondary transition-all rounded-xl'
                   >
                     Sau

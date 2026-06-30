@@ -21,6 +21,7 @@ const ResetPassword = lazy(() => import('@/pages/reset-password/ResetPassword'))
 const Dashboard = lazy(() => import('@/pages/admin/dashboard'))
 const Users = lazy(() => import('@/pages/admin/users'))
 const LegalDocuments = lazy(() => import('@/pages/admin/legal-documents'))
+const LawInspect = lazy(() => import('@/pages/admin/law-inspect'))
 const PageNotFound = lazy(() => import('@/pages/404/PageNotFound'))
 const Profile = lazy(() => import('@/pages/profile/Profile'))
 const HomePage = lazy(() => import('@/pages/home/HomePage'))
@@ -99,10 +100,11 @@ export default function useRoutesElements() {
             <Route path={ROUTE.ADMIN.DASHBOARD} element={<Dashboard />} />
             <Route path={ROUTE.ADMIN.USERS} element={<Users />} />
             <Route path={ROUTE.ADMIN.LEGAL_DOCUMENTS} element={<LegalDocuments />} />
+            <Route path={ROUTE.ADMIN.LAW_INSPECT} element={<LawInspect />} />
             <Route path={ROUTE.ADMIN.ANALYTICS.ROOT} element={<span>Analytics</span>} />
             <Route path={ROUTE.ADMIN.ANALYTICS.OVERVIEW} element={<span>Analytics Overview</span>} />
             <Route path={ROUTE.ADMIN.ANALYTICS.SALES} element={<span>Analytics Sales</span>} />
-            <Route path={ROUTE.ADMIN.ANALYTICS.USERS} element={<span>Analytics Users</span>} />
+            <Route path={ROUTE.ADMIN.USERS} element={<span>Analytics Users</span>} />
             <Route path={ROUTE.ADMIN.ANALYTICS.PERFORMANCE} element={<span>Analytics Performance</span>} />
           </Route>
         </Route>

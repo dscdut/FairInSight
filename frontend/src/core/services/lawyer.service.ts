@@ -4,7 +4,7 @@ import axiosClient from '@/core/services/axios-client'
 import { type LawyerApi } from '@/models/types/api/lawyer-api.type'
 
 const API_LAWYER_LISTS_URL = '/lawyers'
-const API_LAWYER_DETAIL = '/lawyers/:id'
+const API_LAWYER_DETAIL = (id: string) => `/lawyers/${id}`
 
 export const createLawyerService = ( client: AxiosInstance ) : LawyerApi => ({
   getLawyerLists: async (params?: {
@@ -21,7 +21,7 @@ export const createLawyerService = ( client: AxiosInstance ) : LawyerApi => ({
 
   getLawyerDetail: async (id: string) => {
     try {
-    const res = await client.get(API_LAWYER_DETAIL.replace(':id', id))
+      const res = await client.get(API_LAWYER_DETAIL(id))
       return res.data
     } catch (error) {
       return Promise.reject(error)

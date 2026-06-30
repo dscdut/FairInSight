@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from 'react'
 
+
 import axios from 'axios'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, History, Clock, Save } from 'lucide-react'
+import { createPortal } from 'react-dom'
 
 import { Button } from '@/components/ui/button'
 import config from '@/core/configs/env'
+import { lawAiApi } from '@/core/services/law-ai.service'
 import { lawApi } from '@/core/services/law.service'
 import { type Law, type LawVersion } from '@/models/types/law.type'
 
-import { DocumentDetailContent } from './document-detail-content'
+import { DOC_TYPE_LABELS } from '../doc-type'
+
+import { DocumentDetailContent, type MetadataDraft } from './document-detail-content'
 import { DocumentVersionItem } from './document-version-item'
 
 interface DocumentDetailDrawerProps {
@@ -19,6 +24,10 @@ interface DocumentDetailDrawerProps {
   onRestoreVersion?: (version: LawVersion) => void
   onSaveNewVersion?: (lawId: string, content: string, changeNote: string, sourceUrl?: string) => void
   readOnly?: boolean
+  // CHỈ admin: cho phép sửa metadata (tên, số hiệu, ngày, tóm tắt) qua nút bút chì.
+  allowMetadataEdit?: boolean
+  // Gọi sau khi lưu metadata thành công để parent reload danh sách.
+  onMetadataUpdated?: () => void
 }
 
 export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
@@ -28,6 +37,8 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
   onRestoreVersion,
   onSaveNewVersion,
   readOnly = false,
+  allowMetadataEdit = false,
+  onMetadataUpdated,
 }) => {
   const [selectedVersion, setSelectedVersion] = useState<LawVersion | null>(null)
 
@@ -49,6 +60,22 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
     error?: string
   }[]>([])
 
+  // --- State sửa metadata (admin, nút bút chì) ---
+  // isEditingMetadata: đang mở bảng sửa. metadataDraft: bản nháp các field admin gõ.
+  // isSavingMetadata: đang gọi API cập nhật.
+  const [isEditingMetadata, setIsEditingMetadata] = useState(false)
+  const [isSavingMetadata, setIsSavingMetadata] = useState(false)
+  const [metadataDraft, setMetadataDraft] = useState<MetadataDraft>({
+    title: '',
+    documentNumber: '',
+    docType: '',
+    issuedDate: '',
+    effectiveDate: '',
+    summary: '',
+  })
+  // Bản gốc lúc mở bảng sửa — so với draft để biết có thay đổi chưa (bật/tắt nút Lưu).
+  const [metadataOriginal, setMetadataOriginal] = useState<MetadataDraft | null>(null)
+
   // Initialize/reset states when drawer opens or law changes
   useEffect(() => {
     if (isOpen && law && law.versions && law.versions.length > 0) {
@@ -68,6 +95,8 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
     setIsPdfUpload(false)
     setPdfProgress([])
     setSourceUrl(null)
+    setIsEditingMetadata(false)
+    setIsSavingMetadata(false)
   }, [isOpen, law])
 
   // Sync state when selectedVersion changes
@@ -103,6 +132,12 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
   const latestVersion = sortedVersions[0]
   const isLatest = selectedVersion ? selectedVersion.id === latestVersion.id : true
 
+  // Tên hiển thị đầy đủ = title (tên sạch) + " số " + số hiệu — KHỚP cột "Tên văn bản"
+  // ở danh sách (DocumentListRow.displayName). DB lưu title không kèm số hiệu.
+  const headerTitle = selectedVersion?.title ?? law.title
+  const headerNumber = selectedVersion?.documentNumber ?? law.documentNumber
+  const headerDisplayName = headerNumber ? `${headerTitle} số ${headerNumber}` : headerTitle
+
   const formatTimeAgo = (dateStr: string) => {
     const date = new Date(dateStr)
     if (isNaN(date.getTime())) return dateStr
@@ -122,10 +157,14 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
     return date.toLocaleDateString('vi-VN', { hour: '2-digit', minute: '2-digit' })
   }
 
-  const getDocumentTypeLabel = (docNum: string, docTitle: string) => {
+  // Nhãn loại VB từ doc_type thật (DB). Fallback đoán theo số hiệu/tên cho data cũ
+  // chưa có doc_type. Hiển thị badge UPPERCASE ở header.
+  const getDocumentTypeLabel = (docType: string, docNum: string, docTitle: string) => {
+    const label = docType ? DOC_TYPE_LABELS[docType] : undefined
+    if (label) return label.toUpperCase()
+
     const numLower = (docNum || '').toLowerCase()
     const titleLower = (docTitle || '').toLowerCase()
-
     if (numLower.includes('tt-') || titleLower.includes('thông tư')) return 'THÔNG TƯ'
     if (numLower.includes('nd-') || numLower.includes('nđ-') || titleLower.includes('nghị định')) return 'NGHỊ ĐỊNH'
     if (numLower.includes('qd-') || numLower.includes('qđ-') || titleLower.includes('quyết định')) return 'QUYẾT ĐỊNH'
@@ -256,7 +295,76 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
     setNewChangeNote('')
   }
 
-  return (
+  // Mở bảng sửa metadata: nạp giá trị hiện tại (bản mới nhất) vào nháp.
+  // Ngày cắt phần time (yyyy-MM-dd) cho input[type=date].
+  const handleStartEditMetadata = () => {
+    const t = latestVersion?.title ?? law.title
+    const initial: MetadataDraft = {
+      title: t || '',
+      documentNumber: latestVersion?.documentNumber || law.documentNumber || '',
+      docType: law.docType || '',
+      issuedDate: (latestVersion?.issuedDate || law.issuedDate || '').split('T')[0],
+      effectiveDate: (latestVersion?.effectiveDate || law.effectiveDate || '').split('T')[0],
+      summary: latestVersion?.content || law.content || '',
+    }
+    setMetadataDraft(initial)
+    setMetadataOriginal(initial) // mốc so sánh để bật nút Lưu khi có thay đổi
+    setIsEditingMetadata(true)
+  }
+
+  // Nút Lưu chỉ bật khi draft KHÁC bản gốc (có ít nhất 1 field bị sửa).
+  const isMetadataDirty =
+    !!metadataOriginal &&
+    (Object.keys(metadataDraft) as (keyof MetadataDraft)[]).some(
+      (k) => metadataDraft[k] !== metadataOriginal[k]
+    )
+
+  const handleCancelMetadata = () => {
+    setIsEditingMetadata(false)
+  }
+
+  const handleMetadataField = (field: keyof MetadataDraft, value: string) => {
+    setMetadataDraft((prev) => ({ ...prev, [field]: value }))
+  }
+
+  // Lưu metadata: gọi PATCH /documents/{id}. BE backend_reasoning HIỆN CHƯA CÓ endpoint
+  // này → bọc try/catch, báo lỗi thân thiện nếu 404/405 để form không vỡ. Thành công
+  // thì đóng bảng + báo parent reload danh sách.
+  const handleSaveMetadata = async () => {
+    if (!metadataDraft.title.trim()) {
+      alert('Tên văn bản không được để trống.')
+      return
+    }
+    setIsSavingMetadata(true)
+    try {
+      await lawAiApi.updateLaw(law.id, {
+        title: metadataDraft.title,
+        official_code: metadataDraft.documentNumber,
+        doc_type: metadataDraft.docType || undefined,
+        issue_date: metadataDraft.issuedDate || undefined,
+        effective_date: metadataDraft.effectiveDate || undefined,
+        summary: metadataDraft.summary,
+      })
+      setIsEditingMetadata(false)
+      onMetadataUpdated?.()
+    } catch (error: unknown) {
+      console.error('Lỗi cập nhật văn bản:', error)
+      const status = (error as { response?: { status?: number } }).response?.status
+      if (status === 404 || status === 405) {
+        alert('Chức năng cập nhật văn bản chưa được hỗ trợ trên máy chủ (thiếu endpoint). Vui lòng liên hệ quản trị hệ thống.')
+      } else {
+        const errorMsg = (error as { response?: { data?: { detail?: string; message?: string } } }).response?.data?.detail || (error as { response?: { data?: { message?: string } } }).response?.data?.message || (error as { message?: string }).message || 'Có lỗi xảy ra khi cập nhật văn bản.'
+        alert(errorMsg)
+      }
+    } finally {
+      setIsSavingMetadata(false)
+    }
+  }
+
+  // Render qua PORTAL ở document.body: layout admin (LayoutMain) có backdrop-blur tạo
+  // containing block khiến position:fixed bị tính theo khung mờ đó (bị bó/che) thay vì
+  // viewport. Portal đưa drawer ra ngoài → fixed bám đúng viewport, z-index ăn thật.
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <>
@@ -266,7 +374,7 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
             animate={{ opacity: 0.4 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className='fixed inset-0 z-40 bg-black'
+            className='fixed inset-0 z-[200] bg-black'
           />
 
           {/* Large Centered Dialog Container */}
@@ -275,17 +383,17 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
             animate={{ opacity: 1, scale: 1, x: '-50%', y: '-54%' }}
             exit={{ opacity: 0, scale: 0.96, x: '-50%', y: '-52%' }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className='fixed left-1/2 top-1/2 z-50 w-[95vw] max-w-6xl h-[85vh] bg-background-primary shadow-2xl rounded-2xl flex flex-col border border-border-secondary overflow-hidden'
+            className='fixed left-1/2 top-1/2 z-[201] w-[95vw] max-w-6xl h-[85vh] bg-background-primary shadow-2xl rounded-2xl flex flex-col border border-border-secondary overflow-hidden'
           >
             {/* Upper Title Header bar */}
             <div className='flex items-center justify-between px-8 py-5 bg-background-primary border-b border-border-secondary'>
               <div className='flex flex-col gap-1 text-left'>
                 <h1 className='text-xl font-extrabold text-text-primary leading-tight'>
-                  {selectedVersion ? selectedVersion.title : law.title}
+                  {headerDisplayName}
                 </h1>
                 <div className='flex items-center gap-4 text-xs mt-1.5'>
                   <span className='inline-flex items-center justify-center px-2.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-[#EBE5FC] text-[#5525CD]'>
-                    {getDocumentTypeLabel(selectedVersion?.documentNumber || law.documentNumber, selectedVersion?.title || law.title)}
+                    {getDocumentTypeLabel(law.docType || '', selectedVersion?.documentNumber || law.documentNumber, selectedVersion?.title || law.title)}
                   </span>
                   <div className='flex items-center gap-1.5 text-text-description font-semibold'>
                     <Clock className='w-4 h-4 text-text-tertiary' />
@@ -328,6 +436,15 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
                 pdfProgress={pdfProgress}
                 uploadingFileName={uploadingFileName}
                 readOnly={readOnly}
+                canEditMetadata={allowMetadataEdit}
+                isEditingMetadata={isEditingMetadata}
+                onStartEditMetadata={handleStartEditMetadata}
+                onCancelMetadata={handleCancelMetadata}
+                onSaveMetadata={handleSaveMetadata}
+                isSavingMetadata={isSavingMetadata}
+                isMetadataDirty={isMetadataDirty}
+                metadataDraft={metadataDraft}
+                setMetadataField={handleMetadataField}
               />
 
               {/* Right Column: Version Timeline Sidebar */}
@@ -411,6 +528,7 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   )
 }

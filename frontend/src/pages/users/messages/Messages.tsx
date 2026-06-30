@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 
 import { Search, Send, Paperclip, Phone, Video, Info, MoreVertical, ArrowLeft, MessageCircle, Image as ImageIcon, FileText, X } from 'lucide-react'
+import { useLocation } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -83,6 +84,7 @@ const INITIAL_CONVERSATIONS: Conversation[] = [
 ]
 
 export default function Messages() {
+  const location = useLocation()
   const [conversations, setConversations] = useState<Conversation[]>(INITIAL_CONVERSATIONS)
   const [activeId, setActiveId] = useState<string>('conv-1')
   const [searchText, setSearchText] = useState<string>('')
@@ -120,6 +122,24 @@ export default function Messages() {
       scrollContainerRef.current.scrollTop = 0
     }
   }, [])
+
+  // Khi điều hướng từ /chat-ai (nút "Liên hệ luật sư"): mở đúng khung luật sư (nếu khớp tên)
+  // và soạn sẵn prompt vào ô nhập. Chạy 1 lần theo state điều hướng.
+  useEffect(() => {
+    const navState = location.state as { lawyerName?: string; prefillMessage?: string } | null
+    if (!navState?.prefillMessage) return
+
+    if (navState.lawyerName) {
+      const matched = INITIAL_CONVERSATIONS.find((c) =>
+        c.name.toLowerCase().includes(navState.lawyerName!.toLowerCase())
+      )
+      if (matched) {
+        setActiveId(matched.id)
+        setShowMobileList(false)
+      }
+    }
+    setInputText(navState.prefillMessage)
+  }, [location.state])
 
   // Clear unread count when clicking conversation
   useEffect(() => {

@@ -33,6 +33,7 @@ export const ROUTE = {
     DASHBOARD: 'dashboard',
     USERS: 'users',
     LEGAL_DOCUMENTS: 'legal-documents',
+    LAW_INSPECT: 'law-inspect',
     ANALYTICS: {
       ROOT: 'analytics',
       OVERVIEW: 'analytics/overview',

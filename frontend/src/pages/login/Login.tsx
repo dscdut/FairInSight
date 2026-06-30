@@ -8,7 +8,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { type z } from 'zod'
 
 import { IconEye, IconNonEye } from '@/assets/icons'
-import { logo } from '@/assets/images'
+import { bg_login, logo } from '@/assets/images'
 import { FadeUp } from '@/components/animated/animated-component'
 import {
   Button,
@@ -105,7 +105,7 @@ export default function Login() {
   return (
     <div
       className='relative flex min-h-screen items-center justify-center bg-cover bg-center'
-      style={{ backgroundImage: "url('/bg.jpg')" }}
+      style={{ backgroundImage: `url(${bg_login})` }}
     >
       <div className='container relative z-10 flex justify-center px-4'>
         <FadeUp className='w-full max-w-md rounded-lg bg-background-secondary p-8 shadow-400'>

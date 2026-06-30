@@ -1,21 +1,11 @@
 import { useMemo, useState } from "react";
 
-import {
-  // AlertTriangle,
-  // CheckCircle2,
-  FileText,
-  Search,
-  User,
-  // UserPlus,
-  UserX
-} from "lucide-react";
 import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, Sector, XAxis, YAxis } from "recharts";
 import { type PieSectorDataItem } from "recharts/types/polar/Pie";
 
 import {
   Card,
   CardContent,
-
   CardFooter,
   CardHeader,
   CardTitle,
@@ -24,14 +14,9 @@ import {
   ChartTooltip,
   ChartTooltipContent
 } from "@/components/ui";
+import { useUsers, useUsersStat } from "@/hooks/users/use-users";
 
 
-const statsData = [
-  { id: 1, title: 'Tổng người dùng', value: '43,520', change: '+5.2%', isPositive: true, icon: User, color: 'text-purple-600 bg-purple-50', sparklinePath: 'M 0 45 Q 30 40 60 42 T 120 48 T 180 38 T 240 32 T 300 28', sparklineGradient: 'M 0 45 Q 30 40 60 42 T 120 48 T 180 38 T 240 32 T 300 28 L 300 60 L 0 60 Z', strokeColor: '#A855F7', gradientId: 'purple-grad' },
-  { id: 2, title: 'Tổng văn bản pháp luật', value: '12,840', change: '+12.5%', isPositive: true, icon: FileText, color: 'text-blue-600 bg-blue-50', sparklinePath: 'M 0 50 Q 40 48 80 35 T 160 25 T 240 18 T 300 25', sparklineGradient: 'M 0 50 Q 40 48 80 35 T 160 25 T 240 18 T 300 25 L 300 60 L 0 60 Z', strokeColor: '#3B82F6', gradientId: 'blue-grad' },
-  { id: 3, title: 'Lượt tra cứu hôm nay', value: '1,240', change: '+14.8%', isPositive: true, icon: Search, color: 'text-teal-600 bg-teal-50', sparklinePath: 'M 0 48 Q 40 42 80 25 T 160 18 T 240 32 T 300 40', sparklineGradient: 'M 0 48 Q 40 42 80 25 T 160 18 T 240 32 T 300 40 L 300 60 L 0 60 Z', strokeColor: '#14B8A6', gradientId: 'teal-grad' },
-  { id: 4, title: 'User đang bị khoá', value: '18', change: '-0.4%', isPositive: false, icon: UserX, color: 'text-destructive bg-destructive/10', sparklinePath: 'M 0 48 Q 30 42 60 38 T 120 45 T 180 40 T 240 25 T 300 20', sparklineGradient: 'M 0 48 Q 30 42 60 38 T 120 45 T 180 40 T 240 25 T 300 20 L 300 60 L 0 60 Z', strokeColor: '#F97316', gradientId: 'orange-grad' },
-];
 
 const weeklyTraffic = [
   { day: 'Mon', accessValue: 1200 },
@@ -49,11 +34,6 @@ const weeklyConfig = {
     color: "var(--info)",
   },
 } satisfies ChartConfig
-// const recentActivities = [
-//   { id: 1, title: 'Cập nhật hệ thống dữ liệu', description: 'Hoàng Thuận đã push 3 commits vào nhánh chính', time: '2 giờ trước', icon: CheckCircle2, iconColor: 'text-blue-600 bg-blue-50' },
-//   { id: 2, title: 'Thành viên mới gia nhập', description: 'Anna Lee đã tham gia đội ngũ Quản lý dự án', time: '4 giờ trước', icon: UserPlus, iconColor: 'text-green-600 bg-green-50' },
-//   { id: 3, title: 'Báo cáo lỗi nghiêm trọng', description: 'Issue #402: Lỗi luồng thanh toán trên Safari', time: 'Hôm qua', icon: AlertTriangle, iconColor: 'text-destructive bg-destructive/10' },
-// ];
 
 const documentDistribution = [
   { 
@@ -106,6 +86,8 @@ interface ActiveShapeProps extends PieSectorDataItem {
 
 
 export default function Overview() {
+  const { data: usersStatData } = useUsersStat()
+  const { data: bannedUsersData } = useUsers({ page: 1, size: 1, status: 'banned' })
 
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const totalDocuments = useMemo(() => {
@@ -115,33 +97,121 @@ export default function Overview() {
   return (
     <section className="space-y-8 animate-fade-in">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {statsData.map((stat) => {
-          return (
-            <div key={stat.id} className="relative overflow-hidden rounded-2xl border border-secondary shadow-sm flex flex-col justify-between h-[160px]">
-              <div className="p-6 pb-0 flex-1 flex flex-col justify-between">
-                <div className="flex items-center justify-between">
-                  <p className="text-small font-medium text-text-description">{stat.title}</p>
-                </div>
-                <div className="flex items-baseline gap-2 mt-2 mb-1">
-                  <span className="text-h2 text-main">{stat.value}</span>
-                  <span className={`text-xs font-semibold px-2 py-1 rounded ${stat.isPositive ? 'bg-green-100 text-success-primary' : 'bg-background-primaryLight text-primary'}`}>{stat.change}</span>
-                </div>
-              </div>
-              <div className="w-full h-[50px]">
-                <svg className="w-full h-full" viewBox="0 0 300 60" preserveAspectRatio="none">
-                  <defs>
-                    <linearGradient id={stat.gradientId} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={stat.strokeColor} stopOpacity="0.2" />
-                      <stop offset="100%" stopColor={stat.strokeColor} stopOpacity="0" />
-                    </linearGradient>
-                  </defs>
-                  <path d={stat.sparklineGradient} fill={`url(#${stat.gradientId})`} />
-                  <path d={stat.sparklinePath} fill="none" stroke={stat.strokeColor} strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </div>
+        {/* Card 1: Tổng người dùng */}
+        <div className="relative overflow-hidden rounded-2xl border border-secondary shadow-sm flex flex-col justify-between h-[160px]">
+          <div className="p-6 pb-0 flex-1 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <p className="text-small font-medium text-text-description">Tổng người dùng</p>
             </div>
-          );
-        })}
+            <div className="flex items-baseline gap-2 mt-2 mb-1">
+              <span className="text-h2 text-main">
+                {usersStatData?.data?.totalUsers !== undefined 
+                  ? usersStatData.data.totalUsers.toLocaleString() 
+                  : '...'}
+              </span>
+              <span className="text-xs font-semibold px-2 py-1 rounded bg-green-100 text-success-primary">
+                +5.2%
+              </span>
+            </div>
+          </div>
+          <div className="w-full h-[50px]">
+            <svg className="w-full h-full" viewBox="0 0 300 60" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="purple-grad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#A855F7" stopOpacity="0.2" />
+                  <stop offset="100%" stopColor="#A855F7" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              <path d="M 0 45 Q 30 40 60 42 T 120 48 T 180 38 T 240 32 T 300 28 L 300 60 L 0 60 Z" fill="url(#purple-grad)" />
+              <path d="M 0 45 Q 30 40 60 42 T 120 48 T 180 38 T 240 32 T 300 28" fill="none" stroke="#A855F7" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Card 2: Tổng văn bản pháp luật */}
+        <div className="relative overflow-hidden rounded-2xl border border-secondary shadow-sm flex flex-col justify-between h-[160px]">
+          <div className="p-6 pb-0 flex-1 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <p className="text-small font-medium text-text-description">Tổng văn bản pháp luật</p>
+            </div>
+            <div className="flex items-baseline gap-2 mt-2 mb-1">
+              <span className="text-h2 text-main">12,840</span>
+              <span className="text-xs font-semibold px-2 py-1 rounded bg-green-100 text-success-primary">
+                +12.5%
+              </span>
+            </div>
+          </div>
+          <div className="w-full h-[50px]">
+            <svg className="w-full h-full" viewBox="0 0 300 60" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="blue-grad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.2" />
+                  <stop offset="100%" stopColor="#3B82F6" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              <path d="M 0 50 Q 40 48 80 35 T 160 25 T 240 18 T 300 25 L 300 60 L 0 60 Z" fill="url(#blue-grad)" />
+              <path d="M 0 50 Q 40 48 80 35 T 160 25 T 240 18 T 300 25" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Card 3: Lượt tra cứu hôm nay */}
+        <div className="relative overflow-hidden rounded-2xl border border-secondary shadow-sm flex flex-col justify-between h-[160px]">
+          <div className="p-6 pb-0 flex-1 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <p className="text-small font-medium text-text-description">Lượt tra cứu hôm nay</p>
+            </div>
+            <div className="flex items-baseline gap-2 mt-2 mb-1">
+              <span className="text-h2 text-main">1,240</span>
+              <span className="text-xs font-semibold px-2 py-1 rounded bg-green-100 text-success-primary">
+                +14.8%
+              </span>
+            </div>
+          </div>
+          <div className="w-full h-[50px]">
+            <svg className="w-full h-full" viewBox="0 0 300 60" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="teal-grad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#14B8A6" stopOpacity="0.2" />
+                  <stop offset="100%" stopColor="#14B8A6" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              <path d="M 0 48 Q 40 42 80 25 T 160 18 T 240 32 T 300 40 L 300 60 L 0 60 Z" fill="url(#teal-grad)" />
+              <path d="M 0 48 Q 40 42 80 25 T 160 18 T 240 32 T 300 40" fill="none" stroke="#14B8A6" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Card 4: User đang bị khoá */}
+        <div className="relative overflow-hidden rounded-2xl border border-secondary shadow-sm flex flex-col justify-between h-[160px]">
+          <div className="p-6 pb-0 flex-1 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <p className="text-small font-medium text-text-description">User đang bị khoá</p>
+            </div>
+            <div className="flex items-baseline gap-2 mt-2 mb-1">
+              <span className="text-h2 text-main">
+                {bannedUsersData?.data?.pagination?.total !== undefined 
+                  ? bannedUsersData.data.pagination.total.toLocaleString() 
+                  : '...'}
+              </span>
+              <span className="text-xs font-semibold px-2 py-1 rounded bg-background-primaryLight text-primary">
+                -0.4%
+              </span>
+            </div>
+          </div>
+          <div className="w-full h-[50px]">
+            <svg className="w-full h-full" viewBox="0 0 300 60" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="orange-grad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#F97316" stopOpacity="0.2" />
+                  <stop offset="100%" stopColor="#F97316" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              <path d="M 0 48 Q 30 42 60 38 T 120 45 T 180 40 T 240 25 T 300 20 L 300 60 L 0 60 Z" fill="url(#orange-grad)" />
+              <path d="M 0 48 Q 30 42 60 38 T 120 45 T 180 40 T 240 25 T 300 20" fill="none" stroke="#F97316" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </div>
+        </div>
       </div>
 
       {/* Section 2: Layout 7-3 */}

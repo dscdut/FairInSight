@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 
 import { getPersistedAuth } from '@/core/shared/auth'
+import { clearTokenRefresh, scheduleTokenRefresh } from '@/core/shared/auth-refresh'
 import { clearLS, setToken, setUserToLS } from '@/core/shared/storage'
 import { type LoginResponse } from '@/models/interface/auth.interface'
 
@@ -39,6 +40,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
       error: null
     })
     if (data?.user) setUserToLS(data?.user)
+    scheduleTokenRefresh() // proactive: hẹn tự refresh trước khi access token hết hạn
   },
 
   loginFailure: (error: string) => {
@@ -49,6 +51,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
   },
 
   logout: () => {
+    clearTokenRefresh() // hủy timer proactive
     clearLS()
     set({
       ...initialState

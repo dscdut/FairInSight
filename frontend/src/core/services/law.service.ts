@@ -116,16 +116,24 @@ function mapLawFromBackend(l: BackendLaw): Law {
   }
 }
 
+const API_LAWS = '/laws'
+const API_LAW_DETAIL = (id: string) => `/laws/${id}`
+const API_LAW_STATUS = (id: string) => `/laws/${id}/status`
+const API_LAW_VERSIONS = (id: string) => `/laws/${id}/versions`
+const API_LAW_RESTORE = (id: string, versionId: string) => `/laws/${id}/versions/${versionId}/restore`
+const API_PARSE_DOCX = '/laws/parse-docx'
+const API_UPLOADS = '/uploads'
+
 export const createLawApi = (client: AxiosInstance) => ({
   async listLaws(params: { page?: number; size?: number; search?: string; status?: string; issuedDate?: string }) {
-    const res = (await client.get('/laws', { params })) as BackendLawListResponse
+    const res = (await client.get(API_LAWS, { params })) as BackendLawListResponse
     return {
       items: (res.items || []).map(mapLawFromBackend),
       pagination: res.pagination || { page: 1, size: 10, total: 0, totalPages: 1 }
     } as LawListResponse
   },
   async getLawById(id: string) {
-    const res = (await client.get(`/laws/${id}`)) as BackendLaw
+    const res = (await client.get(API_LAW_DETAIL(id))) as BackendLaw
     return mapLawFromBackend(res)
   },
   async createLaw(params: {
@@ -146,7 +154,7 @@ export const createLawApi = (client: AxiosInstance) => ({
       officialUrl: params.officialUrl,
       content: params.content
     }
-    const res = (await client.post('/laws', payload)) as BackendLaw
+    const res = (await client.post(API_LAWS, payload)) as BackendLaw
     return mapLawFromBackend(res)
   },
   async updateLaw(
@@ -172,29 +180,29 @@ export const createLawApi = (client: AxiosInstance) => ({
       content: params.content,
       changeNote: params.changeNote
     }
-    const res = (await client.put(`/laws/${id}`, payload)) as BackendLaw
+    const res = (await client.put(API_LAW_DETAIL(id), payload)) as BackendLaw
     return mapLawFromBackend(res)
   },
   async toggleStatus(id: string, params: { status: 'ACTIVE' | 'INACTIVE'; reason?: string }) {
-    const res = (await client.patch(`/laws/${id}/status`, params)) as BackendLaw
+    const res = (await client.patch(API_LAW_STATUS(id), params)) as BackendLaw
     return mapLawFromBackend(res)
   },
   async listVersions(id: string) {
-    const res = (await client.get(`/laws/${id}/versions`)) as BackendLawVersion[]
+    const res = (await client.get(API_LAW_VERSIONS(id))) as BackendLawVersion[]
     return (res || []).map(mapVersionFromBackend) as LawVersion[]
   },
   async restoreVersion(id: string, versionId: string) {
-    const res = (await client.post(`/laws/${id}/versions/${versionId}/restore`)) as BackendLaw
+    const res = (await client.post(API_LAW_RESTORE(id, versionId))) as BackendLaw
     return mapLawFromBackend(res)
   },
   async parseDocx(fileUrl: string) {
-    const res = (await client.post('/laws/parse-docx', { fileUrl })) as ParseDocxResponse
+    const res = (await client.post(API_PARSE_DOCX, { fileUrl })) as ParseDocxResponse
     return res as ParseDocxResponse
   },
   async uploadFile(file: File, folder = 'laws') {
     const formData = new FormData()
     formData.append('file', file)
-    const res = (await client.post('/uploads', formData, {
+    const res = (await client.post(API_UPLOADS, formData, {
       params: { folder },
       headers: {
         'Content-Type': 'multipart/form-data'

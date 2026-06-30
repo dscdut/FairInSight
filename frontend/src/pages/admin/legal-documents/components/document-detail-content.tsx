@@ -1,13 +1,35 @@
 import React, { useState, useEffect } from 'react'
 
-import { Info, Globe, FileDown, Edit3, Eye, UploadCloud, FileText, Trash2, Loader2 } from 'lucide-react'
+import { Info, Globe, FileDown, Edit3, Eye, UploadCloud, FileText, Trash2, Loader2, Pencil, Save, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/core/lib/utils'
 import { type Law, type LawVersion } from '@/models/types/law.type'
 
+import { DOC_TYPE_OPTIONS } from '../doc-type'
+
 import { MarkdownPreview } from './markdown-preview'
 import { PipelineLoader } from './pipeline-loader'
+
+// Giá trị metadata văn bản admin có thể sửa (chỉ chữ — không xoá). Khớp các field
+// mà form import nhập: tên, số hiệu, ngày ban hành, ngày hiệu lực, tóm tắt.
+export interface MetadataDraft {
+  title: string
+  documentNumber: string
+  docType: string
+  issuedDate: string
+  effectiveDate: string
+  summary: string
+}
 
 interface DocumentDetailContentProps {
   law: Law
@@ -34,6 +56,20 @@ interface DocumentDetailContentProps {
   }[]
   uploadingFileName?: string
   readOnly?: boolean
+  // --- Sửa metadata (admin) ---
+  // canEditMetadata: cho phép hiện nút bút chì (admin). isEditingMetadata: đang mở
+  // bảng sửa. metadataDraft + setMetadataField: form sửa các field. onSaveMetadata /
+  // onCancelMetadata / isSavingMetadata: lưu/huỷ + trạng thái đang lưu.
+  canEditMetadata?: boolean
+  isEditingMetadata?: boolean
+  onStartEditMetadata?: () => void
+  onCancelMetadata?: () => void
+  onSaveMetadata?: () => void
+  isSavingMetadata?: boolean
+  // Có thay đổi so với bản gốc chưa — nút Lưu chỉ bật khi true.
+  isMetadataDirty?: boolean
+  metadataDraft?: MetadataDraft
+  setMetadataField?: (field: keyof MetadataDraft, value: string) => void
 }
 
 export const DocumentDetailContent: React.FC<DocumentDetailContentProps> = ({
@@ -55,6 +91,15 @@ export const DocumentDetailContent: React.FC<DocumentDetailContentProps> = ({
   pdfProgress = [],
   uploadingFileName = '',
   readOnly = false,
+  canEditMetadata = false,
+  isEditingMetadata = false,
+  onStartEditMetadata,
+  onCancelMetadata,
+  onSaveMetadata,
+  isSavingMetadata = false,
+  isMetadataDirty = false,
+  metadataDraft,
+  setMetadataField,
 }) => {
   const currentContent = selectedVersion ? selectedVersion.content : law.content
   const currentTitle = selectedVersion ? selectedVersion.title : law.title
@@ -85,8 +130,21 @@ export const DocumentDetailContent: React.FC<DocumentDetailContentProps> = ({
     return <MarkdownPreview content={text} />
   }
 
+  // Khi nhúng PDF, ẩn cột thumbnail/bookmark bên trái của trình xem PDF (chỉ hiện văn bản).
+  // #pagemode=none: tắt panel trái; toolbar=1 giữ thanh điều khiển phải để cuộn/zoom.
   const getInlinePdfUrl = (url: string) => {
-    return url || ''
+    if (!url) return ''
+    const hashFragment = 'pagemode=none&toolbar=1&navpanes=0'
+    return url.includes('#') ? url : `${url}#${hashFragment}`
+  }
+
+  // Chỉ NHÚNG iframe khi link là PDF THẬT (Cloudinary raw / đuôi .pdf). Link web ngoài
+  // (vbpl, thuvienphapluat...) KHÔNG nhúng — nhúng nguyên trang web khác vào web mình
+  // trông kỳ + thường bị chặn iframe (X-Frame-Options). Thay bằng nút mở tab mới.
+  const isPdfLink = (url: string) => {
+    if (!url) return false
+    const u = url.toLowerCase().split('#')[0].split('?')[0]
+    return u.endsWith('.pdf') || u.includes('res.cloudinary.com')
   }
 
   return (
@@ -116,16 +174,143 @@ export const DocumentDetailContent: React.FC<DocumentDetailContentProps> = ({
             </div>
           )}
 
-          {/* Document Header Info Card */}
+          {/* Bảng SỬA metadata văn bản (admin) — hiện thay cho header khi bật chế độ
+              sửa. Style input giống form import (Input/Textarea). Admin chỉ sửa chữ. */}
+          {isEditingMetadata && metadataDraft ? (
+            <div className='mb-6 pb-6 border-b border-border-secondary/60 space-y-4'>
+              <div className='flex items-center justify-between gap-3'>
+                <h2 className='text-sm font-bold text-text-primary uppercase tracking-wider'>
+                  Sửa thông tin văn bản
+                </h2>
+                <div className='flex items-center gap-2 shrink-0'>
+                  <Button
+                    type='button'
+                    variant='outline'
+                    onClick={onCancelMetadata}
+                    disabled={isSavingMetadata}
+                    className='h-11 px-5 rounded-xl border-border-primary text-text-secondary hover:text-text-primary flex items-center gap-2 text-sm font-bold'
+                  >
+                    <X className='w-4 h-4' />
+                    Huỷ
+                  </Button>
+                  <Button
+                    type='button'
+                    onClick={onSaveMetadata}
+                    disabled={isSavingMetadata || !isMetadataDirty}
+                    title={!isMetadataDirty ? 'Chưa có thay đổi nào để lưu' : undefined}
+                    className='h-11 px-6 bg-primary text-white hover:opacity-90 rounded-xl flex items-center gap-2 text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed'
+                  >
+                    {isSavingMetadata ? <Loader2 className='w-4 h-4 animate-spin' /> : <Save className='w-4 h-4' />}
+                    Lưu
+                  </Button>
+                </div>
+              </div>
+
+              {/* Tên (title) */}
+              <div>
+                <label className='block text-xs font-bold text-text-secondary mb-1.5'>
+                  Tên văn bản <span className='text-primary'>*</span>
+                </label>
+                <Input
+                  value={metadataDraft.title}
+                  onChange={(e) => setMetadataField?.('title', e.target.value)}
+                  placeholder='Ví dụ: Luật Đất đai 2024'
+                  className='h-10 text-sm bg-background-secondary/30 border-border-secondary focus:bg-background-primary rounded-xl text-text-primary'
+                />
+              </div>
+
+              {/* Số hiệu & Loại văn bản */}
+              <div className='grid grid-cols-2 gap-4'>
+                <div>
+                  <label className='block text-xs font-bold text-text-secondary mb-1.5'>
+                    Số hiệu
+                  </label>
+                  <Input
+                    value={metadataDraft.documentNumber}
+                    onChange={(e) => setMetadataField?.('documentNumber', e.target.value)}
+                    placeholder='Ví dụ: 31/2024/QH15'
+                    className='h-10 text-sm bg-background-secondary/30 border-border-secondary focus:bg-background-primary rounded-xl text-text-primary'
+                  />
+                </div>
+                <div>
+                  <label className='block text-xs font-bold text-text-secondary mb-1.5'>
+                    Loại văn bản
+                  </label>
+                  <Select
+                    value={metadataDraft.docType || undefined}
+                    onValueChange={(v) => setMetadataField?.('docType', v)}
+                  >
+                    <SelectTrigger className='h-10 text-sm bg-background-secondary/30 border-border-secondary focus:bg-background-primary rounded-xl text-text-primary'>
+                      <SelectValue placeholder='Chọn loại văn bản' />
+                    </SelectTrigger>
+                    {/* z-[210] > drawer z-[201]: dropdown portal mặc định z-50 bị che dưới
+                        drawer. side=bottom + avoidCollisions=false: ÉP luôn mở XUỐNG dưới. */}
+                    <SelectContent
+                      className='z-[210]'
+                      position='popper'
+                      side='bottom'
+                      avoidCollisions={false}
+                    >
+                      {DOC_TYPE_OPTIONS.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>
+                          {o.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Ngày ban hành & Ngày hiệu lực */}
+              <div className='grid grid-cols-2 gap-4'>
+                <div>
+                  <label className='block text-xs font-bold text-text-secondary mb-1.5'>
+                    Ngày ban hành
+                  </label>
+                  <Input
+                    type='date'
+                    value={metadataDraft.issuedDate}
+                    onChange={(e) => setMetadataField?.('issuedDate', e.target.value)}
+                    className='h-10 text-sm bg-background-secondary/30 border-border-secondary focus:bg-background-primary rounded-xl text-text-primary'
+                  />
+                </div>
+                <div>
+                  <label className='block text-xs font-bold text-text-secondary mb-1.5'>
+                    Ngày hiệu lực
+                  </label>
+                  <Input
+                    type='date'
+                    value={metadataDraft.effectiveDate}
+                    onChange={(e) => setMetadataField?.('effectiveDate', e.target.value)}
+                    className='h-10 text-sm bg-background-secondary/30 border-border-secondary focus:bg-background-primary rounded-xl text-text-primary'
+                  />
+                </div>
+              </div>
+
+              {/* Tóm tắt (content/summary) */}
+              <div>
+                <label className='block text-xs font-bold text-text-secondary mb-1.5'>
+                  Tóm tắt
+                </label>
+                <Textarea
+                  value={metadataDraft.summary}
+                  onChange={(e) => setMetadataField?.('summary', e.target.value)}
+                  placeholder='Tóm tắt nội dung văn bản...'
+                  className='w-full min-h-[120px] p-3.5 text-xs bg-background-secondary/20 border border-border-secondary rounded-xl text-text-primary resize-y font-medium outline-none leading-relaxed'
+                />
+              </div>
+            </div>
+          ) : (
+          /* Document Header Info Card */
           <div className='mb-6 pb-6 border-b border-border-secondary/60 flex items-start justify-between gap-4'>
             <div className='text-left'>
               <h2 className='text-lg font-bold text-text-primary mb-1'>{currentTitle}</h2>
               <p className='text-xs text-text-description font-semibold'>Số hiệu: {selectedVersion?.documentNumber || law.documentNumber}</p>
-              
+
               {officialUrl && (
                 <div className='flex items-center gap-1.5 mt-3 text-xs text-text-secondary'>
                   <Globe className='w-4 h-4 text-primary shrink-0' />
-                  <span>Website chính thức: </span>
+                  <span>Đường dẫn văn bản: </span>
                   <a
                     href={officialUrl}
                     target='_blank'
@@ -137,6 +322,20 @@ export const DocumentDetailContent: React.FC<DocumentDetailContentProps> = ({
                 </div>
               )}
             </div>
+
+            {/* Nút SỬA metadata (bút chì) — CHỈ hiện cho admin, khi đang xem bản mới
+                nhất và không ở chế độ sửa nội dung điều khoản. */}
+            {canEditMetadata && isLatest && !isEditing && (
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={onStartEditMetadata}
+                className='h-8.5 rounded-xl border-border-primary text-text-secondary hover:text-text-primary flex items-center gap-1.5 shrink-0 text-xs font-bold'
+              >
+                <Pencil className='w-3.5 h-3.5' />
+                Sửa
+              </Button>
+            )}
 
             {/* Inline Edit Toggle (Only when viewing latest version in Docx mode) */}
             {!readOnly && isLatest && viewMode === 'docx' && hasDocx && (
@@ -160,6 +359,7 @@ export const DocumentDetailContent: React.FC<DocumentDetailContentProps> = ({
               </Button>
             )}
           </div>
+          )}
 
           {/* Mode Selector Tabs (Shown only if both docx text and PDF url exist and not editing) */}
           {hasDocx && pdfUrl && !isEditing && (
@@ -351,12 +551,26 @@ export const DocumentDetailContent: React.FC<DocumentDetailContentProps> = ({
             /* PDF Preview view mode */
             <div className='flex flex-col gap-3'>
               <div className='w-full h-[620px] border border-border-secondary rounded-2xl overflow-hidden shadow-inner bg-background-secondary/20 relative'>
-                {pdfUrl ? (
+                {pdfUrl && isPdfLink(pdfUrl) ? (
                   <iframe
                     src={getInlinePdfUrl(pdfUrl)}
                     className='w-full h-full border-none'
                     title={`Bản PDF của ${currentTitle}`}
                   />
+                ) : pdfUrl ? (
+                  /* Link web ngoài (vbpl/thuvienphapluat) — KHÔNG nhúng, cho mở tab mới */
+                  <div className='absolute inset-0 flex flex-col items-center justify-center text-text-tertiary gap-3 p-6 text-center'>
+                    <Info className='w-10 h-10 text-text-tertiary' />
+                    <p className='text-sm font-semibold'>Tài liệu này là liên kết trang nguồn (chưa có bản PDF).</p>
+                    <a
+                      href={pdfUrl}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      className='inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-primary rounded-xl hover:opacity-90 transition-all'
+                    >
+                      Mở trang nguồn ↗
+                    </a>
+                  </div>
                 ) : (
                   <div className='absolute inset-0 flex flex-col items-center justify-center text-text-tertiary gap-2 p-6 text-center'>
                     <Info className='w-10 h-10 text-text-tertiary' />
