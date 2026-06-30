@@ -202,46 +202,65 @@ def _regex_markup(batch: str) -> str:
 _SHELL_AMEND = re.compile(r"^(Sửa đổi|Bổ sung|Bãi bỏ|Thay thế|Sửa)\b", re.I)
 # Tiêu đề Điều VỎ-THI-HÀNH ("Điều 2. Điều khoản thi hành"/hiệu lực/chuyển tiếp).
 _SHELL_EXEC = re.compile(r"(thi hành|hiệu lực|chuyển tiếp|điều khoản|tổ chức thực hiện)", re.I)
-# Dòng LỆNH cấp 1 trong điều vỏ-sửa: "N. (verb) ... như sau:".
-_CMD_L1 = re.compile(r"^\d+[a-zđ]?\.\s+(Sửa đổi|Bổ sung|Bãi bỏ|Thay thế|Sửa|Thay)\b", re.I)
-_RE_ART_LINE = re.compile(r"^Điều\s+\d+[a-zA-Zđ]?\s*\.\s*(.*)$")
+# Dòng LỆNH cấp 1 trong điều vỏ-sửa. 2 dạng:
+#  A) "N. (verb) ... như sau:"  — verb sửa đứng ngay sau số.
+#  B) "N. Trong <Luật...>, cụm từ ... được thay bằng ..." — lệnh thay-cụm-từ toàn văn
+#     (verb "thay" nằm GIỮA câu, không ngay sau số) → bắt qua "Trong ... cụm từ".
+_CMD_L1 = re.compile(
+    r"^\d+[a-zđ]?\.\s+(?:(?:Sửa đổi|Bổ sung|Bãi bỏ|Thay thế|Sửa|Thay)\b"
+    r"|Trong\b.{0,80}?\bcụm từ\b)",
+    re.I,
+)
+# Vỏ Điều của VB sửa đổi đi LIÊN TỤC từ 1 (Điều 1, 2, 3...) — đây là dấu hiệu phân biệt
+# với Điều NHÚNG (nội dung luật đích, NHẢY số / có hậu tố: 7, 7b, 12, 29, 102...). Vỏ có
+# thể ghi "Điều 1. Sửa đổi..." (chấm + tiêu đề CÙNG dòng) HOẶC "Điều 1" TRẦN (tiêu đề ở
+# DÒNG KẾ — VBPL/scrape hay tách). group: 1=số, 2=hậu tố, 3=tiêu đề cùng dòng (nếu có).
+_RE_ART_NUM = re.compile(r"^Điều\s+(\d+)([a-zA-Zđ]?)\s*\.?\s*(.*)$")
+
+
+def _next_nonempty(lines: list[str], i: int) -> str:
+    """Dòng non-empty kế tiếp sau i (để đọc tiêu đề khi vỏ Điều ghi TRẦN)."""
+    j = i + 1
+    while j < len(lines) and not lines[j].strip():
+        j += 1
+    return lines[j].strip() if j < len(lines) else ""
 
 
 def _amend_markup_rule(text: str) -> tuple[str, dict]:
     """Đánh dấu VB sửa đổi bằng RULE (deterministic, không cần LLM).
 
-    Cốt lõi: trong VB sửa đổi, CHỈ "Điều 1/Điều 2..." VỎ là Điều thật; mọi "Điều X."
-    khác (12, 52, 66, 109...) đều là NHÚNG (nội dung Điều mới của luật đích) → KHÔNG mở
-    Điều. Phân biệt VỎ bằng TIÊU ĐỀ (verb sửa / thi hành), không dựa ngoặc kép.
+    Cốt lõi (ĐẾM LIÊN TỤC): vỏ Điều của VB sửa đổi đi 1,2,3... liền mạch. Mọi "Điều X"
+    KHÁC — nhảy số hoặc có hậu tố (7b, 12, 29, 102, 44a...) — đều là NHÚNG (Điều mới của
+    luật đích) → content, KHÔNG mở Điều giả. Vỏ nhận khi: số == số-vỏ-kế-tiếp + KHÔNG hậu
+    tố + tiêu đề (cùng dòng HOẶC dòng kế) là verb sửa / thi hành. Chịu được "Điều 1" trần.
 
-    - VỎ-SỬA: @@ART; mỗi lệnh "N. (verb) ... như sau:" → @@CL; phần còn lại (nhúng + điểm
-      -lệnh con a/b/c) = content của lệnh.
-    - VỎ-THI-HÀNH: @@ART; khoản "N." → @@CL; điểm "x)" → @@PT (điều này không có nhúng).
-    - Điều NHÚNG / header đầu: content (không đánh dấu).
+    - VỎ-SỬA (amend): @@ART; mỗi lệnh "N. (verb)..." → @@CL; nhúng + điểm-lệnh con = content.
+    - VỎ-THI-HÀNH (exec): @@ART; khoản "N." → @@CL; điểm "x)" → @@PT (không có nhúng).
     """
+    lines = text.splitlines()
     out: list[str] = []
     mode: Optional[str] = None  # 'amend' | 'exec' | None
+    exp_art = 1                  # số Điều VỎ kế tiếp mong đợi (đếm liên tục từ 1)
     n_art = n_cl = n_pt = 0
-    for raw in text.splitlines():
+    for i, raw in enumerate(lines):
         s = raw.strip()
         if not s:
             out.append(raw)
             continue
-        ma = _RE_ART_LINE.match(s)
+        ma = _RE_ART_NUM.match(s)
         if ma:
-            atitle = ma.group(1).strip()
-            if _SHELL_AMEND.match(atitle):
+            num, suf, title = int(ma.group(1)), ma.group(2), ma.group(3).strip()
+            probe = title or _next_nonempty(lines, i)   # vỏ trần → đọc dòng kế
+            is_amend = bool(_SHELL_AMEND.match(probe))
+            is_exec = bool(_SHELL_EXEC.search(probe))
+            # VỎ THẬT: đúng số liên tục + không hậu tố + tiêu đề sửa/thi hành.
+            if not suf and num == exp_art and (is_amend or is_exec):
                 out.append(TAG_ART + s)
                 n_art += 1
-                mode = "amend"
+                exp_art += 1
+                mode = "amend" if is_amend else "exec"
                 continue
-            if _SHELL_EXEC.search(atitle):
-                out.append(TAG_ART + s)
-                n_art += 1
-                mode = "exec"
-                continue
-            # "Điều X." có tên nội dung → NHÚNG của luật đích → content
-            out.append(raw)
+            out.append(raw)   # Điều NHÚNG (nhảy số / hậu tố) → content
             continue
         if mode == "amend":
             if _CMD_L1.match(s):
