@@ -82,7 +82,18 @@ class Service {
             email: user.email,
             fullName: user.full_name,
             roleName: user.roles?.name ? user.roles.name.toUpperCase() : null,
+            avatarUrl: user.avatar_url ?? null,
+            avatar: user.avatar_url ?? null,
+            status: user.banned_by ? 'banned' : 'active',
+            phone: user.phone ?? null,
+            location: user.location ?? null,
         };
+
+        if (user.banned_by) {
+            userData.banned_at = user.updated_at?.toISOString() || null;
+            userData.bannedAt = user.updated_at?.toISOString() || null;
+            userData.reason = user.ban_reason ?? null;
+        }
 
         const targetUserId = userId ?? user.id;
         const roleNames = await this.#getRoleNames(targetUserId);

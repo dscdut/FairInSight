@@ -120,9 +120,6 @@ class Repository extends BaseRepository {
                 deleted_at: null,
                 roles: {
                     name: 'LAWYER'
-                },
-                lawyer_details: {
-                    is_verified: true
                 }
             },
             include
