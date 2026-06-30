@@ -67,7 +67,7 @@ export const mapLawyerListItem = user => {
         averageRating: lawyerDetails.rating_avg || 0,
         successfulCases: lawyerDetails.successful_cases || 0,
         specializations,
-        city: user.location || '',
+        location: user.location || '',
     };
 };
 
@@ -95,6 +95,15 @@ export const mapLawyerDetail = user => {
         data: {
             items: reviews,
             summary: {
+                id: user.id,
+                email: user.email,
+                phone: user.phone ?? '',
+                location: user.location ?? '',
+                avatarUrl: user.avatar_url ?? null,
+                avatar: user.avatar_url ?? null,
+                name: user.full_name,
+                roleName: (user.roles?.name || 'lawyer').toUpperCase(),
+                bio,
                 averageRating: lawyerDetails.rating_avg || 0,
                 careerHistory,
                 careerMilestones,
@@ -102,15 +111,18 @@ export const mapLawyerDetail = user => {
                     ? Number(lawyerDetails.price_per_hour)
                     : 0,
                 experienceYears: lawyerDetails.experience_years || 0,
+                successfulCases: lawyerDetails.successful_cases || 0,
+                lawyerStatus: lawyerDetails.status || 'OFFLINE',
+                status: user.banned_by ? 'BANNED' : (!user.is_email_confirmed ? 'INACTIVE' : 'ACTIVE'),
                 licenseInfo: {
                     isVerified: lawyerDetails.is_verified || false,
                     licenseFileUrl: certificate?.file_url || null,
                     licenseIssuer: lawyerDetails.bar_association || '',
                     licenseNumber: lawyerDetails.license_number || '',
                 },
-                name: user.full_name,
-                roleName: (user.roles?.name || 'lawyer').toUpperCase(),
                 specializations,
+                createdAt: user.created_at ?? null,
+                updatedAt: user.updated_at ?? null,
             },
         },
     };
