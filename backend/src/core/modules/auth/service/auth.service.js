@@ -77,6 +77,13 @@ class Service {
             throw new UnAuthorizedException('Email is not verified');
         }
 
+        let status = 'ACTIVE';
+        if (user.banned_by) {
+            status = 'BANNED';
+        } else if (!user.is_email_confirmed) {
+            status = 'INACTIVE';
+        }
+
         const userData = {
             userId: user.id,
             email: user.email,
@@ -84,7 +91,7 @@ class Service {
             roleName: user.roles?.name ? user.roles.name.toUpperCase() : null,
             avatarUrl: user.avatar_url ?? null,
             avatar: user.avatar_url ?? null,
-            status: user.banned_by ? 'banned' : 'active',
+            status,
             phone: user.phone ?? null,
             location: user.location ?? null,
         };

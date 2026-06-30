@@ -112,7 +112,8 @@ export const mapLawyerDetail = user => {
                     : 0,
                 experienceYears: lawyerDetails.experience_years || 0,
                 successfulCases: lawyerDetails.successful_cases || 0,
-                status: lawyerDetails.status || 'OFFLINE',
+                lawyerStatus: lawyerDetails.status || 'OFFLINE',
+                status: user.banned_by ? 'BANNED' : (!user.is_email_confirmed ? 'INACTIVE' : 'ACTIVE'),
                 licenseInfo: {
                     isVerified: lawyerDetails.is_verified || false,
                     licenseFileUrl: certificate?.file_url || null,
