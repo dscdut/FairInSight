@@ -7,19 +7,10 @@ import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from 'react-router-dom'
 import { type z } from 'zod'
 
-import { logo } from '@/assets/images'
+import { bg_login, logo } from '@/assets/images'
 import { FadeUp } from '@/components/animated/animated-component'
 import PasswordStrengthBar from '@/components/PasswordStrengthBar/PasswordStrengthBar'
-import {
-  Button,
-  FormControl,
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  Input
-} from '@/components/ui'
+import { Button, FormControl, Form, FormField, FormItem, FormLabel, FormMessage, Input } from '@/components/ui'
 import { ROUTE } from '@/core/constants/path'
 import { containerVariants, itemVariants } from '@/core/lib/variant/style-variant'
 import { ResetPasswordSchema } from '@/core/zod/reset-password.zod'
@@ -61,14 +52,12 @@ export default function ResetPassword() {
   return (
     <div
       className='relative flex min-h-screen items-center justify-center bg-cover bg-center'
-      style={{ backgroundImage: "url('/bg.jpg')" }}
+      style={{ backgroundImage: `url(${bg_login})` }}
     >
       <div className='absolute inset-0 bg-slate-950/70 backdrop-blur-[2px]' />
 
       <div className='container relative z-10 flex justify-center px-4'>
-        <FadeUp
-          className='w-full max-w-md rounded-lg bg-background-secondary p-8 shadow-400'
-        >
+        <FadeUp className='w-full max-w-md rounded-lg bg-background-secondary p-8 shadow-400'>
           {/* Brand Logo & Title */}
           <div className='space-y-2 text-center'>
             <div className='flex justify-center mb-4'>
@@ -106,11 +95,7 @@ export default function ResetPassword() {
                       <FormItem>
                         <FormLabel className='text-small text-text-primary'>{t('newPasswordLabel')}</FormLabel>
                         <FormControl>
-                          <Input
-                            type='password'
-                            placeholder={t('newPasswordPlaceholder')}
-                            {...field}
-                          />
+                          <Input type='password' placeholder={t('newPasswordPlaceholder')} {...field} />
                         </FormControl>
                         <PasswordStrengthBar password={form.watch('password') || ''} />
                         <FormMessage />
@@ -128,11 +113,7 @@ export default function ResetPassword() {
                       <FormItem>
                         <FormLabel className='text-small text-text-primary'>{t('confirmPasswordLabel')}</FormLabel>
                         <FormControl>
-                          <Input
-                            type='password'
-                            placeholder={t('confirmPasswordPlaceholder')}
-                            {...field}
-                          />
+                          <Input type='password' placeholder={t('confirmPasswordPlaceholder')} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -154,7 +135,10 @@ export default function ResetPassword() {
                 </motion.div>
 
                 {/* FOOTER */}
-                <motion.div variants={itemVariants} className='text-center text-small text-text-secondary pt-2 space-y-4'>
+                <motion.div
+                  variants={itemVariants}
+                  className='text-center text-small text-text-secondary pt-2 space-y-4'
+                >
                   <p>
                     {t('havingTrouble')}{' '}
                     <span className='text-primary font-semibold hover:underline cursor-pointer'>
@@ -162,7 +146,10 @@ export default function ResetPassword() {
                     </span>
                   </p>
                   <div>
-                    <Link to={ROUTE.AUTH.LOGIN} className='font-semibold text-primary hover:text-primary-600 transition-colors duration-200'>
+                    <Link
+                      to={ROUTE.AUTH.LOGIN}
+                      className='font-semibold text-primary hover:text-primary-600 transition-colors duration-200'
+                    >
                       ← {t('backToLogin')}
                     </Link>
                   </div>

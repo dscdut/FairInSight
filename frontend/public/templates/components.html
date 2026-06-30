@@ -1,0 +1,579 @@
+{% macro style() %}
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bcc-serif-font: 'BCC-Times', 'Times New Roman', 'Liberation Serif', 'DejaVu Serif', serif;
+  }
+
+  @font-face {
+    font-family: 'BCC-Times';
+    src: local('Times New Roman'),
+        local('TimesNewRomanPSMT'),
+        url('/fonts/times.ttf') format('truetype');
+    font-style: normal;
+    font-weight: 400;
+  }
+
+  @font-face {
+    font-family: 'BCC-Times';
+    src: local('Times New Roman Bold'),
+        local('TimesNewRomanPS-BoldMT'),
+        url('/fonts/timesbd.ttf') format('truetype');
+    font-style: normal;
+    font-weight: 700;
+  }
+
+  @font-face {
+    font-family: 'BCC-Times';
+    src: local('Times New Roman Italic'),
+        local('TimesNewRomanPS-ItalicMT'),
+        url('/fonts/timesi.ttf') format('truetype');
+    font-style: italic;
+    font-weight: 400;
+  }
+
+  @font-face {
+    font-family: 'BCC-Times';
+    src: local('Times New Roman Bold Italic'),
+        local('TimesNewRomanPS-BoldItalicMT'),
+        url('/fonts/timesbi.ttf') format('truetype');
+    font-style: italic;
+    font-weight: 700;
+  }
+
+
+    body { font-size: 13pt; line-height: 1.15; color: #000; font-family: var(--bcc-serif-font); }
+    sup { font-size: 0.65em; }
+    
+    @page {
+      size: A4;
+      margin: 0;
+    }
+    @page a4 {
+      size: A4;
+      margin: 0;
+    }
+    
+
+
+    page {
+      display: block;
+      box-sizing: border-box;
+      width: 21cm;
+      height: 29.7cm;
+      padding: 2.0cm 1.8cm 2.0cm 3.2cm;
+      position: relative;
+      page-break-before: always;
+      page-break-after: always;
+      overflow: hidden;
+    }
+
+    .center { text-align: center; }
+    .right { text-align: right; }
+    .bold { font-weight: bold; }
+    .italic { font-style: italic; }
+
+    .header { text-align: center; margin-bottom: 2px; }
+    .header .republic { font-size: 13pt; font-weight: bold; text-transform: uppercase; }
+    .header .motto { font-size: 13pt; font-weight: bold; border-bottom: 1.2px solid #000; display: inline-block; padding-bottom: 1px; }
+
+    .appendix { margin-bottom: 4px; }
+    .doc-date { margin-bottom: 6px; }
+    .title { text-align: center; margin-top: 20px; margin-bottom: 20px; }
+    .title h1 { font-size: 14pt; font-weight: bold; text-transform: uppercase; margin-bottom: 2px; }
+    .title h2 { font-size: 14pt; font-weight: bold; text-transform: uppercase; }
+
+    .line { margin-bottom: 5px; line-height: 1.15; text-align: justify; }
+    .section { margin-top: 6px; margin-bottom: 2px; font-weight: bold; }
+    .indent-1 { padding-left: 18px; }
+    .indent-2 { padding-left: 32px; }
+
+    .box {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 1px solid #000;
+      vertical-align: middle;
+      margin-left: 4px;
+      position: relative;
+    }
+    .box.checked::after {
+      content: "X";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 11px;
+      font-weight: bold;
+      line-height: 1;
+    }
+
+    table.tbl { width: 100%; border-collapse: collapse; margin: 4px 0; font-size: 13pt; table-layout: fixed; }
+    table.tbl th, table.tbl td { border: 1px solid #000; padding: 3px 6px; vertical-align: top; }
+    table.tbl th { text-align: center; font-weight: bold; }
+
+    .small { font-size: 11pt; }
+    .commit li { margin-left: 15px; margin-bottom: 2px; }
+
+    .signature { margin-top: 10px; display: flex; justify-content: space-between; }
+    .signature-left { width: 45%; }
+    .signature-right { width: 50%; text-align: center; }
+    .signature-right .role { font-weight: bold; text-transform: uppercase; margin-top: 4px; }
+    .signature-right .name { font-weight: bold; }
+
+    .footer-notes {
+      position: absolute;
+      bottom: 2.2cm;
+      left: 3.2cm;
+      right: 1.8cm;
+      font-size: 9.5pt;
+      line-height: 1.2;
+      border-top: 1.2px solid #000;
+      padding-top: 3px;
+      text-align: justify;
+    }
+    .footer-notes p { margin-bottom: 2px; }
+    .footer-notes p:last-child { margin-bottom: 0; }
+
+    .tax-table { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 13pt; table-layout: fixed; }
+    .tax-table th, .tax-table td { border: 1px solid #000; padding: 4px 6px; vertical-align: top; }
+    .tax-table th { text-align: center; font-weight: bold; }
+    .tax-stt { width: 50px; text-align: center; font-weight: bold; }
+    
+    .pg-num {
+      text-align: center;
+      font-weight: bold;
+      font-size: 13pt;
+      margin-bottom: 6px;
+    }
+
+    .form-line {
+      display: flex;
+      align-items: baseline;
+      line-height: 1.15;
+      margin-bottom: 5px;
+    }
+    .form-line .label {
+      flex-shrink: 0;
+      padding-right: 4px;
+    }
+    .form-line .value-container {
+      display: inline-block;
+      flex-grow: 1;
+      position: relative;
+      overflow: hidden;
+      vertical-align: bottom;
+    }
+    .form-multiline {
+      line-height: 20px;
+      margin-bottom: 5px;
+      background-image: url("data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%224.5%22%20height%3D%2220%22%3E%3Ctext%20x%3D%222.25%22%20y%3D%2218%22%20font-family%3D%22Times%20New%20Roman%22%20font-size%3D%2213px%22%20fill%3D%22black%22%20text-anchor%3D%22middle%22%3E.%3C%2Ftext%3E%3C%2Fsvg%3E");
+      background-repeat: repeat;
+      background-position: left top;
+      background-origin: content-box;
+    }
+    .form-multiline.no-dots {
+      background-image: none;
+    }
+    .form-multiline .label {
+      background-color: #fff;
+      padding-right: 4px;
+    }
+    .form-multiline .value {
+      background-color: transparent;
+      padding-left: 8px;
+      padding-right: 8px;
+    }
+    .form-multiline.indent-1 {
+      margin-left: 18px;
+      padding-left: 0;
+    }
+    .form-multiline.indent-2 {
+      margin-left: 32px;
+      padding-left: 0;
+    }
+    .form-line .bg-dots {
+      display: inline-block;
+      color: #000;
+      white-space: nowrap;
+      pointer-events: none;
+      font-family: "Times New Roman", Times, serif;
+      font-size: 13pt;
+      line-height: 1.15;
+      width: 100%;
+    }
+    .form-line .value {
+      display: inline-block;
+      background: transparent;
+      white-space: nowrap;
+      font-family: "Times New Roman", Times, serif;
+      font-size: 13pt;
+      line-height: 1.15;
+      padding-left: 2px;
+      padding-right: 2px;
+    }
+
+
+      body {
+        margin: 0;
+        padding: 0;
+        background: #fff;
+      }
+      page, page[size="A4"] {
+        display: block;
+        width: 21cm !important;
+        height: 29.7cm !important;
+        padding: 2.0cm 1.8cm 2.0cm 3.2cm !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
+        position: relative;
+        page-break-before: always !important;
+        page-break-after: always !important;
+        break-before: page !important;
+        break-after: page !important;
+        break-inside: avoid !important;
+        background: #fff;
+      }
+      .footer-notes {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        font-size: 8pt;
+      }
+      .line, .form-line, .form-multiline {
+        margin-bottom: 5px;
+      }
+      .section {
+        margin-top: 4px;
+        margin-bottom: 1.5px;
+      }
+      table.tbl th, table.tbl td {
+        padding: 1.5px 3px !important;
+      }
+      .tax-table th, .tax-table td {
+        padding: 1.5px 3px !important;
+      }
+    }
+  </style>
+{% endmacro %}
+
+{% macro page(page_num=none) %}
+<page size="A4">
+  {% if page_num %}
+    <div class="pg-num">{{ page_num }}</div>
+  {% endif %}
+  {{ caller() }}
+</page>
+{% endmacro %}
+
+{% macro header(appendix_num=none) %}
+  {% if appendix_num %}
+    <div class="appendix right bold">Mẫu số {{ appendix_num }}</div>
+  {% endif %}
+  <div class="header">
+    <div class="republic">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+    <div class="motto">Độc lập - Tự do - Hạnh phúc</div>
+  </div>
+  <div class="doc-date center italic" style="margin-top: 4px; margin-bottom: 15px;">
+    ......, ngày ...... tháng ...... năm ......
+  </div>
+{% endmacro %}
+
+{% macro title(main, sub=none, agency="") %}
+  <div class="title">
+    <h1>{{ main }}</h1>
+    {% if sub %}
+      <h2>{{ sub }}</h2>
+    {% endif %}
+  </div>
+  <div class="line" style="margin-top: 10px; margin-bottom: 20px; text-align: center;">
+    Kính gửi: <span >Phòng Doanh nghiệp và Đăng ký kinh doanh - Sở tài chính</span> {{ agency }}
+  </div>
+{% endmacro %}
+
+{% macro field(label, value, indent=0) %}
+  {% if value %}
+    <div class="form-multiline{{ ' indent-1' if indent == 1 else (' indent-2' if indent == 2 else '') }} no-dots"><span class="label">{{ label|safe }}</span><span class="value">{{ value }}</span></div>
+  {% else %}
+    <div class="form-multiline{{ ' indent-1' if indent == 1 else (' indent-2' if indent == 2 else '') }}"><span class="label">{{ label|safe }}</span></div>
+  {% endif %}
+{% endmacro %}
+
+{% macro field_multiline(label, value, indent=0) %}
+  {% if value %}
+    <div class="form-multiline{{ ' indent-1' if indent == 1 else (' indent-2' if indent == 2 else '') }} no-dots"><span class="label">{{ label|safe }}</span><span class="value">{{ value }}</span></div>
+  {% else %}
+    <div class="form-multiline{{ ' indent-1' if indent == 1 else (' indent-2' if indent == 2 else '') }}"><span class="label">{{ label|safe }}</span></div>
+  {% endif %}
+{% endmacro %}
+
+{% macro fields_inline(list_fields, indent=0, col_widths=none) %}
+  {% if col_widths %}
+    {% set indent_margin = '18px' if indent == 1 else ('32px' if indent == 2 else '0px') %}
+    <table style="width: calc(100% - {{ indent_margin }}); margin-left: {{ indent_margin }}; border: none; border-collapse: collapse; margin-bottom: 5px; table-layout: fixed;">
+      <tbody>
+        <tr>
+          {% for label, value, width, pad_left in list_fields %}
+            <td style="width: {{ col_widths[loop.index0] }}; border: none; padding: 0; vertical-align: baseline;">
+              <div class="form-line" style="margin-bottom: 0;">
+                <span class="label"{{ (' style="padding-left: ' ~ pad_left ~ 'px;"')|safe if pad_left else '' }}>{{ label|safe }}</span>
+                <span class="value-container" style="flex-grow: 1; min-width: 0;">
+                  {% if value %}
+                    <span class="value">{{ value }}</span>
+                  {% else %}
+                    <span class="bg-dots">..................................................................................................................................................................................</span>
+                  {% endif %}
+                </span>
+              </div>
+            </td>
+          {% endfor %}
+        </tr>
+      </tbody>
+    </table>
+  {% else %}
+    <div class="form-line{{ ' indent-1' if indent == 1 else (' indent-2' if indent == 2 else '') }}">
+      {% for label, value, width, pad_left in list_fields %}
+        <span class="label"{{ (' style="padding-left: ' ~ pad_left ~ 'px;"')|safe if pad_left else '' }}>{{ label|safe }}</span>
+        {% set actual_width = width %}
+        {% if width == 'auto' and not value %}
+          {% set actual_width = '80px' %}
+        {% endif %}
+        <span class="value-container"{{ (' style="width: ' ~ actual_width ~ '; max-width: ' ~ (actual_width if actual_width != 'auto' else 'none') ~ '; flex-grow: 0; flex-shrink: 0; min-width: 0;"')|safe if actual_width else '' }}>
+          {% if value %}
+            <span class="value">{{ value }}</span>
+          {% else %}
+            <span class="bg-dots">..................................................................................................................................................................................</span>
+          {% endif %}
+        </span>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endmacro %}
+
+
+
+{% macro checkbox_row(label, checked, width_pct="90%", bold_label=false) %}
+  <tr>
+    <td style="border: none; padding: 6px 0; vertical-align: middle; width: {{ width_pct }};{{ ' font-weight: bold;' if bold_label else '' }}">{{ label }}</td>
+    <td style="border: none; padding: 6px 20px 6px 0; text-align: right; vertical-align: middle;"><span class="box{{ ' checked' if checked else '' }}"></span></td>
+  </tr>
+{% endmacro %}
+
+{# Render text flowing full width with checkbox appearing inline right after the last word.
+   Use this instead of checkbox_row when you do NOT want a 2-column table layout. #}
+{% macro checkbox_inline(label, checked, indent=0, bold_label=false) %}
+  <div class="line" style="margin-top: 8px; line-height: 1.35;{% if indent %} padding-left: {{ indent }}px;{% endif %}{{ ' font-weight: bold;' if bold_label else '' }}">
+    {{ label }} <span class="box{{ ' checked' if checked else '' }}"></span>
+  </div>
+{% endmacro %}
+
+{% macro footnote(items) %}
+  <div class="footer-notes">
+    {% for index, text in items %}
+      <p><sup>{{ index }}</sup> {{ text }}</p>
+    {% endfor %}
+  </div>
+{% endmacro %}
+
+{% macro signature(place, day, month, year, role, name, attached_docs=none) %}
+  <div class="signature" style="margin-top: 30px; margin-bottom: 30px;">
+    <div class="signature-left">
+      
+    </div>
+    <div class="signature-right">
+      <div class="italic" style="font-size: 13pt;">{{ place|default('..................', True) }}, ngày {{ day|default('……', True) }} tháng {{ month|default('……', True) }} năm {{ year|default('……', True) }}</div>
+      <div class="role" style="margin-top: 12px; font-size: 13pt;">{{ role|safe }}</div>
+      <div class="name" style="margin-top: 70px; font-size: 13pt;">{{ name|upper }}</div>
+    </div>
+  </div>
+{% endmacro %}
+
+{% macro format_date(val, format='slash') -%}
+  {%- if format_date_js is defined -%}
+    {{- format_date_js(val, format) -}}
+  {%- else -%}
+    {%- if val -%}
+      {%- set parts = val.split('-') if '-' in val else val.split('/') -%}
+      {%- if parts|length == 3 -%}
+        {%- if format == 'words' -%}
+          {{- parts[2] ~ ' tháng ' ~ parts[1] ~ ' năm ' ~ parts[0] if '-' in val else val -}}
+        {%- else -%}
+          {{- parts[2] ~ '/' ~ parts[1] ~ '/' ~ parts[0] if '-' in val else val -}}
+        {%- endif -%}
+      {%- else -%}
+        {{- val -}}
+      {%- endif -%}
+    {%- else -%}
+      {%- if format == 'words' -%}
+        ...... tháng ...... năm ......
+      {%- else -%}
+        ..../..../....
+      {%- endif -%}
+    {%- endif -%}
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro format_money(val) -%}
+  {%- if val -%}
+    {%- if format_money_js is defined -%}
+      {{- format_money_js(val) -}}
+    {%- else -%}
+      {%- set num_str = val|string|replace(',', '')|replace('.', '')|replace(' ', '') -%}
+      {%- if num_str|int > 0 or num_str == '0' -%}
+        {%- set num = num_str|int -%}
+        {%- set formatted = "{:,}".format(num)|replace(',', '.') -%}
+        {{- formatted -}}
+      {%- else -%}
+        {{- val -}}
+      {%- endif -%}
+    {%- endif -%}
+  {%- else -%}
+    
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro format_fiscal_year(val) -%}
+  {%- if val -%}
+    {%- set parts = val.split('-') if '-' in val else val.split('/') -%}
+    {%- if parts|length == 3 -%}
+      {{- parts[2] ~ '/' ~ parts[1] if '-' in val else (parts[0] ~ '/' ~ parts[1]) -}}
+    {%- elif parts|length == 2 -%}
+      {{- parts[0] ~ '/' ~ parts[1] -}}
+    {%- else -%}
+      {{- val -}}
+    {%- endif -%}
+  {%- else -%}
+    ..../....
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro republic_header(appendix_num=none, place=none, day=none, month=none, year=none) %}
+  {% if appendix_num %}
+    <div class="appendix right bold">Mẫu số {{ appendix_num }}</div>
+  {% endif %}
+  <div class="header">
+    <div class="republic">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+    <div class="motto">Độc lập - Tự do - Hạnh phúc</div>
+  </div>
+  <div class="doc-date center italic" style="margin-top: 4px; margin-bottom: 15px;">
+    {{ place|default('..................', True) }}, ngày {{ day|default('……', True) }} tháng {{ month|default('……', True) }} năm {{ year|default('……', True) }}
+  </div>
+{% endmacro %}
+
+{% macro personal_info_box(
+  person, 
+  dan_toc="", 
+  quoc_tich="Việt Nam", 
+  so_ho_chieu="", 
+  giay_to_ngay_cap="", 
+  giay_to_noi_cap="", 
+  noi_thuong_tru="", 
+  dia_chi_quoc_gia="Việt Nam"
+) %}
+  <table class="tbl" style="margin-top: 4px; margin-bottom: 8px;">
+    <tbody>
+      <tr>
+        <td style="padding: 4px 6px;">
+          {{ fields_inline([
+               ("Dân tộc:", dan_toc if person.identification_type == 'Hộ chiếu' else '', "140px", 0),
+               ("Quốc tịch:", quoc_tich if person.identification_type == 'Hộ chiếu' else '', none, 20)
+             ]) }}
+          {{ field("Số Hộ chiếu <i>(đối với cá nhân Việt Nam không có số định danh cá nhân)</i>/Số Hộ chiếu nước ngoài hoặc giấy tờ có giá trị thay thế hộ chiếu nước ngoài <i>(đối với cá nhân là người nước ngoài)</i>:", so_ho_chieu if person.identification_type == 'Hộ chiếu' else '') }}
+          {{ fields_inline([
+               ("Ngày cấp:", format_date(giay_to_ngay_cap) if person.identification_type == 'Hộ chiếu' else '', "140px", 0),
+               ("Nơi cấp:", giay_to_noi_cap if person.identification_type == 'Hộ chiếu' else '', none, 20)
+             ]) }}
+          <div class="line" style="margin-top: 4px;">Nơi thường trú:</div>
+          {{ field_multiline("Số nhà/phòng, ngách/hẻm, ngõ/kiệt, đường/phố/đại lộ, tổ/xóm/ấp/thôn:", noi_thuong_tru if person.identification_type == 'Hộ chiếu' else '', 1) }}
+          {{ field("Xã/Phường/Đặc khu:", (person.ward|default(person.district|default(''))) if person.identification_type == 'Hộ chiếu' else '', 1) }}
+          {{ field("Tỉnh/Thành phố trực thuộc trung ương:", person.province if person.identification_type == 'Hộ chiếu' else '', 1) }}
+          {{ field("Quốc gia:", dia_chi_quoc_gia if person.identification_type == 'Hộ chiếu' else '', 1) }}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+{% endmacro %}
+
+{% macro reorganized_enterprise_block(reorganized_enterprise) %}
+  {{ field("Tên doanh nghiệp (ghi bằng chữ in hoa):", reorganized_enterprise.name|upper, 1) }}
+  {{ field("Mã số doanh nghiệp/Mã số thuế:", reorganized_enterprise.enterprise_code, 1) }}
+  <div class="line indent-1" style="text-align: justify; margin-bottom: 6px;">
+    Đề nghị Quý Cơ quan thực hiện chấm dứt tồn tại đối với doanh nghiệp bị chia, bị tách, bị hợp nhất và các chi nhánh/văn phòng đại diện/địa điểm kinh doanh của doanh nghiệp bị chia, bị hợp nhất.
+  </div>
+{% endmacro %}
+
+{% macro converted_household_block(converted_household) %}
+  {{ field("Tên hộ kinh doanh (ghi bằng chữ in hoa):", converted_household.name_business|upper, 1) }}
+  {{ field("Số Giấy chứng nhận đăng ký hộ kinh doanh <i>(nếu có)</i>:", converted_household.certification_household_number, 1) }}
+  {{ fields_inline([
+       ("Ngày cấp:", format_date(converted_household.certification_household_date), "120px", 0),
+       ("Nơi cấp:", converted_household.certification_household_place, none, 20)
+     ], indent=1) }}
+  {{ field("Mã số thuế của hộ kinh doanh:", converted_household.tax_code_household, 1) }}
+  {{ field("Địa chỉ trụ sở hộ kinh doanh:", converted_household.address_household, 1) }}
+  {{ field("Tên chủ hộ kinh doanh:", converted_household.owner_name, 1) }}
+  <div class="line indent-1">
+    Loại giấy tờ pháp lý của cá nhân <span class="italic" style="font-size: 11.5pt;">(kê khai theo giấy tờ pháp lý của cá nhân được ghi trên Giấy chứng nhận đăng ký thuế của hộ kinh doanh)</span>:
+  </div>
+  <table style="width: 75%; border: none; font-size: 13pt; margin: 1px 0; margin-left: 20px; border-collapse: collapse;">
+    <tbody>
+      <tr>
+        <td style="border: none; padding: 2px 0; width: 5%; vertical-align: middle;"><span class="box{{ ' checked' if converted_household.owner_legal_document_type in ['Chứng minh nhân dân', 'CMND', 'Chứng minh thư'] else '' }}"></span></td>
+        <td style="border: none; padding: 2px 0; width: 40%; vertical-align: middle; padding-left: 4px;">Chứng minh nhân dân</td>
+        <td style="border: none; padding: 2px 0; width: 15%; padding-left: 20px; vertical-align: middle;"><span class="box{{ ' checked' if converted_household.owner_legal_document_type in ['Căn cước công dân', 'CCCD', 'Căn cước'] else '' }}"></span></td>
+        <td style="border: none; padding: 2px 0; width: 40%; vertical-align: middle; padding-left: 4px;">Căn cước công dân</td>
+      </tr>
+      <tr>
+        <td style="border: none; padding: 2px 0; width: 5%; vertical-align: middle;"><span class="box{{ ' checked' if converted_household.owner_legal_document_type == 'Hộ chiếu' else '' }}"></span></td>
+        <td style="border: none; padding: 2px 0; width: 40%; vertical-align: middle; padding-left: 4px;">Hộ chiếu</td>
+        <td style="border: none; padding: 2px 0; width: 15%; padding-left: 20px; vertical-align: middle;"><span class="box{{ ' checked' if converted_household.owner_legal_document_type not in ['Chứng minh nhân dân', 'CMND', 'Chứng minh thư', 'Căn cước công dân', 'CCCD', 'Căn cước', 'Hộ chiếu', ''] else '' }}"></span></td>
+        <td style="border: none; padding: 2px 0; width: 40%; vertical-align: middle; padding-left: 4px;">Loại khác <i>(ghi rõ)</i>: {{ converted_household.owner_legal_document_type if converted_household.owner_legal_document_type not in ['Chứng minh nhân dân', 'CMND', 'Chứng minh thư', 'Căn cước công dân', 'CCCD', 'Căn cước', 'Hộ chiếu'] else '' }}</td>
+      </tr>
+    </tbody>
+  </table>
+  {{ field("Số giấy tờ pháp lý của cá nhân:", converted_household.owner_legal_document_number, 1) }}
+  {{ fields_inline([
+       ("Ngày cấp:", format_date(converted_household.owner_legal_document_issue_date), "95px", 0),
+       ("Nơi cấp:", converted_household.owner_legal_document_issue_place, "300px", 15)
+     ], indent=1) }}
+  {{ field("Ngày hết hạn <i>(nếu có)</i>:", format_date(converted_household.owner_legal_document_expiry_date), 1) }}
+{% endmacro %}
+
+{% macro converted_social_block(converted_social) %}
+  {{ field("Tên cơ sở bảo trợ xã hội/quỹ xã hội/quỹ từ thiện <i>(ghi bằng chữ in hoa)</i>:", converted_social.name_social_organization|upper, 1) }}
+  {{ field("Số Giấy chứng nhận đăng ký thành lập <i>(đối với cơ sở bảo trợ xã hội)</i>/Số Giấy phép thành lập và công nhận điều lệ quỹ <i>(đối với quỹ xã hội/quỹ từ thiện)</i>:", converted_social.foundation_license_number, 1) }}
+  {{ fields_inline([
+       ("Ngày cấp:", format_date(converted_social.license_issue_date), "120px", 0),
+       ("Nơi cấp:", converted_social.license_issue_place, none, 20)
+     ], indent=1) }}
+  {{ field("Mã số thuế của cơ sở bảo trợ xã hội/quỹ xã hội/quỹ từ thiện <i>(chỉ kê khai mã số thuế 10 số)</i>:", converted_social.tax_code_social_organization, 1) }}
+  {{ field("Địa chỉ trụ sở chính:", converted_social.address_head_social_organization, 1) }}
+  {{ field("Tên người đại diện cơ sở bảo trợ xã hội/quỹ xã hội/quỹ từ thiện:", converted_social.representative_name_social_organization, 1) }}
+  <div class="line indent-1">
+    Loại giấy tờ pháp lý của cá nhân <span class="italic" style="font-size: 11.5pt;">(kê khai theo giấy tờ pháp lý của cá nhân được ghi trên Giấy chứng nhận đăng ký thuế của cơ sở bảo trợ xã hội/quỹ xã hội/quỹ từ thiện)</span>:
+  </div>
+  <table style="width: 75%; border: none; font-size: 13pt; margin: 1px 0; margin-left: 20px; border-collapse: collapse;">
+    <tbody>
+      <tr>
+        <td style="border: none; padding: 2px 0; width: 5%; vertical-align: middle;"><span class="box{{ ' checked' if converted_social.representative_legal_document_type in ['Chứng minh nhân dân', 'CMND', 'Chứng minh thư'] else '' }}"></span></td>
+        <td style="border: none; padding: 2px 0; width: 40%; vertical-align: middle; padding-left: 4px;">Chứng minh nhân dân</td>
+        <td style="border: none; padding: 2px 0; width: 15%; padding-left: 20px; vertical-align: middle;"><span class="box{{ ' checked' if converted_social.representative_legal_document_type in ['Căn cước công dân', 'CCCD', 'Căn cước'] else '' }}"></span></td>
+        <td style="border: none; padding: 2px 0; width: 40%; vertical-align: middle; padding-left: 4px;">Căn cước công dân</td>
+      </tr>
+      <tr>
+        <td style="border: none; padding: 2px 0; width: 5%; vertical-align: middle;"><span class="box{{ ' checked' if converted_social.representative_legal_document_type == 'Hộ chiếu' else '' }}"></span></td>
+        <td style="border: none; padding: 2px 0; width: 40%; vertical-align: middle; padding-left: 4px;">Hộ chiếu</td>
+        <td style="border: none; padding: 2px 0; width: 15%; padding-left: 20px; vertical-align: middle;"><span class="box{{ ' checked' if converted_social.representative_legal_document_type not in ['Chứng minh nhân dân', 'CMND', 'Chứng minh thư', 'Căn cước công dân', 'CCCD', 'Căn cước', 'Hộ chiếu', ''] else '' }}"></span></td>
+        <td style="border: none; padding: 2px 0; width: 40%; vertical-align: middle; padding-left: 4px;">Loại khác <i>(ghi rõ)</i>: {{ converted_social.representative_legal_document_type if converted_social.representative_legal_document_type not in ['Chứng minh nhân dân', 'CMND', 'Chứng minh thư', 'Căn cước công dân', 'CCCD', 'Căn cước', 'Hộ chiếu'] else '' }}</td>
+      </tr>
+    </tbody>
+  </table>
+  {{ field("Số giấy tờ pháp lý của cá nhân:", converted_social.representative_legal_document_number, 1) }}
+  {{ fields_inline([
+       ("Ngày cấp:", format_date(converted_social.representative_legal_document_issue_date), "auto", 0),
+       ("Nơi cấp:", converted_social.representative_legal_document_issue_place, none, 10)
+     ], indent=1) }}
+  {{ field("Ngày hết hạn <i>(nếu có)</i>:", format_date(converted_social.representative_legal_document_expiry_date), 1) }}
+{% endmacro %}
+

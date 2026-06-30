@@ -9,6 +9,7 @@ export class SpecificRoleGuard {
 
     canActive(req) {
         const user = getUserContext(req);
-        return user.payload.role === this.#role;
+        const roles = user?.payload?.roles ?? user?.payload?.role ?? [];
+        return (Array.isArray(roles) ? roles : [roles]).includes(this.#role);
     }
 }

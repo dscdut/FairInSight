@@ -52,6 +52,22 @@ services:
       - ./frontend:/app
       - /app/node_modules
 
+  # --- AI reasoning (RAG + chat pháp lý). Cổng 8000. ---
+  # DB dùng Supabase cloud (env), KHÔNG phụ thuộc service db trên. Embed + chat LLM
+  # trỏ ra ngoài (Ollama Mac/máy qua tunnel) — xem AI/backend_reasoning/.env.example.
+  # Reranker đóng sẵn trong image (CPU). Build lại sau khi điền .env trên server.
+  ai:
+    build: ./AI/backend_reasoning
+    container_name: fair-insight-ai
+    restart: always
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./AI/backend_reasoning/.env
+    # cho phép container gọi Ollama chạy trên HOST (nếu embed/chat cùng máy chạy Docker)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
 volumes:
   postgres_data:
 

@@ -48,15 +48,15 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     )
 
     const inputClassName = cn(
-      'flex h-12 w-full rounded-lg border bg-background px-3 py-2 text-sm ring-offset-background',
+      'flex h-11 w-full rounded-full border bg-background px-3 py-2 text-sm ring-offset-background',
       'file:border-0 file:bg-transparent file:text-sm file:font-medium',
       'placeholder:text-muted-foreground',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+      'focus-visible:outline-none focus-visible:ring-ring focus-visible:ring-offset-2',
       'disabled:cursor-not-allowed disabled:opacity-50',
       // Base styles using CSS variables
-      'border-[var(--border-primary)] text-[var(--text-primary)]',
-      'hover:border-[var(--border-secondary)]',
-      'focus-visible:border-[var(--border-focus)]',
+      'border-[var(--border-secondary)] text-[var(--text-primary)]',
+      'hover:border-border-secondary',
+      'focus-visible:border-info',
       // Error styles
       error && [
         'border-[var(--error-primary)] text-[var(--error-primary)]',

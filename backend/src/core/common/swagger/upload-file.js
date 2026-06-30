@@ -7,3 +7,12 @@ export const uploadMediaSwagger = SwaggerDocument.ApiParams({
     type: 'file',
     description: 'Image file to upload',
 });
+
+export const uploadFileSwagger = SwaggerDocument.ApiParams({
+    name: 'file',
+    paramsIn: 'formData',
+    require: true,
+    type: 'file',
+    description: 'File to upload',
+});
+

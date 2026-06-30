@@ -1,13 +1,13 @@
 import { lazy } from 'react'
 
-import { Navigate } from "react-router-dom"
+import { Navigate } from 'react-router-dom'
 
-import LayoutClient from "@/app/layout/layout-client"
+import LayoutClient from '@/app/layout/layout-client'
 import { ROLE_ADMIN } from '@/core/configs/consts'
 import isEqual from '@/core/configs/is-equal'
-import { ROUTE } from "@/core/constants/path"
-import { useAuthStore } from "@/core/store/features/auth/authStore"
-import { useAuth } from "@/hooks/auth/use-auth"
+import { ROUTE } from '@/core/constants/path'
+import { useAuthStore } from '@/core/store/features/auth/authStore'
+import { useAuth } from '@/hooks/auth/use-auth'
 
 const HomePage = lazy(() => import('@/pages/home/HomePage'))
 const UserDashboard = lazy(() => import('@/pages/users/dashboard/Dashboard'))

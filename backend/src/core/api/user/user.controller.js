@@ -1,5 +1,5 @@
 import { UserService } from '../../modules/user/services/user.service';
-import { CreateUserDto, UpdateUserDto, BanUserDto, UnbanUserDto, UpdateUserRoleDto } from '../../modules/user/dto';
+import { UpdateUserDto, BanUserDto, UnbanUserDto, UpdateUserRoleDto } from '../../modules/user/dto';
 import { ValidHttpResponse } from '../../../packages/handler/response/validHttp.response';
 import { parsePaginationAndFilters, parsePagination } from '../../utils';
 
@@ -28,7 +28,7 @@ class Controller {
     updateOne = async req => {
         await this.service.upsertOne(UpdateUserDto(req.body), req.user.payload.id);
         return ValidHttpResponse.toNoContentResponse();
-    };  
+    };
 
     /**
      * GET /api/v1/users/{id}

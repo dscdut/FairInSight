@@ -6,5 +6,4 @@ export const LogoutInterceptor = new DefaultValidatorInterceptor(
     Joi.object({
         refresh_token: JoiUtils.requiredString(),
     }),
-    'params'
 );

@@ -1,5 +1,5 @@
 import { AuthService } from '../../modules/auth/service/auth.service';
-import { RegisterDto, LoginDto, ForgotPasswordDto, VerifyOtpDto, ResetPasswordDto, UpdateMyProfileDto, RefreshTokenDto } from '../../modules/auth';
+import { RegisterDto, LoginDto, ForgotPasswordDto, VerifyOtpDto, ResetPasswordDto, UpdateMyProfileDto, RefreshTokenDto, LogoutDto } from '../../modules/auth';
 import { ValidHttpResponse } from '../../../packages/handler/response/validHttp.response';
 
 class Controller {
@@ -21,6 +21,7 @@ class Controller {
         const data = await this.service.getMyProfile(req.user.payload.id);
         return ValidHttpResponse.toOkResponse(data);
     }
+
     updateMyProfile = async req => {
         const data = await this.service.updateMyProfile(UpdateMyProfileDto(req.body), req.user.payload.id);
         return ValidHttpResponse.toOkResponse(data);
@@ -30,10 +31,12 @@ class Controller {
         const data = await this.service.forgotPassword(ForgotPasswordDto(req.body));
         return ValidHttpResponse.toOkResponse(data);
     }
+
     verifyOtp = async req => {
         const data = await this.service.verifyOtp(VerifyOtpDto(req.body));
         return ValidHttpResponse.toOkResponse(data);
     }
+
     resetPassword = async req => {
         const data = await this.service.resetPassword(ResetPasswordDto(req.body));
         return ValidHttpResponse.toOkResponse(data);
@@ -45,7 +48,8 @@ class Controller {
     }
 
     logout = async req => {
-        const data = await this.service.logout()
+        const data = await this.service.logout(LogoutDto(req.body));
+        return ValidHttpResponse.toOkResponse(data);
     }
 }
 

@@ -1,15 +1,15 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { type AxiosError } from 'axios'
 import { useNavigate } from 'react-router-dom'
 import { type z } from 'zod'
 
 import { ROUTE } from '@/core/constants/path'
 import { handleError } from '@/core/helpers/error-handler'
-import { MUTATION_KEYS } from '@/core/helpers/key-tanstack'
+import { MUTATION_KEYS, QUERY_KEYS } from '@/core/helpers/key-tanstack'
 import { processLoginSuccess } from '@/core/helpers/process-login-success'
 import toastifyCommon from '@/core/lib/toastify-common'
 import { authApi } from '@/core/services/auth.service'
-// import { type LoginSchema } from '@/core/zod/login.zod'
+import { useAuthStore } from '@/core/store/features/auth/authStore'
 import { type ForgotEmailSchema } from '@/core/zod/forgot-email.zod'
 import { type RegisterSchema } from '@/core/zod/register.zod'
 import {
@@ -18,7 +18,6 @@ import {
   type LoginApiResponse,
   type ResetPasswordReq
 } from '@/models/interface/auth.interface'
-
 
 // Login
 export const useLoginAuth = () => {
@@ -83,7 +82,6 @@ export const useEmailForgotPassAuth = () => {
 // VERIFY EMAIL
 export const useVerifyEmailAuth = () => {
   const navigate = useNavigate()
-  const { mutateAsync: login } = useLoginAuth()
 
   return useMutation({
     mutationKey: [MUTATION_KEYS.verifyEmail],
@@ -93,15 +91,6 @@ export const useVerifyEmailAuth = () => {
       toastifyCommon.success('Xác thực thành công!')
       if (variables.type === 'forgot_password') {
         navigate(ROUTE.AUTH.RESET_PASSWORD, { state: { email: variables.email } })
-      } else if (variables.password && variables.email) {
-        try {
-          await login({
-            email: variables.email,
-            password: variables.password
-          })
-        } catch (error) {
-          navigate(ROUTE.AUTH.LOGIN)
-        }
       } else {
         navigate(ROUTE.AUTH.LOGIN)
       }
@@ -110,8 +99,10 @@ export const useVerifyEmailAuth = () => {
   })
 }
 
+// RESET PASSWORD
 export const useResetPasswordAuth = () => {
   const navigate = useNavigate()
+
   return useMutation({
     mutationKey: [MUTATION_KEYS.resetPassword],
     mutationFn: (data: ResetPasswordReq) => authApi.resetPassword(data),
@@ -119,6 +110,19 @@ export const useResetPasswordAuth = () => {
       toastifyCommon.success('Mật khẩu đã được cập nhật. Vui lòng đăng nhập lại.')
       navigate(ROUTE.AUTH.LOGIN)
     },
-    onError: (error: AxiosError) => handleError(error, 'Failed to reset password')
+    onError: (error: AxiosError) => handleError(error, 'Xác thực thất bại!')
+  })
+}
+
+export const useUserInfo = () => {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+
+  return useQuery({
+    queryKey: [QUERY_KEYS.userInfo],
+    queryFn: async () => {
+      const userData = await authApi.getUserInfo()
+      return userData
+    },
+    enabled: isAuthenticated
   })
 }

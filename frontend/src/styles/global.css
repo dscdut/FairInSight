@@ -54,29 +54,29 @@
     TYPOGRAPHY SYSTEM
     ========================================= */
     /* Heading Styles */
-    --font-size-h1: 48px;
+    --font-size-h1: 40px;
     --line-height-h1: 58px;
     --font-weight-h1: 700;
 
-    --font-size-h2: 40px;
+    --font-size-h2: 32px;
     --line-height-h2: 48px;
     --font-weight-h2: 700;
 
-    --font-size-h3: 32px;
-    --line-height-h3: 38px;
+    --font-size-h3: 28px;
+    --line-height-h3: 34px;
     --font-weight-h3: 600;
 
-    --font-size-h4: 28px;
-    --line-height-h4: 34px;
+    --font-size-h4: 24px;
+    --line-height-h4: 28px;
     --font-weight-h4: 600;
 
-    --font-size-h5: 24px;
-    --line-height-h5: 28px;
+    --font-size-h5: 20px;
+    --line-height-h5: 24px;
     --font-weight-h5: 600;
 
     /* Body Text Styles */
-    --font-size-p: 20px;
-    --line-height-p: 28px;
+    --font-size-p: 16px;
+    --line-height-p: 24px;
     --font-weight-p: 400;
 
     --font-size-p-medium: 16px;
@@ -139,6 +139,7 @@
 
 /* Add Google Sans Flex font */
 @font-face {
+  font-display: swap;
   font-family: 'Google Sans Flex';
   src: url('../assets/fonts/GoogleSansFlex-VariableFont.woff2') format('woff2');
   font-weight: 100 900;

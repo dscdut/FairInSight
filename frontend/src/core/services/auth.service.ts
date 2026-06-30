@@ -1,15 +1,7 @@
 import { type AxiosInstance } from 'axios'
 
 import axiosClient from '@/core/services/axios-client'
-import {
-  type VerifyOtpReq,
-  type ResetPasswordReq,
-  type Account,
-  type LoginResponse,
-  type LoginApiResponse,
-  type RegisterReponse,
-  type SendEmailReq
-} from '@/models/interface/auth.interface'
+import { type AuthApi } from '@/models/types/api/auth-api.type'
 
 const API_LOGIN_URL = '/auth/login'
 const API_REGISTER_URL = '/auth/register'
@@ -20,18 +12,11 @@ const API_RESEND_CODE_URL = '/auth/resend-verification-email'
 const API_RESET_PASSWORD_URL = '/auth/reset-password'
 const API_LOGOUT_URL = '/auth/logout'
 
-export type AuthApi = {
-  login: (params: Account) => Promise<LoginApiResponse>
-  register: (params: Account) => Promise<RegisterReponse>
-  refreshToken: (refreshToken: string) => Promise<LoginResponse>
-  forgotPassword: (params: SendEmailReq) => Promise<{message: string}>
-  verifyOtp: (params: VerifyOtpReq) => Promise<{message: string}>
-  resendVerificationCode: (email: string) => Promise<{ message: string }>
-  resetPassword: (params: ResetPasswordReq) => Promise<{ message: string }>
-  logout: (refresh_token: string) => Promise<void>
-}
+const API_USER = '/auth/me'
+
 
 export const createAuthApi = (client: AxiosInstance): AuthApi => ({
+  // Auth
   login(params) {
     return client.post(API_LOGIN_URL, params)
   },
@@ -55,6 +40,13 @@ export const createAuthApi = (client: AxiosInstance): AuthApi => ({
   },
   logout(refresh_token) {
     return client.post(API_LOGOUT_URL, { refresh_token })
+  },
+  // User
+  getUserInfo() {
+    return client.get(API_USER)
+  },
+  updateProfile(params) {
+    return client.put(API_USER, params)
   }
 })
 

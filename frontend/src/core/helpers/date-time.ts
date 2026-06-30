@@ -20,6 +20,7 @@ import {
 dayjs.extend(relativeTime)
 dayjs.extend(duration)
 
+//YYYY-MM-DD
 export function formatDate(date: Dayjs | string | Date, dateFormat: string = STANDARD_DATE_FORMAT_INVERSE) {
   if (date) {
     if (typeof date === 'object' && 'format' in date) {
@@ -31,6 +32,7 @@ export function formatDate(date: Dayjs | string | Date, dateFormat: string = STA
   return null
 }
 
+// Chuyển thành giờ phút
 export function formatTime(time: Dayjs, timeFormat: string = STANDARD_TIME_FORMAT) {
   if (!time) return null
   if (typeof time === 'object' && 'format' in time) {
@@ -39,6 +41,7 @@ export function formatTime(time: Dayjs, timeFormat: string = STANDARD_TIME_FORMA
   return dayjs(time).format(timeFormat)
 }
 
+// DD/MM/YYY HH:mm
 export function formatDateTime(time: Dayjs, dateTimeFormat: string = STANDARD_DATE_TIME_FORMAT_VIEW) {
   if (!time) return null
   if (typeof time === 'object' && 'format' in time) {
@@ -47,10 +50,13 @@ export function formatDateTime(time: Dayjs, dateTimeFormat: string = STANDARD_DA
   return dayjs(time).format(dateTimeFormat)
 }
 
+// Format date from now
+// just now, x mins ago, x hours ago, x days ago, x weeks ago, x months ago, x years ago
 export function formatDateTimeFromNow(time: Dayjs, lang: string) {
   return dayjs(time).locale(lang).fromNow()
 }
 
+// Convert to VietNameTime
 export const formatDateToVietnamTimezone = (date?: Dayjs | string | undefined, format = STANDARD_DATE_FORMAT_FULL) => {
   if (isEmpty(date) || isUndefined(date)) {
     return null
@@ -59,18 +65,22 @@ export const formatDateToVietnamTimezone = (date?: Dayjs | string | undefined, f
   return dayjs(date).add(VIETNAMESE_TIME_ZONE_OFFSET, 'hour').format(format)
 }
 
+// Convert to Vietnam Timezone
 export const convertUTCTimeToVietnamTimezone = (dateString: string) => {
   return dayjs(dateString).add(VIETNAMESE_TIME_ZONE_OFFSET, 'hour')
 }
 
+// Check if date is valid (YYYY-MM-DD)
 export function isDateValue(date?: string) {
   return date?.match(/[0-9]{4}-[0-9]{2}-[0-9]{2}/)
 }
 
+// Check if time is valid (HH:mm)
 export function isTimeValue(time?: string) {
   return time?.match(/[0-9]{2}:[0-9]{2}/)
 }
 
+// Check if date and time is valid (YYYY-MM-DD HH:mm)
 export function isDateTimeValue(time?: string) {
   return (
     time?.match(STANDARD_DATE_TIME_REGEX_WITHOUT_TIMEZONE) ||
