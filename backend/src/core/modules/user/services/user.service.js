@@ -61,7 +61,13 @@ class Service {
    */
     toUserListItem(user) {
         const roleName = (user.roles?.name || Role.USER).toUpperCase();
-        const status = user.banned_by ? UserStatus.BANNED : UserStatus.ACTIVE;
+        let status = UserStatus.ACTIVE;
+        if (user.banned_by) {
+            status = UserStatus.BANNED;
+        } else if (!user.is_email_confirmed) {
+            status = UserStatus.INACTIVE;
+        }
+
         return {
             id: user.id,
             userCode: `USR-${user.id.slice(0, 8).toUpperCase()}`,

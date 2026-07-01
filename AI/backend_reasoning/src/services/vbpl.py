@@ -65,6 +65,24 @@ def fetch(item_id: str) -> dict:
     return data
 
 
+def pdf_download_url(item_id: str, data: Optional[dict] = None) -> Optional[str]:
+    """URL tải PDF gốc trên VBPL (không tải về). None nếu văn bản không có PDF.
+
+    Dùng làm fallback show PDF khi không lưu được lên Cloudinary (file quá lớn): FE
+    mở link này ở tab mới (browser tự tải/mở — VBPL serve octet-stream nên KHÔNG nhúng
+    iframe được, chỉ mở tab). data truyền sẵn để khỏi fetch lại; None thì tự fetch.
+    """
+    from urllib.parse import quote
+
+    if data is None:
+        data = fetch(item_id)
+    filename = (data.get("documentContentFileName") or "").strip()
+    if not filename:
+        return None
+    base = settings.VBPL_API_BASE.rstrip("/")
+    return f"{base}/minio/buckets/vbpl/{item_id}/{quote(filename)}/download"
+
+
 def fetch_pdf(item_id: str) -> tuple[bytes, str]:
     """Tải PDF GỐC (bản scan có dấu mộc) từ VBPL. Trả (pdf_bytes, filename).
 
@@ -88,16 +106,35 @@ def fetch_pdf(item_id: str) -> tuple[bytes, str]:
     return resp.content, filename
 
 
-def _strip_html(html: str) -> str:
-    """HTML toàn văn VBPL (có <table>/<p>/<span>) → text phẳng giữ cấu trúc dòng.
+# Block-level HTML của VBPL: mỗi đơn vị (tiêu đề Điều, khoản, điểm) nằm trong 1 thẻ
+# block riêng. get_text('\n') TOÀN CỤC chèn \n giữa MỌI thẻ con (<strong>/<span>) →
+# XÉ VỤN tiêu đề "Điều 3. Hiệu lực thi hành" thành nhiều dòng rời → unit_tree mất Điều.
+_BLOCK_TAGS = ["p", "li", "div", "h1", "h2", "h3", "h4", "h5", "h6", "tr", "blockquote"]
 
-    get_text('\\n') để mỗi block (Điều/Khoản) xuống dòng riêng → UnitTreeBuilder bắt
-    được. Gộp khoảng trắng thừa nhưng GIỮ '\\n'. Bỏ dòng rỗng dư.
+
+def _strip_html(html: str) -> str:
+    """HTML toàn văn VBPL → text phẳng, MỖI BLOCK (<p>/<li>/...) = 1 DÒNG liền mạch.
+
+    Ghép text trong từng block với separator ' ' (KHÔNG '\\n') → các <strong>/<span> bị
+    HTML xé trong cùng <p> dính lại liền (vd 'Điều 3. Hiệu lực thi hành' nguyên dòng) →
+    UnitTreeBuilder cắt Điều theo dòng "^Điều N." không còn bỏ sót. Chỉ lấy block LÁ
+    (không chứa block con) để khỏi trùng. Fallback get_text('\\n') nếu HTML không có
+    block (text trần / chỉ <br>) → tránh ra rỗng.
     """
     soup = BeautifulSoup(html or "", "lxml")
-    text = soup.get_text("\n")
-    lines = [_MULTISPACE.sub(" ", ln).strip() for ln in text.split("\n")]
-    text = "\n".join(ln for ln in lines if ln)
+    leaf_lines: list[str] = []
+    for el in soup.find_all(_BLOCK_TAGS):
+        if el.find(_BLOCK_TAGS):
+            continue  # block cha — để block con (lá) xử, tránh trùng nội dung
+        txt = _MULTISPACE.sub(" ", el.get_text(" ", strip=True)).strip()
+        if txt:
+            leaf_lines.append(txt)
+    text = "\n".join(leaf_lines)
+    # Fallback: HTML không dùng block (hiếm, VB cũ) → per-block ra quá ít so với toàn văn.
+    flat = soup.get_text("\n")
+    if len(text) < 0.5 * len(_MULTISPACE.sub(" ", flat)):
+        lines = [_MULTISPACE.sub(" ", ln).strip() for ln in flat.split("\n")]
+        text = "\n".join(ln for ln in lines if ln)
     return _MULTIBLANK.sub("\n\n", text).strip()
 
 

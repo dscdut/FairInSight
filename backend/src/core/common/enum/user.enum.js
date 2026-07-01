@@ -1,6 +1,7 @@
 export const UserStatus = {
-    ACTIVE: 'active',
-    BANNED: 'banned',
+    ACTIVE: 'ACTIVE',
+    INACTIVE: 'INACTIVE',
+    BANNED: 'BANNED',
 };
 
 export const UserActionType = {
