@@ -61,7 +61,7 @@ export const mapLawyerListItem = user => {
     return {
         id: user.id,
         fullName: user.full_name,
-        avatar: user.avatar_url,
+        avatarUrl: user.avatar_url,
         careerHistory,
         bio,
         averageRating: lawyerDetails.rating_avg || 0,
