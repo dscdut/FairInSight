@@ -65,7 +65,7 @@ class Service {
         return {
             id: user.id,
             userCode: `USR-${user.id.slice(0, 8).toUpperCase()}`,
-            avatar: user.avatar_url,
+            avatarUrl: user.avatar_url,
             fullName: user.full_name,
             email: user.email,
             roleName,
@@ -103,7 +103,16 @@ class Service {
    * Alias for findById (OpenAPI naming)
    */
     async getUserById(id) {
-        return this.findById(id);
+        const user = await this.findById(id);
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        return {
+            data: {
+                ...this.toUserListItem(user),
+            }
+        }
     }
 
     /**
@@ -247,7 +256,7 @@ class Service {
             data: {
                 fullName: updatedUser.full_name,
                 email: updatedUser.email,
-                avatar: updatedUser.avatar_url,
+                avatarUrl: updatedUser.avatar_url,
                 roleName: role.toUpperCase(),
                 licenseInfo: role === Role.LAWYER.toLowerCase()
                     ? {
