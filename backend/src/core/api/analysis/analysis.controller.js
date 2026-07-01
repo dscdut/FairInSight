@@ -11,6 +11,13 @@ class Controller {
         const data = await this.service.listAnalysisHistory(userId);
         return ValidHttpResponse.toOkResponse(data);
     };
+
+    getAnalysisHistoryDetail = async req => {
+        const userId = req.user.payload.id;
+        const analysisId = req.params.id;
+        const data = await this.service.getAnalysisHistoryDetail(userId, analysisId);
+        return ValidHttpResponse.toOkResponse(data);
+    };
 }
 
 export const AnalysisController = new Controller();
