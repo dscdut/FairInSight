@@ -1,5 +1,7 @@
 import { Module } from 'packages/handler/Module';
-import { CreateDraftInterceptor } from 'core/modules/draft/interceptor';
+import { CreateDraftInterceptor, UpdateDraftInterceptor } from 'core/modules/draft/interceptor';
+import { RecordIdInterceptor } from 'core/modules/interceptor/recordId/record-id.interceptor';
+import { RecordId } from 'core/common/swagger';
 import { DraftController } from './draft.controller';
 
 export const DraftResolver = Module.builder()
@@ -16,5 +18,16 @@ export const DraftResolver = Module.builder()
             body: 'CreateDraftDto',
             controller: DraftController.createDraft,
             preAuthorization: true
+        },
+        {
+            route: '/:id',
+            method: 'put',
+            params: [RecordId],
+            interceptors: [RecordIdInterceptor, UpdateDraftInterceptor],
+            body: 'UpdateDraftDto',
+            controller: DraftController.updateDraft,
+            preAuthorization: true
         }
     ]);
+
+
