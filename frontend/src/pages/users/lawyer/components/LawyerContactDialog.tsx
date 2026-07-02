@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
 
 import { MapPin, Star, Check, Paperclip, X } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import FileUpload from '@/components/upload-file/file-upload'
+import toastifyCommon from '@/core/lib/toastify-common'
+import { consultationApi } from '@/core/services/consultation.service'
 import { useAppointmentStore } from '@/core/store/features/appointments'
 import { useUserInfo } from '@/hooks/tanstack-query/auth/use-query-auth'
 import { type Lawyer } from '@/models/lawyer/list-lawyer.type'
@@ -37,8 +40,10 @@ export function LawyerContactDialog({
   const [contactForm, setContactForm] = useState({ name: '', phone: '', email: '', message: '' })
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [prepopulatedFiles, setPrepopulatedFiles] = useState<any[]>([])
+  const [submitting, setSubmitting] = useState(false)
 
   const { data: user } = useUserInfo()
+  const navigate = useNavigate()
 
   // Reset/Initialize form and step when modal opens or lawyer changes
   useEffect(() => {
@@ -58,32 +63,44 @@ export function LawyerContactDialog({
 
   if (!lawyer) return null
 
-  const handleContactSubmit = (e: React.FormEvent) => {
+  const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // eslint-disable-next-line no-console
-    console.log('Submitted contact request:', { ...contactForm, files: selectedFiles, prepopulatedFiles })
+    setSubmitting(true)
+    try {
+      // Create a real consultation process in the database with the user's manually typed context/message
+      await consultationApi.createConsultation({
+        lawyerId: lawyer.id,
+        contextSummary: `Đăng ký tư vấn: ${contactForm.message.slice(0, 40)}...`,
+        message: contactForm.message
+      })
 
-    // Add new request to the global appointments store
-    const addRequest = useAppointmentStore.getState().addRequest
-    addRequest({
-      lawyerName: lawyer.fullName,
-      lawyerAvatar: lawyer.avatar || '',
-      topicVI: lawyer.specializations[0] || 'Tư vấn pháp lý',
-      topicEN: lawyer.specializations[0] || 'Legal Consultation',
-      message: contactForm.message,
-      attachments: [
-        ...prepopulatedFiles.map((file) => ({
-          name: file.name,
-          size: file.size || 'N/A'
-        })),
-        ...selectedFiles.map((file) => ({
-          name: file.name,
-          size: formatContactFileSize(file.size)
-        }))
-      ]
-    })
+      // Add new request to the global appointments store
+      const addRequest = useAppointmentStore.getState().addRequest
+      addRequest({
+        lawyerName: lawyer.fullName,
+        lawyerAvatar: lawyer.avatar || '',
+        topicVI: lawyer.specializations[0] || 'Tư vấn pháp lý',
+        topicEN: lawyer.specializations[0] || 'Legal Consultation',
+        message: contactForm.message,
+        attachments: [
+          ...prepopulatedFiles.map((file) => ({
+            name: file.name,
+            size: file.size || 'N/A'
+          })),
+          ...selectedFiles.map((file) => ({
+            name: file.name,
+            size: formatContactFileSize(file.size)
+          }))
+        ]
+      })
 
-    setStep(3)
+      setStep(3)
+    } catch (err) {
+      console.error('Failed to create consultation:', err)
+      toastifyCommon.error('Đăng ký tư vấn thất bại. Vui lòng thử lại!')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -173,19 +190,19 @@ export function LawyerContactDialog({
                   <div className='space-y-1'>
                     <label className='text-xs font-bold text-text-secondary'>Họ và tên của bạn</label>
                     <Input
-                      disabled
                       value={contactForm.name}
+                      onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
                       placeholder='Nhập họ tên...'
-                      className='h-9.5 border-border-secondary bg-background-tertiary text-sm cursor-not-allowed opacity-75'
+                      className='h-9.5 border-border-secondary bg-background-primary text-sm'
                     />
                   </div>
                   <div className='space-y-1'>
                     <label className='text-xs font-bold text-text-secondary'>Số điện thoại</label>
                     <Input
-                      disabled
                       value={contactForm.phone}
+                      onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })}
                       placeholder='Nhập số điện thoại...'
-                      className='h-9.5 border-border-secondary bg-background-tertiary text-sm cursor-not-allowed opacity-75'
+                      className='h-9.5 border-border-secondary bg-background-primary text-sm'
                     />
                   </div>
                 </div>
@@ -193,11 +210,11 @@ export function LawyerContactDialog({
                 <div className='space-y-1'>
                   <label className='text-xs font-bold text-text-secondary'>Email liên hệ</label>
                   <Input
-                    disabled
                     type='email'
                     value={contactForm.email}
+                    onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
                     placeholder='Nhập địa chỉ email...'
-                    className='h-9.5 border-border-secondary bg-background-tertiary text-sm cursor-not-allowed opacity-75'
+                    className='h-9.5 border-border-secondary bg-background-primary text-sm'
                   />
                 </div>
 
@@ -312,9 +329,10 @@ export function LawyerContactDialog({
                   </Button>
                   <Button
                     type='submit'
+                    disabled={submitting}
                     className='w-full'
                   >
-                    Gửi yêu cầu
+                    {submitting ? 'Đang gửi...' : 'Gửi yêu cầu'}
                   </Button>
                 </div>
               </div>
@@ -332,13 +350,26 @@ export function LawyerContactDialog({
                   Yêu cầu của bạn với Luật sư <span className='font-bold text-text-primary'>{lawyer.fullName}</span> đã được gửi đi thành công.
                 </p>
               </div>
-              <Button
-                type='button'
-                onClick={() => onOpenChange(false)}
-                className='mt-6 h-9.5 text-xs rounded-md bg-primary text-white font-bold px-6'
-              >
-                Đóng
-              </Button>
+              <div className='flex gap-3 mt-6'>
+                <Button
+                  type='button'
+                  onClick={() => {
+                    onOpenChange(false)
+                    navigate('/messages')
+                  }}
+                  className='h-9.5 text-xs rounded-md bg-primary text-white font-bold px-4 hover:bg-primary/95 transition-all shadow-sm'
+                >
+                  Đi đến Chat & Xem tiến trình
+                </Button>
+                <Button
+                  type='button'
+                  variant='outline'
+                  onClick={() => onOpenChange(false)}
+                  className='h-9.5 text-xs rounded-md border-border-secondary hover:bg-background-tertiary text-text-primary px-4'
+                >
+                  Đóng
+                </Button>
+              </div>
             </div>
           )}
         </div>

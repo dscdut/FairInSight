@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.repositories import document_repo
 from src.services import cloudinary, llm
+from src.services import vbpl as vbpl_module
 from src.services.extraction import extract as extract_mod
 
 # Cache preview theo client_id (in-memory, đủ cho POC — confirm dùng lại metadata/url).
@@ -118,19 +119,34 @@ def _tail_text(path: str, skip_first: int = 2, max_tail: int = 2) -> str:
 
 
 async def preview(
-    session: AsyncSession, *, file_bytes: bytes, filename: str, client_id: str
+    session: AsyncSession, *, file_bytes: bytes, filename: str, client_id: str,
+    vbpl_url: Optional[str] = None,
 ) -> dict:
     """Preview 1 file upload (KHÔNG ghi KB). Trả contract /preview.
 
     1) upload Cloudinary  2) trích 1-2 trang đầu  3) LLM rút metadata
     4) check trùng (document_repo)  5) LLM tóm tắt sơ bộ. Cache theo client_id.
+
+    vbpl_url (tùy chọn): nếu admin dán link vbpl.vn hợp lệ → cào toàn văn + metadata
+    từ VBPL (cấu trúc Điều/Khoản mạnh hơn OCR). PDF VẪN upload + LLM-metadata để ĐỐI
+    CHIẾU (số hiệu/loại/tên) cho admin yên tâm. Khi đó: fields trả về = nguồn VBPL,
+    summary tạo từ text cào, cache thêm scraped_text để confirm nạp bằng raw_text (bỏ OCR).
     """
     # public_id PHẢI kết thúc ".pdf": Cloudinary raw suy content-type từ đuôi URL.
     # Không có .pdf → serve application/octet-stream → browser TẢI VỀ, iframe trắng.
-    up = cloudinary.upload_law_pdf(
-        file_bytes, public_id=_pdf_public_id(filename, client_id), overwrite=True
-    )
-    cloudinary_url = up["secure_url"]
+    # Cloudinary có thể từ chối (file > giới hạn gói free 10MB...) → KHÔNG chặn cả
+    # luồng: với nguồn VBPL (text cào), PDF gốc chỉ để đối chiếu/xem lại, không bắt
+    # buộc. Fail thì cloudinary_url=None + cảnh báo, nạp vẫn chạy bằng text VBPL.
+    cloudinary_warning = None
+    pdf_is_external = False  # True khi pdf_url là link ngoài (VBPL) → FE mở tab mới, không iframe
+    try:
+        up = cloudinary.upload_law_pdf(
+            file_bytes, public_id=_pdf_public_id(filename, client_id), overwrite=True
+        )
+        cloudinary_url = up["secure_url"]
+    except Exception as exc:  # noqa: BLE001 — không chặn preview/nạp khi Cloudinary lỗi
+        cloudinary_url = None
+        cloudinary_warning = f"Không lưu được PDF lên Cloudinary: {exc}"
 
     # Trích trang ĐẦU (tiêu đề/số hiệu) + trang CUỐI (điều khoản hiệu lực) để LLM đọc.
     tmp = Path(tempfile.gettempdir()) / f"preview_{client_id}_{Path(filename).name}"
@@ -142,15 +158,46 @@ async def preview(
         tmp.unlink(missing_ok=True)
 
     raw = llm.complete_json_sync(_build_meta_prompt(head, tail), system=META_SYSTEM)
-    fields = {k: raw.get(k) for k in _META_FIELDS}
+    pdf_fields = {k: raw.get(k) for k in _META_FIELDS}
+
+    # --- Nhánh VBPL: cào text + metadata, đối chiếu với PDF ---
+    scraped_text = None
+    compare = None
+    fields = pdf_fields
+    item_id = vbpl_module.parse_vbpl_url(vbpl_url) if vbpl_url else None
+    if item_id:
+        try:
+            data = vbpl_module.fetch(item_id)
+            vbpl_fields = vbpl_module.to_fields(data)
+            scraped_text = vbpl_module.extract_text(data)
+            compare = vbpl_module.build_compare_report(vbpl_fields, pdf_fields)
+            fields = vbpl_fields  # nguồn chân lý = VBPL (cấu trúc mạnh hơn)
+            # PDF không lưu được Cloudinary (file to) → fallback link PDF gốc VBPL để FE
+            # mở tab mới xem (KHÔNG nhúng iframe được vì VBPL serve octet-stream).
+            if not cloudinary_url:
+                vbpl_pdf_url = vbpl_module.pdf_download_url(item_id, data)
+                if vbpl_pdf_url:
+                    cloudinary_url = vbpl_pdf_url
+                    pdf_is_external = True
+                    cloudinary_warning = (
+                        (cloudinary_warning or "") + " — Dùng link PDF gốc trên VBPL "
+                        "(mở tab mới, không xem inline được)."
+                    )
+        except Exception as exc:  # noqa: BLE001 — VBPL lỗi thì lùi về PDF, không chặn
+            compare = {"error": f"Không lấy được dữ liệu VBPL: {exc}", "checks": []}
+            scraped_text = None
 
     duplicate = await document_repo.check_duplicate(
         session, fields.get("official_code") or "", fields.get("title") or ""
     )
 
     try:
-        # tóm tắt ~150-250 từ: cho LLM nhiều ngữ cảnh hơn (đầu + cuối).
-        summary_input = f"{head[:5000]}\n...\n{tail[:1500]}"
+        # tóm tắt ~150-250 từ. VBPL có text đầy đủ → lấy đầu+cuối text cào; PDF thì
+        # dùng head+tail trích được.
+        if scraped_text:
+            summary_input = f"{scraped_text[:5000]}\n...\n{scraped_text[-1500:]}"
+        else:
+            summary_input = f"{head[:5000]}\n...\n{tail[:1500]}"
         summary = llm.complete_sync(summary_input, system=_SUMMARY_SYSTEM, temperature=0.2)
     except Exception:  # noqa: BLE001 — summary phụ, lỗi LLM thì để rỗng
         summary = ""
@@ -160,6 +207,8 @@ async def preview(
         "fields": fields,
         "filename": filename,
         "summary": summary,
+        "vbpl_url": vbpl_url if item_id else None,
+        "scraped_text": scraped_text,
     }
     return {
         "client_id": client_id,
@@ -167,6 +216,9 @@ async def preview(
         "fields": fields,
         "summary": summary,
         "duplicate": duplicate,
+        "compare": compare,  # None nếu không dùng VBPL
+        "cloudinary_warning": cloudinary_warning,  # != None khi PDF không lưu được (file to...)
+        "pdf_is_external": pdf_is_external,  # True: cloudinary_url là link VBPL → FE mở tab mới
     }
 
 
@@ -198,14 +250,19 @@ def _parse_date(s):
 
 
 def confirm(
-    cloudinary_url: str, fields: Optional[dict] = None, summary: Optional[str] = None
+    cloudinary_url: str, fields: Optional[dict] = None, summary: Optional[str] = None,
+    *, vbpl_url: Optional[str] = None, scraped_text: Optional[str] = None,
 ) -> dict:
-    """Publish PDF vào KB qua run_ingest (sync, nặng LLM). Trả {document_id, status, warnings}.
+    """Publish văn bản vào KB qua run_ingest (sync, nặng LLM). Trả {document_id, status, warnings}.
 
-    Tải PDF từ Cloudinary về file tạm → run_ingest → set pdf_url + ÁP field admin
-    đã sửa (title/official_code/ngày/doc_type/issuer) đè metadata ingest tự suy
-    (ingest suy từ tên file tạm nên hay sai) + lưu summary vào metadata_json. publisher
-    KHÔNG nhận các field này nên update sau ingest (1 transaction nhỏ, không sửa publisher).
+    HAI nguồn text:
+    - scraped_text (luồng VBPL): nạp THẲNG bằng raw_text → bỏ tải PDF/OCR. source_url
+      = link vbpl.vn (truy vết nguồn cào); pdf_url vẫn = Cloudinary (FE iframe xem PDF).
+    - không có (luồng PDF cũ): tải PDF Cloudinary về file tạm → run_ingest (OCR + fix).
+
+    Cả 2 đều ÁP field admin (title/official_code/ngày/doc_type/issuer) đè metadata ingest
+    tự suy + lưu summary vào metadata_json (publisher không nhận các field này nên update
+    sau ingest, 1 transaction nhỏ).
     """
     import httpx
 
@@ -213,24 +270,39 @@ def confirm(
     from src.schema.models import Document
     from src.workflows.ingest_graph import run_ingest
 
-    resp = httpx.get(cloudinary_url, timeout=60.0, follow_redirects=True)
-    resp.raise_for_status()
-    # Tên file tạm = số hiệu admin (vd "06_2026_QH16.pdf"). QUAN TRỌNG: metadata
-    # extractor là filename-first và title này chui vào BREADCRUMB của chunk (đã embed)
-    # → đặt tên sạch để retrieval không dính "confirm_file_czr8kx.pdf". Rỗng thì fallback.
+    # stem sạch (số hiệu) cho cả pseudo filename (VBPL) lẫn tên file tạm (PDF): metadata
+    # extractor filename-first + breadcrumb chunk lấy tên này → tránh "confirm_file_xxx".
     code = ((fields or {}).get("official_code") or "").strip()
     safe = __import__("re").sub(r"[^A-Za-z0-9_-]+", "_", code).strip("_")
-    stem = safe or (Path(cloudinary_url).stem or "document")
-    tmp = Path(tempfile.gettempdir()) / f"{stem}.pdf"
-    tmp.write_bytes(resp.content)
-    try:
-        # field admin → vào ingest TRƯỚC khi tính tier/cắt chunk: tier/scope đúng +
-        # breadcrumb mang tên luật thật (file scan hay mất header nên text tự suy sai).
+    stem = safe or (Path(cloudinary_url).stem if cloudinary_url else "") or "document"
+
+    if scraped_text:
+        # Luồng VBPL: text đã sạch → nạp thẳng, bỏ OCR. path = pseudo filename để
+        # MetadataExtractor parse type/code/issuer (filename-first).
+        pseudo = vbpl_module.pseudo_filename(fields or {})
         result = run_ingest(
-            str(tmp), source_url=cloudinary_url, meta_overrides=fields or {},
+            pseudo, source_url=vbpl_url or cloudinary_url,
+            meta_overrides=fields or {}, raw_text=scraped_text,
         )
-    finally:
-        tmp.unlink(missing_ok=True)
+    else:
+        # Luồng PDF cũ: tải PDF Cloudinary về file tạm → OCR + fix.
+        if not cloudinary_url:
+            raise ValueError(
+                "Không thể nạp: PDF chưa lưu được lên Cloudinary (file quá lớn?) và "
+                "không có text VBPL để thay thế. Dùng link vbpl.vn hoặc PDF nhỏ hơn."
+            )
+        resp = httpx.get(cloudinary_url, timeout=60.0, follow_redirects=True)
+        resp.raise_for_status()
+        tmp = Path(tempfile.gettempdir()) / f"{stem}.pdf"
+        tmp.write_bytes(resp.content)
+        try:
+            # field admin → vào ingest TRƯỚC khi tính tier/cắt chunk: tier/scope đúng +
+            # breadcrumb mang tên luật thật (file scan hay mất header nên text tự suy sai).
+            result = run_ingest(
+                str(tmp), source_url=cloudinary_url, meta_overrides=fields or {},
+            )
+        finally:
+            tmp.unlink(missing_ok=True)
 
     doc_id = result.get("document_id")
     if doc_id:

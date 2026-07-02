@@ -1,12 +1,16 @@
 """ChunkBuilder — biến units thành chunk RAG (chunk_text có breadcrumb).
 
-Chiến lược v2 (chunk-theo-ĐIỀU, giữ ngữ nghĩa):
-- 1 ĐIỀU = 1 chunk, gộp tiêu đề Điều + intro + toàn bộ Khoản/Điểm con. Header mang
-  breadcrumb Chương/Mục để mỗi chunk tự đủ ngữ cảnh (không còn khoản lẻ mất tiêu đề Điều).
-- Điều quá dài (> _MAX_CHARS) → chia tiếp theo NHÓM KHOẢN, MỖI mảnh lặp lại tiêu đề Điều cha
-  ("(tiếp N)") để không mất ngữ cảnh. Khoản đơn vẫn > ngưỡng → đứng riêng (cắt cứng cuối).
+Chiến lược v3 (ĐA GRANULARITY — Điều + Khoản + Điểm, mỗi cấp tự đủ ngữ cảnh cha):
+- 1 ĐIỀU = 1 chunk "rollup" (gộp tiêu đề Điều + intro + toàn bộ Khoản/Điểm con) → cho
+  câu hỏi TỔNG QUÁT về cả Điều. Header mang breadcrumb Chương/Mục.
+- 1 KHOẢN = 1 chunk RIÊNG (khi Điều có >=2 khoản) kèm TIÊU ĐỀ ĐIỀU CHA + breadcrumb →
+  cho câu hỏi TRÚNG khoản (đỡ loãng so với chỉ embed mức Điều). source_unit = Khoản.
+- 1 ĐIỂM = 1 chunk RIÊNG (khi Khoản có >=2 điểm và điểm đủ dài) kèm ĐIỀU + KHOẢN cha.
+  source_unit = Điểm.
+- Điều/khoản quá dài → vẫn cắt theo _MAX_CHARS, lặp tiêu đề cha ("(tiếp N)").
 - Block (văn bản không có Điều) → 1 chunk như cũ.
-Chỉ chạy cho Tier A/B (Tier C không vào vector). source_unit = chính ĐIỀU (article).
+Chỉ chạy cho Tier A/B (Tier C không vào vector). source_unit khớp ĐÚNG cấp → khi Khoản/
+Điểm bị sửa (amend mức khoản), chunk con đó flag unit_status đúng, không kéo cả Điều.
 """
 
 from __future__ import annotations
@@ -21,6 +25,9 @@ from src.ingest.unit_tree import UnitDraft
 _MIN_CHARS = 15
 # Ngưỡng 1 chunk: ~1500 token (len//4) — an toàn dưới context bge-m3 8192.
 _MAX_CHARS = 6000
+# Khoản/Điểm phải đủ dài mới tách chunk RIÊNG (tránh vector vụn "1. Áp dụng." vô nghĩa).
+_MIN_CLAUSE_CHARS = 80
+_MIN_POINT_CHARS = 120
 # Tier được phép chunk + embedding (C = cá biệt, chỉ metadata).
 _CHUNK_TIERS = {Tier.A.value, Tier.B.value}
 
@@ -98,6 +105,56 @@ def _article_segments(art: UnitDraft, by_parent: dict[str, list[UnitDraft]]) -> 
     return title, segments
 
 
+def _clause_full(clause: UnitDraft, by_parent: dict[str, list[UnitDraft]]) -> str:
+    """Nội dung 1 Khoản gộp các Điểm con (để làm chunk Khoản riêng)."""
+    label = _clause_label(clause)
+    parts = [f"{label}{(clause.content or '').strip()}".strip()]
+    for ch in by_parent.get(clause.temp_id, []):
+        body = (ch.content or "").strip()
+        if body:
+            parts.append(f"{_clause_label(ch)}{body}")
+    return "\n".join(p for p in parts if p).strip()
+
+
+def _emit_subunits(
+    chunks: list[ChunkDraft], idx: int, art: UnitDraft, art_title: str,
+    header: str, by_parent: dict[str, list[UnitDraft]],
+) -> int:
+    """Phát sinh chunk RIÊNG cho Khoản (và Điểm dài) — mỗi chunk mang ngữ cảnh cha.
+
+    Chỉ chạy khi Điều có >=2 Khoản (Điều 1-khoản đã đủ trong chunk rollup). Mỗi chunk
+    Khoản = header + tiêu đề Điều cha + nội dung khoản (gộp điểm). Khoản có >=2 Điểm dài
+    → tách thêm chunk Điểm (kèm Điều + Khoản cha). source_unit = ĐÚNG cấp (Khoản/Điểm).
+    """
+    clauses = [c for c in by_parent.get(art.temp_id, [])
+               if c.unit_type == UnitType.CLAUSE.value]
+    if len(clauses) < 2:
+        return idx
+    for cl in clauses:
+        cl_text = _clause_full(cl, by_parent)
+        if len(cl_text) < _MIN_CLAUSE_CHARS:
+            continue  # khoản quá ngắn → đã đủ trong rollup, không tạo vector vụn
+        text = f"{header}\n{art_title}\n{cl_text}"
+        if len(text) <= _MAX_CHARS:
+            idx = _emit(chunks, idx, cl.temp_id, text)
+        else:
+            # khoản quá dài → cắt theo điểm, lặp tiêu đề Điều+Khoản
+            idx = _emit(chunks, idx, cl.temp_id,
+                        f"{header}\n{art_title}\nKhoản {cl.clause_no}: {cl_text[:_MAX_CHARS]}")
+        # Điểm dài → chunk riêng (kèm Điều + Khoản cha)
+        points = [p for p in by_parent.get(cl.temp_id, [])
+                  if p.unit_type == UnitType.POINT.value]
+        if len(points) >= 2:
+            for pt in points:
+                body = (pt.content or "").strip()
+                if len(body) < _MIN_POINT_CHARS:
+                    continue
+                ptext = (f"{header}\n{art_title} > Khoản {cl.clause_no}\n"
+                         f"{_clause_label(pt)}{body}")
+                idx = _emit(chunks, idx, pt.temp_id, ptext[:_MAX_CHARS])
+    return idx
+
+
 def _emit(chunks: list[ChunkDraft], idx: int, temp_id: str, text: str) -> int:
     chunks.append(
         ChunkDraft(
@@ -148,33 +205,35 @@ def build_chunks(units: list[UnitDraft], doc_prefix: str) -> list[ChunkDraft]:
         if len(full) < _MIN_CHARS:
             continue
 
-        # vừa ngưỡng → 1 chunk trọn Điều
+        # (1) chunk rollup mức ĐIỀU — cho câu hỏi tổng quát về cả Điều
         if len(header) + len(full) <= _MAX_CHARS:
             idx = _emit(chunks, idx, u.temp_id, f"{header}\n{full}")
-            continue
-
-        # Điều dài → chia nhóm khoản, lặp tiêu đề Điều
-        part: list[str] = []
-        plen = len(header) + len(title)
-        pno = 1
-
-        def flush_part():
-            nonlocal idx, pno, part, plen
-            if not part:
-                return
-            tag = title if pno == 1 else f"{title} (tiếp {pno})"
-            text = f"{header}\n{tag}\n" + "\n".join(part)
-            idx = _emit(chunks, idx, u.temp_id, text)
-            pno += 1
-            part = []
+        else:
+            # Điều dài → chia nhóm khoản, lặp tiêu đề Điều
+            part: list[str] = []
             plen = len(header) + len(title)
+            pno = 1
 
-        for seg in segments:
-            if plen + len(seg) > _MAX_CHARS and part:
-                flush_part()
-            part.append(seg)
-            plen += len(seg)
-        flush_part()
+            def flush_part():
+                nonlocal idx, pno, part, plen
+                if not part:
+                    return
+                tag = title if pno == 1 else f"{title} (tiếp {pno})"
+                text = f"{header}\n{tag}\n" + "\n".join(part)
+                idx = _emit(chunks, idx, u.temp_id, text)
+                pno += 1
+                part = []
+                plen = len(header) + len(title)
+
+            for seg in segments:
+                if plen + len(seg) > _MAX_CHARS and part:
+                    flush_part()
+                part.append(seg)
+                plen += len(seg)
+            flush_part()
+
+        # (2) chunk RIÊNG mức KHOẢN/ĐIỂM — cho câu hỏi trúng sâu (đỡ loãng vector Điều)
+        idx = _emit_subunits(chunks, idx, u, title, header, by_parent)
 
     return chunks
 

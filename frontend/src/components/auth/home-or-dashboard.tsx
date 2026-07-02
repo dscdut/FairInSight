@@ -3,7 +3,7 @@ import { lazy } from 'react'
 import { Navigate } from 'react-router-dom'
 
 import LayoutClient from '@/app/layout/layout-client'
-import { ROLE_ADMIN } from '@/core/configs/consts'
+import { ROLE_ADMIN, ROLE_LAWYER } from '@/core/configs/consts'
 import isEqual from '@/core/configs/is-equal'
 import { ROUTE } from '@/core/constants/path'
 import { useAuthStore } from '@/core/store/features/auth/authStore'
@@ -19,6 +19,9 @@ const HomeOrDashboard = () => {
   if (isAuthenticated) {
     if (isEqual(user?.roleName, ROLE_ADMIN)) {
       return <Navigate to={`${ROUTE.ADMIN.ROOT}/${ROUTE.ADMIN.DASHBOARD}`} replace />
+    }
+    if (isEqual(user?.roleName, ROLE_LAWYER)) {
+      return <Navigate to={ROUTE.LAWYER.ROOT} replace />
     }
     return (
       <LayoutClient>

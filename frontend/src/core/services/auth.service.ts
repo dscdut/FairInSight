@@ -46,7 +46,7 @@ export const createAuthApi = (client: AxiosInstance): AuthApi => ({
     return client.get(API_USER)
   },
   updateProfile(params) {
-    return client.put(API_USER, params)
+    return client.patch(API_USER, params)
   }
 })
 

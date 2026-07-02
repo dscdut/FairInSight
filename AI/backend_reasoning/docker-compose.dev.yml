@@ -37,16 +37,26 @@ services:
       - .env
 
     environment:
-      # Đè localhost -> host.docker.internal để thấy Ollama/tunnel trên host.
+      # Đè localhost -> host.docker.internal để thấy Ollama/tunnel trên host
+      # (chỉ dùng khi USE_NINE_ROUTER=false fallback; mặc định chat qua 9router HTTPS).
       OLLAMA_BASE_URL: "http://host.docker.internal:11434"
       OLLAMA_CHAT_BASE_URL: "http://host.docker.internal:11500"
+      # Embed bge-m3 ĐÓNG trong image (không cần Ollama ngoài). Khớp KB cũ (cosine 0.99998).
+      EMBED_LOCAL: "true"
+      # DB LOCAL trên host: .env trỏ Supabase cloud → ĐÈ sang Postgres local POCFAIRINSIGHT.
+      # localhost trong container = chính container → phải host.docker.internal.
+      POSTGRES_HOST: "host.docker.internal"
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: "POCFAIRINSIGHT"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "123456"
       # Bind & port cố định trong container.
       HOST: "0.0.0.0"
       PORT: "8000"
       # Container KHÔNG có GPU NVIDIA -> EasyOCR chạy CPU (tránh lỗi tìm CUDA).
       OCR_USE_GPU: "false"
       OCR_SWAP_VRAM: "false"
-      # Reranker vốn đã CPU (đóng sẵn trong image) — giữ nguyên.
+      # Reranker + embed bge-m3 đều CPU (đóng sẵn trong image) — giữ nguyên.
 
     ports:
       - "8000:8000"

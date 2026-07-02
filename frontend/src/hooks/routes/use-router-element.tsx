@@ -6,7 +6,7 @@ import LayoutClient from '@/app/layout/layout-client'
 import LayoutMain from '@/app/layout/layout-main'
 import SuspenseProvider from '@/app/providers/suspense-provider'
 import ProtectedRoute from '@/components/auth/protected-route'
-import { ROLE_ADMIN } from '@/core/configs/consts'
+import { ROLE_ADMIN, ROLE_LAWYER } from '@/core/configs/consts'
 import isEqual from '@/core/configs/is-equal'
 import { ROUTE } from '@/core/constants/path'
 import { useAuthStore } from '@/core/store/features/auth/authStore'
@@ -38,6 +38,13 @@ const LawyerList = lazy(() => import('@/pages/users/lawyer/LawyerList'))
 const LawyerProfile = lazy(() => import('@/pages/users/lawyer/LawyerProfile'))
 const Appointments = lazy(() => import('@/pages/users/appointments/Appointments'))
 
+// Lawyer Lazy loaded components
+const LawyerDashboard = lazy(() => import('@/pages/lawyers/dashboard/LawyerDashboard'))
+const LawyerAppointments = lazy(() => import('@/pages/lawyers/appointments/LawyerAppointments'))
+const LawyerMessages = lazy(() => import('@/pages/lawyers/messages/LawyerMessages'))
+const LawyerProfileEdit = lazy(() => import('@/pages/lawyers/profile/LawyerProfileEdit'))
+const LawyerSettings = lazy(() => import('@/pages/lawyers/setting/LawyerSettings'))
+
 export default function useRoutesElements() {
   const location = useLocation()
   const { isAuthenticated } = useAuth()
@@ -59,6 +66,11 @@ export default function useRoutesElements() {
                 path={ROUTE.HOME}
                 element={<Navigate to={`${ROUTE.ADMIN.ROOT}/${ROUTE.ADMIN.DASHBOARD}`} replace />}
               />
+            ) : isEqual(user?.roleName, ROLE_LAWYER) ? (
+              <Route
+                path={ROUTE.HOME}
+                element={<Navigate to={ROUTE.LAWYER.ROOT} replace />}
+              />
             ) : (
               <Route path={ROUTE.USER.ROOT} element={<LayoutMain />}>
                 <Route index element={<UserDashboard />} />
@@ -78,6 +90,20 @@ export default function useRoutesElements() {
             )}
           </Route>
         )}
+
+        {/* Lawyer protected routes */}
+        <Route element={<ProtectedRoute redirectPath={ROUTE.AUTH.LOGIN} />}>
+          {isEqual(user?.roleName, ROLE_LAWYER) && (
+            <Route path={ROUTE.LAWYER.ROOT} element={<LayoutMain />}>
+              <Route index element={<Navigate to={ROUTE.LAWYER.DASHBOARD} replace />} />
+              <Route path={ROUTE.LAWYER.DASHBOARD} element={<LawyerDashboard />} />
+              <Route path={ROUTE.LAWYER.APPOINTMENT} element={<LawyerAppointments />} />
+              <Route path={ROUTE.LAWYER.MESSAGES} element={<LawyerMessages />} />
+              <Route path={ROUTE.LAWYER.PROFILE} element={<LawyerProfileEdit />} />
+              <Route path={ROUTE.LAWYER.SETTING} element={<LawyerSettings />} />
+            </Route>
+          )}
+        </Route>
 
         {/* Auth routes */}
         <Route path={ROUTE.AUTH.LOGIN} element={<Login />} />

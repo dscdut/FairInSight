@@ -1,5 +1,5 @@
 import { Resend } from 'resend';
-import { RESEND_API_KEY, RESEND_FROM } from 'core/env';
+import { RESEND_API_KEY, RESEND_FROM, NODE_ENV } from 'core/env';
 import { InternalServerException } from 'packages/httpException';
 import { logger } from 'packages/logger';
 
@@ -9,6 +9,11 @@ class Service {
     }
 
     async send({ to, subject, text, html }) {
+        if (NODE_ENV === 'development') {
+            logger.info(`[DEV MODE] Sending mail to ${to} | Subject: ${subject} | Content: ${text || html}`);
+            return;
+        }
+
         if (!this.client || !RESEND_FROM) {
             throw new InternalServerException('Mail service is not configured');
         }
