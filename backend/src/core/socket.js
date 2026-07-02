@@ -3,7 +3,7 @@ import { logger } from '../packages/logger';
 
 let io;
 
-export const initSocket = (server) => {
+export const initSocket = server => {
     io = new Server(server, {
         cors: {
             origin: '*',
@@ -11,10 +11,10 @@ export const initSocket = (server) => {
         }
     });
 
-    io.on('connection', (socket) => {
+    io.on('connection', socket => {
         logger.info(`Socket connected: ${socket.id}`);
 
-        socket.on('join_process', (processId) => {
+        socket.on('join_process', processId => {
             socket.join(processId);
             logger.info(`Socket ${socket.id} joined room: ${processId}`);
         });
@@ -56,9 +56,7 @@ export const initSocket = (server) => {
     return io;
 };
 
-export const getIo = () => {
-    return io;
-};
+export const getIo = () => io;
 
 export const emitToRoom = (roomId, event, data) => {
     if (io && roomId) {

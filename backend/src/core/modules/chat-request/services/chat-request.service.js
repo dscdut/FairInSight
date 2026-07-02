@@ -22,7 +22,6 @@ class Service {
             // Verify analysis exists if provided
             let finalAnalysisId = null;
             if (analysisId) {
-                const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
                 if (uuidRegex.test(analysisId)) {
                     const analysis = await prisma.analysis.findFirst({
                         where: { id: analysisId, user_id: userId, deleted_at: null }

@@ -1,5 +1,5 @@
-import { AnalysisRepository } from '../analysis.repository';
 import { InternalServerException } from 'packages/httpException';
+import { AnalysisRepository } from '../analysis.repository';
 
 class Service {
     constructor() {

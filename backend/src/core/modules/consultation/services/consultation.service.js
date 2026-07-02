@@ -1,7 +1,5 @@
 import prisma from 'core/database';
 import { NotFoundException, BadRequestException, ForbiddenException } from 'packages/httpException';
-import { TextChatAdapter } from '../adapters/text-chat.adapter';
-import { CallAdapter } from '../adapters/call.adapter';
 import { emitToRoom } from 'core/socket';
 import fs from 'fs';
 import path from 'path';
@@ -9,10 +7,11 @@ import axios from 'axios';
 import puppeteer from 'puppeteer';
 import { v2 as cloudinary } from 'cloudinary';
 import { CLOUDINARY_TYPE } from 'core/env';
+import { TextChatAdapter } from '../adapters/text-chat.adapter';
 
 class Service {
     async listConsultations(userId) {
-        return await prisma.consultation_processes.findMany({
+        return prisma.consultation_processes.findMany({
             where: {
                 OR: [
                     { user_id: userId },
@@ -73,15 +72,15 @@ class Service {
                 // Mock report handler: Dynamically create analysis database record
                 let context_summary = 'Tư vấn chuyên sâu';
                 let result = '';
-                
+
                 if (analysisId === 'ana-1082') {
                     context_summary = 'Tranh chấp hợp đồng đặt cọc nhà đất';
-                    result = `### BẢN PHÂN TÍCH PHÁP LÝ\n**Chủ đề:** Tranh chấp hợp đồng đặt cọc mua bán nhà đất\n**Ngày lập:** 29/06/2026\n\n#### 1. Căn cứ pháp lý áp dụng\n- Bộ luật Dân sự 2015 (Điều 328 về Đặt cọc).\n- Luật Đất đai và các văn bản hướng dẫn thi hành.\n\n#### 2. Nhận định tình huống\n- Bên mua đã giao tiền đặt cọc đúng hạn và có biên nhận hợp lệ.\n- Bên bán đơn phương hủy bỏ giao dịch mà không có lý do bất khả kháng.\n\n#### 3. Khuyến nghị giải quyết\n- **Khởi kiện:** Yêu cầu bên bán trả lại tiền đặt cọc và phạt cọc tương đương giá trị đặt cọc theo quy định tại Khoản 2 Điều 328 BLDS 2015.\n- **Thương lượng:** Đề xuất mức bồi thường phù hợp trước khi đưa ra tòa án để tiết kiệm thời gian và chi phí.`;
+                    result = '### BẢN PHÂN TÍCH PHÁP LÝ\n**Chủ đề:** Tranh chấp hợp đồng đặt cọc mua bán nhà đất\n**Ngày lập:** 29/06/2026\n\n#### 1. Căn cứ pháp lý áp dụng\n- Bộ luật Dân sự 2015 (Điều 328 về Đặt cọc).\n- Luật Đất đai và các văn bản hướng dẫn thi hành.\n\n#### 2. Nhận định tình huống\n- Bên mua đã giao tiền đặt cọc đúng hạn và có biên nhận hợp lệ.\n- Bên bán đơn phương hủy bỏ giao dịch mà không có lý do bất khả kháng.\n\n#### 3. Khuyến nghị giải quyết\n- **Khởi kiện:** Yêu cầu bên bán trả lại tiền đặt cọc và phạt cọc tương đương giá trị đặt cọc theo quy định tại Khoản 2 Điều 328 BLDS 2015.\n- **Thương lượng:** Đề xuất mức bồi thường phù hợp trước khi đưa ra tòa án để tiết kiệm thời gian và chi phí.';
                 } else if (analysisId === 'ana-1095') {
                     context_summary = 'Đơn phương ly hôn có yếu tố nước ngoài';
-                    result = `### BẢN PHÂN TÍCH PHÁP LÝ\n**Chủ đề:** Đơn phương ly hôn có yếu tố nước ngoài\n**Ngày lập:** 28/06/2026\n\n#### 1. Căn cứ pháp lý áp dụng\n- Luật Hôn nhân và Gia đình 2014.\n- Bộ luật Tố tụng Dân sự 2015.\n\n#### 2. Nhận định tình huống\n- Người chồng đã đi nước ngoài hơn 2 năm, gia đình không liên lạc được và không rõ địa chỉ cụ thể hiện tại.\n- Thẩm quyền giải quyết thuộc Tòa án nhân dân cấp Tỉnh.\n\n#### 3. Các bước thực hiện\n1. Nộp đơn yêu cầu thông báo tìm kiếm người vắng mặt tại nơi cư trú.\n2. Nộp đơn xin ly hôn đơn phương kèm chứng cứ chứng minh mâu thuẫn gia đình.\n3. Thực hiện thủ tục niêm yết công khai theo quy định tố tụng dân sự.`;
+                    result = '### BẢN PHÂN TÍCH PHÁP LÝ\n**Chủ đề:** Đơn phương ly hôn có yếu tố nước ngoài\n**Ngày lập:** 28/06/2026\n\n#### 1. Căn cứ pháp lý áp dụng\n- Luật Hôn nhân và Gia đình 2014.\n- Bộ luật Tố tụng Dân sự 2015.\n\n#### 2. Nhận định tình huống\n- Người chồng đã đi nước ngoài hơn 2 năm, gia đình không liên lạc được và không rõ địa chỉ cụ thể hiện tại.\n- Thẩm quyền giải quyết thuộc Tòa án nhân dân cấp Tỉnh.\n\n#### 3. Các bước thực hiện\n1. Nộp đơn yêu cầu thông báo tìm kiếm người vắng mặt tại nơi cư trú.\n2. Nộp đơn xin ly hôn đơn phương kèm chứng cứ chứng minh mâu thuẫn gia đình.\n3. Thực hiện thủ tục niêm yết công khai theo quy định tố tụng dân sự.';
                 }
-                
+
                 const newAnalysis = await prisma.analysis.create({
                     data: {
                         user_id: userId,
@@ -192,7 +191,7 @@ class Service {
             return null;
         }
 
-        return await prisma.consultation_processes.findFirst({
+        return prisma.consultation_processes.findFirst({
             where: {
                 analysis_id: analysisId,
                 OR: [
@@ -243,8 +242,6 @@ class Service {
         const { stage } = payload;
         const process = await this.getConsultation(userId, id);
 
-        // Security: only user or lawyer can trigger transitions
-        const isUser = process.user_id === userId;
         const isLawyer = process.lawyer_id === userId;
 
         // Custom transition logics
@@ -320,8 +317,6 @@ class Service {
 
     async skipStage(userId, id, payload) {
         const { targetStage } = payload;
-        const process = await this.getConsultation(userId, id);
-
         // Transition check
         const validStages = ['PENDING', 'CHATTING', 'PDF_GENERATION', 'PORTAL_SUBMITTING', 'COMPLETED', 'REVIEWED'];
         if (!validStages.includes(targetStage)) {
@@ -489,7 +484,7 @@ class Service {
     async sendMessage(userId, id, payload) {
         const { content } = payload;
         const process = await this.getConsultation(userId, id);
-        
+
         let conversationId = process.conversation_id;
         if (!conversationId) {
             const conversation = await prisma.conversations.create({
@@ -511,7 +506,7 @@ class Service {
             data: {
                 conversation_id: conversationId,
                 sender_id: userId,
-                content: content
+                content
             }
         });
 
@@ -584,10 +579,11 @@ class Service {
         };
 
         let renderedHtml = htmlContent;
-        for (const [key, value] of Object.entries(data)) {
+        Object.keys(data).forEach(key => {
+            const value = data[key];
             const regex = new RegExp(`{{\\s*${key}\\s*}}`, 'g');
             renderedHtml = renderedHtml.replace(regex, value || '');
-        }
+        });
         renderedHtml = renderedHtml.replace(/{{\s*[\w\d_]+\s*}}/g, '');
 
 

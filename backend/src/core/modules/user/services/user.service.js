@@ -1,4 +1,5 @@
 import { BcryptService } from 'core/modules/auth';
+import prisma from 'core/database';
 import { Optional } from 'core/utils';
 import { NotFoundException, BadRequestException } from 'packages/httpException';
 import { Role, UserStatus, UserActionType } from 'core/common/enum';

@@ -4,7 +4,7 @@ import { CommunicationAdapter } from './communication.adapter';
 export class TextChatAdapter extends CommunicationAdapter {
     async startSession(processId, payload) {
         const { userId, lawyerId } = payload;
-        
+
         const conversation = await prisma.conversations.create({
             data: {
                 user_id: userId,
@@ -21,7 +21,7 @@ export class TextChatAdapter extends CommunicationAdapter {
         return { conversationId: conversation.id };
     }
 
-    async endSession(processId, payload) {
+    async endSession() {
         return { success: true };
     }
 }

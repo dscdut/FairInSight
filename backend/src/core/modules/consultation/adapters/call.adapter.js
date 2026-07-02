@@ -7,7 +7,7 @@ export class CallAdapter extends CommunicationAdapter {
         this.channel = channel; // 'VOICE_CALL' or 'VIDEO_CALL'
     }
 
-    async startSession(processId, payload) {
+    async startSession(processId) {
         const callSession = await prisma.call_sessions.create({
             data: {
                 process_id: processId,
