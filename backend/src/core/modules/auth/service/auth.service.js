@@ -338,6 +338,8 @@ class Service {
                 ? { planName: user.subscriptions.plan_name ?? null }
                 : undefined,
             createdAt: user.created_at ?? undefined,
+            status: user.status ?? 'ACTIVE',
+            roleName: user.roles?.name || (Array.isArray(user.roles) ? user.roles[0]?.name : null) || 'USER'
         };
     }
 
