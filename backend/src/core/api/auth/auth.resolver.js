@@ -18,7 +18,7 @@ export const AuthResolver = Module.builder()
         prefixPath: '/auth',
         tag: 'auth',
         module: 'AuthModule'
-    })
+    }) 
     .register([
         {
             route: '/login',
