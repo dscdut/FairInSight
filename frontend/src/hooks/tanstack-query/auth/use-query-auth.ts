@@ -30,6 +30,7 @@ export const useLoginAuth = () => {
     mutationFn: (data: Account) => authApi.login(data),
     onSuccess: (response: LoginApiResponse) => {
       const user = response.data?.user
+      console.log(user)
       const userStatus = user?.status || 'ACTIVE'
 
       if (userStatus === 'ACTIVE') {
@@ -145,6 +146,7 @@ export const useUserInfo = () => {
     if (query.data) {
       // Map Account to UserResponseType structure
       const account = query.data
+      const currentUser = useAuthStore.getState().user
       updateUser({
         userId: account.id || '',
         fullName: account.fullName || '',
@@ -152,8 +154,8 @@ export const useUserInfo = () => {
         phone: account.phone,
         location: account.location,
         avatarUrl: account.avatarUrl,
-        roleName: account.roleName as UserRole,
-        status: account.status
+        roleName: account.roleName as UserRole || currentUser?.roleName || 'USER',
+        status: account.status || currentUser?.status || 'ACTIVE'
       })
     }
   }, [query.data, updateUser])

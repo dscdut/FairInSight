@@ -29,6 +29,7 @@ const App = () => {
       if (accessToken) {
         try {
           const userData = await authApi.getUserInfo() as Account
+          const currentUser = useAuthStore.getState().user
           updateUser({
             userId: userData.id || '',
             fullName: userData.fullName || '',
@@ -36,8 +37,8 @@ const App = () => {
             phone: userData.phone || '',
             location: userData.location || '',
             avatarUrl: userData.avatarUrl || '',
-            roleName: userData.roleName as UserRole,
-            status: userData.status
+            roleName: userData.roleName as UserRole || currentUser?.roleName || 'USER',
+            status: userData.status || currentUser?.status || 'ACTIVE'
           })
           scheduleTokenRefresh()
         } catch (error: any) {

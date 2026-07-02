@@ -12,6 +12,10 @@ const PROFILE_SELECT = {
         select: { plan_name: true },
     },
     created_at: true,
+    status: true,
+    roles: {
+        select: { name: true }
+    }
 };
 
 const ROLE_SELECT = {
