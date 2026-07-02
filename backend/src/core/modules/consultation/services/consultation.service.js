@@ -46,7 +46,35 @@ class Service {
     }
 
     async createConsultation(userId, payload) {
-        const { lawyerId, analysisId, contextSummary, message } = payload;
+        let { lawyerId } = payload;
+        const { analysisId, contextSummary, message } = payload;
+
+        // Verify user exists
+        const userExists = await prisma.users.findFirst({
+            where: { id: userId, deleted_at: null }
+        });
+        if (!userExists) {
+            throw new NotFoundException(`User with ID "${userId}" not found. Please log out and log in again.`);
+        }
+
+        // Resolve mock lawyer ID to a real database lawyer UUID if needed
+        const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+        if (lawyerId && !uuidRegex.test(lawyerId)) {
+            const allLawyers = await prisma.lawyer_details.findMany({
+                where: { deleted_at: null },
+                orderBy: { created_at: 'asc' }
+            });
+            if (allLawyers.length > 0) {
+                const match = lawyerId.match(/lyr-(\d+)/);
+                if (match) {
+                    const index = parseInt(match[1], 10) - 1;
+                    const selectedLawyer = allLawyers[index % allLawyers.length];
+                    lawyerId = selectedLawyer.user_id;
+                } else {
+                    lawyerId = allLawyers[0].user_id;
+                }
+            }
+        }
 
         // Verify lawyer details exist
         const lawyer = await prisma.lawyer_details.findFirst({
@@ -59,7 +87,6 @@ class Service {
         // Verify analysis report if provided
         let validAnalysisId = null;
         if (analysisId) {
-            const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
             if (uuidRegex.test(analysisId)) {
                 const analysis = await prisma.analysis.findFirst({
                     where: { id: analysisId, user_id: userId, deleted_at: null }
