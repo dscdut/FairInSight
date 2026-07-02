@@ -5,7 +5,8 @@ export const ROUTE = {
     REGISTER: '/register',
     VERIFY_ACCOUNT_EMAIL: '/verify-account-email',
     FORGOT_PASSWORD: '/forgot-password',
-    RESET_PASSWORD: '/reset-password'
+    RESET_PASSWORD: '/reset-password',
+    BANNED: '/banned'
   },
   PROFILE: {
     ROOT: '/profile',

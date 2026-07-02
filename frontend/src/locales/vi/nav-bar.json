@@ -1,5 +1,5 @@
 {
-  "dashboard": "Bảng điều khiển",
+  "dashboard": "Trang chủ",
   "analytics": "Phân tích",
   "overview": "Tổng quan",
   "sales": "Phân tích doanh thu",
@@ -23,7 +23,7 @@
   "system_status": "Trạng thái hệ thống",
   "online_secure": "Hoạt động & An toàn",
   "account": "Tài khoản",
-  "profile": "Hồ sơ cá nhân",
+  "profile": "Trang cá nhân",
   "edit_profile": "Chỉnh sửa hồ sơ",
   "logout": "Đăng xuất",
   "appointments": "Lịch hẹn tư vấn"

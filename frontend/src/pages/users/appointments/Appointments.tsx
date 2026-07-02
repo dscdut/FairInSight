@@ -23,6 +23,7 @@ import { useAppointmentStore } from '@/core/store/features/appointments'
 interface Attachment {
   name: string
   size: string
+  url?: string
 }
 
 interface AppointmentRequest {
@@ -107,11 +108,11 @@ export default function Appointments() {
   }
 
   return (
-    <div className='p-4 space-y-6 max-w-6xl mx-auto text-left'>
+    <div className='p-4 space-y-6 mx-auto text-left'>
       {/* Title Header */}
       <div className='flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border-secondary pb-5'>
         <div>
-          <h1 className='text-h2 font-bold text-text-primary tracking-tight'>
+          <h1 className='text-h3 text-text-main'>
             {t('common.appointments.title')}
           </h1>
           <p className='text-sm text-text-secondary mt-1.5'>
@@ -412,7 +413,12 @@ export default function Appointments() {
                           <Button
                             variant='ghost'
                             size='sm'
-                            className='h-7 w-7 p-0 rounded-full hover:bg-background-tertiary text-text-description hover:text-text-primary shrink-0'
+                            className={`h-7 w-7 p-0 rounded-full hover:bg-background-tertiary text-text-description hover:text-text-primary shrink-0 ${!file.url ? 'pointer-events-none opacity-50' : ''}`}
+                            onClick={() => {
+                              if (file.url) {
+                                window.open(file.url, '_blank', 'noopener,noreferrer')
+                              }
+                            }}
                           >
                             <Download className='w-3.5 h-3.5' />
                           </Button>

@@ -1,4 +1,6 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useEffect } from 'react'
+
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { type AxiosError } from 'axios'
 import { useNavigate } from 'react-router-dom'
 import { type z } from 'zod'
@@ -18,6 +20,7 @@ import {
   type LoginApiResponse,
   type ResetPasswordReq
 } from '@/models/interface/auth.interface'
+import { type UserRole } from '@/models/user/types'
 
 // Login
 export const useLoginAuth = () => {
@@ -26,8 +29,19 @@ export const useLoginAuth = () => {
     mutationKey: [MUTATION_KEYS.login],
     mutationFn: (data: Account) => authApi.login(data),
     onSuccess: (response: LoginApiResponse) => {
-      processLoginSuccess(response, navigate)
-      toastifyCommon.success('Đăng nhập thành công')
+      const user = response.data?.user
+      const userStatus = user?.status || 'ACTIVE'
+
+      if (userStatus === 'ACTIVE') {
+        processLoginSuccess(response, navigate)
+        toastifyCommon.success('Đăng nhập thành công')
+      } else if (userStatus === 'INACTIVE') {
+        toastifyCommon.error('Tài khoản chưa được xác thực!')
+        navigate(ROUTE.AUTH.VERIFY_ACCOUNT_EMAIL, { state: { email: user?.email } })
+      } else if (userStatus === 'BANNED') {
+        toastifyCommon.error('Tài khoản của bạn đã bị khóa!')
+        navigate(ROUTE.AUTH.BANNED)
+      }
     },
     onError: (error: AxiosError, variables) => {
       const errorResponse = error.response?.data as LoginErrorResponse
@@ -116,13 +130,63 @@ export const useResetPasswordAuth = () => {
 
 export const useUserInfo = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const updateUser = useAuthStore((state) => state.updateUser)
 
-  return useQuery({
+  const query = useQuery({
     queryKey: [QUERY_KEYS.userInfo],
     queryFn: async () => {
-      const userData = await authApi.getUserInfo()
+      const userData = await authApi.getUserInfo() as Account
       return userData
     },
     enabled: isAuthenticated
+  })
+
+  useEffect(() => {
+    if (query.data) {
+      // Map Account to UserResponseType structure
+      const account = query.data
+      updateUser({
+        userId: account.id || '',
+        fullName: account.fullName || '',
+        email: account.email || '',
+        phone: account.phone,
+        location: account.location,
+        avatarUrl: account.avatarUrl,
+        roleName: account.roleName as UserRole
+      })
+    }
+  }, [query.data, updateUser])
+
+  return query
+}
+
+export const useUpdateProfile = () => {
+  const queryClient = useQueryClient()
+  const updateUser = useAuthStore((state) => state.updateUser)
+  const user = useAuthStore((state) => state.user)
+
+  return useMutation({
+    mutationKey: ['updateProfile'],
+    mutationFn: (data: Account) => authApi.updateProfile(data),
+    onSuccess: (res: any) => {
+      toastifyCommon.success('Cập nhật thông tin thành công!')
+      
+      // Sync the newly updated profile data into the authStore (LocalStorage)
+      const updatedProfile = res?.data || res
+      if (updatedProfile && user) {
+        updateUser({
+          ...user,
+          fullName: updatedProfile.fullName || user.fullName,
+          phone: updatedProfile.phone || user.phone,
+          location: updatedProfile.location || user.location,
+          avatarUrl: updatedProfile.avatarUrl || user.avatarUrl
+        })
+      }
+
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.userInfo] })
+    },
+    onError: (error: AxiosError) => {
+      handleError(error, 'Cập nhật thông tin thất bại')
+    }
   })
 }
