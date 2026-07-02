@@ -83,16 +83,12 @@ axiosClient.interceptors.response.use(
       controllers.delete(response.config.url)
     }
 
-    // Check if response indicates user is banned (only for current user profile/auth requests)
+    // Check if response indicates user is banned (only for auth/profile endpoints of the current user)
     const dataObj = response.data as any
     const user = dataObj?.data?.user || dataObj?.user
     const userStatus = user?.status || dataObj?.data?.status || dataObj?.status
-    const isMeRequest = response.config.url && (
-      response.config.url.includes('/auth/me') ||
-      response.config.url.includes('/auth/login') ||
-      response.config.url.includes('/auth/refresh-token')
-    )
-    if (isMeRequest && (userStatus === 'BANNED' || userStatus === 'banned')) {
+    const isAuthRequestUrl = response.config.url && response.config.url.includes('/auth/')
+    if (isAuthRequestUrl && (userStatus === 'BANNED' || userStatus === 'banned')) {
       handleBannedUser(
         user?.banReason || dataObj?.data?.banReason || dataObj?.banReason,
         user?.bannedAt || dataObj?.data?.bannedAt || dataObj?.bannedAt
@@ -105,18 +101,14 @@ axiosClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config
 
-    // Check if error response indicates user is banned (only for current user profile/auth requests)
+    // Check if error response indicates user is banned (only for auth/profile endpoints of the current user)
     const errorStatus = error.response?.status
     const errorData = error.response?.data as any
     const errorMessage = errorData?.message || ''
-    const isMeRequest = originalRequest?.url && (
-      originalRequest.url.includes('/auth/me') ||
-      originalRequest.url.includes('/auth/login') ||
-      originalRequest.url.includes('/auth/refresh-token')
-    )
+    const isAuthRequestUrl = originalRequest?.url && originalRequest.url.includes('/auth/')
 
     if (
-      isMeRequest &&
+      isAuthRequestUrl &&
       (errorStatus === 403 ||
       errorStatus === 401 ||
       errorMessage.toLowerCase().includes('banned') ||
