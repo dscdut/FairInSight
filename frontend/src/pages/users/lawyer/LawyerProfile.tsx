@@ -104,7 +104,11 @@ export default function LawyerProfile() {
     BUSY: { label: 'Đang bận', className: 'bg-amber-500/10 text-amber-500 border-amber-500/20' },
     OFFLINE: { label: 'Ngoại tuyến', className: 'bg-slate-500/10 text-slate-500 border-slate-500/20' }
   }
-  const currentStatus = statusMap[detail.lawyerStatus] || { label: detail.lawyerStatus, className: 'bg-slate-500/10 text-slate-500 border-slate-500/20' }
+  const statusKey = detail.lawyerStatus || detail.status
+  const currentStatus = statusMap[statusKey as keyof typeof statusMap] || {
+    label: statusKey || 'Ngoại tuyến',
+    className: 'bg-slate-500/10 text-slate-500 border-slate-500/20'
+  }
 
   const stats = [
     {
