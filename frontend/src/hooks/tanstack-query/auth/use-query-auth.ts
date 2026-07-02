@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect } from 'react'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { type AxiosError } from 'axios'
@@ -20,7 +20,6 @@ import {
   type LoginApiResponse,
   type ResetPasswordReq
 } from '@/models/interface/auth.interface'
-import { type RoleUser } from '@/models/types/role.type'
 
 // Login
 export const useLoginAuth = () => {
@@ -130,30 +129,34 @@ export const useResetPasswordAuth = () => {
 
 export const useUserInfo = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-  const persistedUser = useAuthStore((state) => state.user)
+  const updateUser = useAuthStore((state) => state.updateUser)
 
-  const placeholderUser = useMemo<Account | undefined>(() => {
-    if (!persistedUser) return undefined
-    return {
-      id: persistedUser.userId,
-      fullName: persistedUser.fullName,
-      email: persistedUser.email,
-      phone: persistedUser.phone,
-      location: persistedUser.location,
-      avatarUrl: persistedUser.avatarUrl,
-      roleName: persistedUser.roleName as RoleUser
-    }
-  }, [persistedUser])
-
-  return useQuery({
+  const query = useQuery({
     queryKey: [QUERY_KEYS.userInfo],
     queryFn: async () => {
       const userData = await authApi.getUserInfo() as Account
       return userData
     },
-    enabled: isAuthenticated,
-    placeholderData: placeholderUser
+    enabled: isAuthenticated
   })
+
+  useEffect(() => {
+    if (query.data) {
+      // Map Account to UserResponseType structure
+      const account = query.data
+      updateUser({
+        userId: account.id,
+        fullName: account.fullName,
+        email: account.email,
+        phone: account.phone,
+        location: account.location,
+        avatarUrl: account.avatarUrl,
+        roleName: account.roleName as any
+      })
+    }
+  }, [query.data, updateUser])
+
+  return query
 }
 
 export const useUpdateProfile = () => {
