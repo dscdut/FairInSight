@@ -20,6 +20,7 @@ import {
   type LoginApiResponse,
   type ResetPasswordReq
 } from '@/models/interface/auth.interface'
+import { type UserRole } from '@/models/user/types'
 
 // Login
 export const useLoginAuth = () => {
@@ -145,13 +146,13 @@ export const useUserInfo = () => {
       // Map Account to UserResponseType structure
       const account = query.data
       updateUser({
-        userId: account.id,
-        fullName: account.fullName,
-        email: account.email,
+        userId: account.id || '',
+        fullName: account.fullName || '',
+        email: account.email || '',
         phone: account.phone,
         location: account.location,
         avatarUrl: account.avatarUrl,
-        roleName: account.roleName as any
+        roleName: account.roleName as UserRole
       })
     }
   }, [query.data, updateUser])
