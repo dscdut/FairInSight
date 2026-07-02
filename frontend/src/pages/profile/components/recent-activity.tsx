@@ -2,7 +2,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 
 export default function RecentActivity() {
   return (
-    <Card className='mt-10'>
+    <Card className='col-span-1 h-full'>
       <CardHeader>
         <CardTitle>Recent Activity</CardTitle>
         <CardDescription>Your recent activities and interactions</CardDescription>

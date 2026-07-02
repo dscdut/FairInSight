@@ -164,7 +164,7 @@ export const getLawyerListMock = (
     filtered = filtered.filter(
       (l) =>
         l.fullName.toLowerCase().includes(query) ||
-        l.bio.toLowerCase().includes(query) ||
+        (l.bio || '').toLowerCase().includes(query) ||
         l.specializations.some((s) => s.toLowerCase().includes(query))
     )
   }
@@ -205,27 +205,36 @@ export const getLawyerListMock = (
 export const getLawyerDetailMock = (id: string): LawyerDetailResponse => {
   const lawyer = MOCK_LAWYERS.find((l) => l.id === id) || MOCK_LAWYERS[0]
   
-  const expMatch = lawyer.careerHistory.match(/\d+/)
+  const expMatch = (lawyer.careerHistory || '').match(/\d+/)
   const experienceYears = expMatch ? parseInt(expMatch[0], 10) : 5
 
   return {
     data: {
       items: [],
       summary: {
+        id: lawyer.id,
+        email: 'lawyer@legalai.vn',
+        phone: '0987654321',
+        name: lawyer.fullName,
+        roleName: 'LAWYER',
+        bio: lawyer.bio,
         averageRating: lawyer.averageRating,
         careerHistory: lawyer.careerHistory,
         careerMilestones: [],
         consultingFee: 500000,
         experienceYears,
+        successfulCases: lawyer.successfulCases || 10,
+        lawyerStatus: 'AVAILABLE',
+        status: 'ACTIVE',
         licenseInfo: {
           isVerified: true,
           licenseFileUrl: null,
           licenseIssuer: 'Bộ Tư pháp',
           licenseNumber: `LS-${lawyer.id.replace('lyr-', '1000')}`
         },
-        name: lawyer.fullName,
-        role: 'Luật sư thành viên',
-        specializations: lawyer.specializations
+        specializations: lawyer.specializations,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       }
     }
   }

@@ -22,7 +22,7 @@ export const createLawyerService = ( client: AxiosInstance ) : LawyerApi => ({
   getLawyerDetail: async (id: string) => {
     try {
       const res = await client.get(API_LAWYER_DETAIL(id))
-      return res.data
+      return res
     } catch (error) {
       return Promise.reject(error)
     }

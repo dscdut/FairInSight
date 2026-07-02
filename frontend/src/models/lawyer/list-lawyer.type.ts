@@ -4,12 +4,13 @@ export interface Lawyer {
   id: string;
   fullName: string;
   avatar?: string | null;
-  careerHistory: string;
-  bio: string;
+  avatarUrl?: string | null;
+  careerHistory: string | null;
+  bio: string | null;
   averageRating: number;
   successfulCases: number;
   specializations: string[];
-  city: VietnamCity;
+  city: string | VietnamCity;
 }
 
 export interface Pagination {

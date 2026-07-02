@@ -1,5 +1,5 @@
 import { Lightbulb, TrendingUp } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 import { DASHBOARD_ACTIVITY, DASHBOARD_DATA } from '@/_mocks/data-dashboard'
 import { RECENT_DOCUMENTS, FEATURED_UPDATE } from '@/_mocks/recent.document.mock'
@@ -73,7 +73,7 @@ export default function MainMenu() {
       </section>
 
       {/* Main Content Grid */}
-      <section className='grid grid-cols-1 gap-8 lg:grid-cols-3'>
+      <section className='grid grid-cols-1 gap-8 lg:grid-cols-3 px-2'>
         {/* Left Column: Recent Updates */}
         <div className='lg:col-span-2 space-y-4'>
           <div className='flex items-center justify-between'>
@@ -130,7 +130,9 @@ export default function MainMenu() {
                   variant='link'
                   className='text-primary font-bold p-0 flex items-center gap-1 hover:gap-2 transition-all h-auto text-btn-small'
                 >
-                  {FEATURED_UPDATE.actionText} →
+                  <Link to={'/legal'}>
+                    {FEATURED_UPDATE.actionText} →
+                  </Link>
                 </Button>
               </div>
             </FadeUp>

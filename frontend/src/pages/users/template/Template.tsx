@@ -59,7 +59,7 @@ export default function Template() {
       {/* Header */}
       <motion.div variants={headerVariants} initial='hidden' animate='visible' className='space-y-4'>
         <div>
-          <h1 className='text-h2 text-main tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-info'>
+          <h1 className='text-h2 font-semibold text-text-main tracking-tight'>
             Thư viện biểu mẫu
           </h1>
           <p className='text-small text-text-description mt-2'>

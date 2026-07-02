@@ -1,4 +1,6 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
+
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { type AxiosError } from 'axios'
 import { useNavigate } from 'react-router-dom'
 import { type z } from 'zod'
@@ -18,6 +20,7 @@ import {
   type LoginApiResponse,
   type ResetPasswordReq
 } from '@/models/interface/auth.interface'
+import { type RoleUser } from '@/models/types/role.type'
 
 // Login
 export const useLoginAuth = () => {
@@ -26,8 +29,19 @@ export const useLoginAuth = () => {
     mutationKey: [MUTATION_KEYS.login],
     mutationFn: (data: Account) => authApi.login(data),
     onSuccess: (response: LoginApiResponse) => {
-      processLoginSuccess(response, navigate)
-      toastifyCommon.success('Đăng nhập thành công')
+      const user = response.data?.user
+      const userStatus = user?.status || 'ACTIVE'
+
+      if (userStatus === 'ACTIVE') {
+        processLoginSuccess(response, navigate)
+        toastifyCommon.success('Đăng nhập thành công')
+      } else if (userStatus === 'INACTIVE') {
+        toastifyCommon.error('Tài khoản chưa được xác thực!')
+        navigate(ROUTE.AUTH.VERIFY_ACCOUNT_EMAIL, { state: { email: user?.email } })
+      } else if (userStatus === 'BANNED') {
+        toastifyCommon.error('Tài khoản của bạn đã bị khóa!')
+        navigate(ROUTE.AUTH.BANNED)
+      }
     },
     onError: (error: AxiosError, variables) => {
       const errorResponse = error.response?.data as LoginErrorResponse
@@ -116,6 +130,20 @@ export const useResetPasswordAuth = () => {
 
 export const useUserInfo = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const persistedUser = useAuthStore((state) => state.user)
+
+  const placeholderUser = useMemo<Account | undefined>(() => {
+    if (!persistedUser) return undefined
+    return {
+      id: persistedUser.userId,
+      fullName: persistedUser.fullName,
+      email: persistedUser.email,
+      phone: persistedUser.phone,
+      location: persistedUser.location,
+      avatarUrl: persistedUser.avatarUrl,
+      roleName: persistedUser.roleName as RoleUser
+    }
+  }, [persistedUser])
 
   return useQuery({
     queryKey: [QUERY_KEYS.userInfo],
@@ -123,6 +151,23 @@ export const useUserInfo = () => {
       const userData = await authApi.getUserInfo()
       return userData
     },
-    enabled: isAuthenticated
+    enabled: isAuthenticated,
+    placeholderData: placeholderUser
+  })
+}
+
+export const useUpdateProfile = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationKey: ['updateProfile'],
+    mutationFn: (data: Account) => authApi.updateProfile(data),
+    onSuccess: () => {
+      toastifyCommon.success('Cập nhật thông tin thành công!')
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.userInfo] })
+    },
+    onError: (error: AxiosError) => {
+      handleError(error, 'Cập nhật thông tin thất bại')
+    }
   })
 }
