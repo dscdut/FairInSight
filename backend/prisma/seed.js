@@ -76,6 +76,7 @@ async function main() {
             phone: '0900000002',
             location: 'Ho Chi Minh City, Vietnam',
             is_email_confirmed: true,
+            avatar_url: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150',
         },
         {
             email: 'user@gmail.com',
@@ -85,6 +86,97 @@ async function main() {
             location: 'Hanoi, Vietnam',
             is_email_confirmed: true,
         },
+        // 10 new professional lawyers
+        {
+            email: 'tri.nguyen@law.com',
+            full_name: 'Nguyễn Minh Trí',
+            role_id: roleMap['LAWYER'],
+            phone: '0912345671',
+            location: 'Hanoi',
+            is_email_confirmed: true,
+            avatar_url: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150',
+        },
+        {
+            email: 'mai.le@law.com',
+            full_name: 'Lê Thị Mai',
+            role_id: roleMap['LAWYER'],
+            phone: '0912345672',
+            location: 'Ho Chi Minh City',
+            is_email_confirmed: true,
+            avatar_url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150',
+        },
+        {
+            email: 'khanh.pham@law.com',
+            full_name: 'Phạm Quốc Khánh',
+            role_id: roleMap['LAWYER'],
+            phone: '0912345673',
+            location: 'Da Nang',
+            is_email_confirmed: true,
+            avatar_url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150',
+        },
+        {
+            email: 'son.hoang@law.com',
+            full_name: 'Hoàng Xuân Sơn',
+            role_id: roleMap['LAWYER'],
+            phone: '0912345674',
+            location: 'Hanoi',
+            is_email_confirmed: true,
+            avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+        },
+        {
+            email: 'oanh.vu@law.com',
+            full_name: 'Vũ Thị Kim Oanh',
+            role_id: roleMap['LAWYER'],
+            phone: '0912345675',
+            location: 'Hai Phong',
+            is_email_confirmed: true,
+            avatar_url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150',
+        },
+        {
+            email: 'long.dang@law.com',
+            full_name: 'Đặng Hoàng Long',
+            role_id: roleMap['LAWYER'],
+            phone: '0912345676',
+            location: 'Ho Chi Minh City',
+            is_email_confirmed: true,
+            avatar_url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150',
+        },
+        {
+            email: 'tuan.bui@law.com',
+            full_name: 'Bùi Minh Tuấn',
+            role_id: roleMap['LAWYER'],
+            phone: '0912345677',
+            location: 'Can Tho',
+            is_email_confirmed: true,
+            avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+        },
+        {
+            email: 'hai.do@law.com',
+            full_name: 'Đỗ Thanh Hải',
+            role_id: roleMap['LAWYER'],
+            phone: '0912345678',
+            location: 'Da Nang',
+            is_email_confirmed: true,
+            avatar_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
+        },
+        {
+            email: 'diep.phan@law.com',
+            full_name: 'Phan Ngọc Diệp',
+            role_id: roleMap['LAWYER'],
+            phone: '0912345679',
+            location: 'Nha Trang',
+            is_email_confirmed: true,
+            avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
+        },
+        {
+            email: 'dung.trinh@law.com',
+            full_name: 'Trịnh Tiến Dũng',
+            role_id: roleMap['LAWYER'],
+            phone: '0912345680',
+            location: 'Hanoi',
+            is_email_confirmed: true,
+            avatar_url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150',
+        }
     ];
 
     const createdUsers = {};
@@ -102,6 +194,7 @@ async function main() {
                     password_hash: passwordHash,
                     phone: userData.phone,
                     location: userData.location,
+                    avatar_url: userData.avatar_url || null,
                     is_email_confirmed: userData.is_email_confirmed,
                 },
             });
@@ -116,33 +209,202 @@ async function main() {
         createdUsers[userData.email] = user;
     }
 
-
-
     // =========================
-    // LAWYER DETAILS
+    // LAWYER DETAILS & SPECIALTIES
     // =========================
-    console.log('Creating lawyer details...');
-    const lawyerUser = createdUsers['lawyer@gmail.com'];
-    if (lawyerUser) {
+    console.log('Creating lawyer details and specializations...');
+    
+    // Find specialties map
+    const dbSpecs = await prisma.specialties.findMany();
+    const specMap = {};
+    dbSpecs.forEach(s => {
+        specMap[s.name] = s.id;
+    });
+
+    const lawyerDetailsData = [
+        {
+            email: 'lawyer@gmail.com',
+            bio: 'Luật sư chuyên về dân sự và doanh nghiệp với hơn 5 năm kinh nghiệm.',
+            experience_years: 5,
+            rating_avg: 4.5,
+            price_per_hour: 500000,
+            bar_association: 'Đoàn Luật sư TP.HCM',
+            license_number: 'LAW123456',
+            specs: ['Dân sự', 'Doanh nghiệp']
+        },
+        {
+            email: 'tri.nguyen@law.com',
+            bio: 'Luật sư cao cấp chuyên bào chữa các vụ án hình sự phức tạp và giải quyết tranh chấp hợp đồng dân sự.',
+            experience_years: 12,
+            rating_avg: 4.9,
+            price_per_hour: 1500000,
+            bar_association: 'Đoàn Luật sư Hà Nội',
+            license_number: 'LAW888777',
+            specs: ['Hình sự', 'Dân sự']
+        },
+        {
+            email: 'mai.le@law.com',
+            bio: 'Tư vấn ly hôn, quyền nuôi con và phân chia tài sản gia đình chuyên nghiệp, tận tâm.',
+            experience_years: 8,
+            rating_avg: 4.8,
+            price_per_hour: 1000000,
+            bar_association: 'Đoàn Luật sư TP.HCM',
+            license_number: 'LAW666555',
+            specs: ['Hôn nhân', 'Dân sự']
+        },
+        {
+            email: 'khanh.pham@law.com',
+            bio: 'Tư vấn pháp luật doanh nghiệp, mua bán sáp nhập (M&A) và giải quyết tranh chấp lao động.',
+            experience_years: 10,
+            rating_avg: 4.7,
+            price_per_hour: 1200000,
+            bar_association: 'Đoàn Luật sư Đà Nẵng',
+            license_number: 'LAW444333',
+            specs: ['Doanh nghiệp', 'Lao động']
+        },
+        {
+            email: 'son.hoang@law.com',
+            bio: 'Chuyên gia pháp lý hàng đầu về tranh chấp đất đai, cấp sổ đỏ và giải quyết khiếu nại đền bù đất đai.',
+            experience_years: 15,
+            rating_avg: 4.9,
+            price_per_hour: 2000000,
+            bar_association: 'Đoàn Luật sư Hà Nội',
+            license_number: 'LAW111222',
+            specs: ['Đất đai', 'Dân sự']
+        },
+        {
+            email: 'oanh.vu@law.com',
+            bio: 'Hỗ trợ pháp lý về bảo hiểm xã hội, tranh chấp tiền lương và soạn thảo quy chế lao động nội bộ doanh nghiệp.',
+            experience_years: 6,
+            rating_avg: 4.6,
+            price_per_hour: 800000,
+            bar_association: 'Đoàn Luật sư Hải Phòng',
+            license_number: 'LAW333222',
+            specs: ['Lao động', 'Doanh nghiệp']
+        },
+        {
+            email: 'long.dang@law.com',
+            bio: 'Bào chữa các tội danh hình sự kinh tế, chức vụ, tham nhũng và các tội vi phạm trật tự quản lý xã hội.',
+            experience_years: 7,
+            rating_avg: 4.5,
+            price_per_hour: 900000,
+            bar_association: 'Đoàn Luật sư TP.HCM',
+            license_number: 'LAW555444',
+            specs: ['Hình sự']
+        },
+        {
+            email: 'tuan.bui@law.com',
+            bio: 'Thành lập doanh nghiệp đầu tư nước ngoài, xin giấy phép con và tư vấn bảo hộ sở hữu trí tuệ.',
+            experience_years: 9,
+            rating_avg: 4.7,
+            price_per_hour: 1100000,
+            bar_association: 'Đoàn Luật sư Cần Thơ',
+            license_number: 'LAW777888',
+            specs: ['Doanh nghiệp']
+        },
+        {
+            email: 'hai.do@law.com',
+            bio: 'Chuyên gia tư vấn pháp lý giao dịch bất động sản dự án, chuyển nhượng đất đai và tranh chấp quyền sử dụng đất.',
+            experience_years: 11,
+            rating_avg: 4.8,
+            price_per_hour: 1600000,
+            bar_association: 'Đoàn Luật sư Đà Nẵng',
+            license_number: 'LAW999000',
+            specs: ['Đất đai']
+        },
+        {
+            email: 'diep.phan@law.com',
+            bio: 'Hỗ trợ các vụ việc kết hôn có yếu tố nước ngoài, ly hôn thuận tình nhanh và ly hôn đơn phương vắng mặt.',
+            experience_years: 5,
+            rating_avg: 4.4,
+            price_per_hour: 700000,
+            bar_association: 'Đoàn Luật sư Khánh Hoà',
+            license_number: 'LAW121212',
+            specs: ['Hôn nhân']
+        },
+        {
+            email: 'dung.trinh@law.com',
+            bio: 'Luật sư tranh tụng kỳ cựu tại tòa án các cấp trong các vụ án dân sự phức tạp và đại diện ngoài tố tụng.',
+            experience_years: 14,
+            rating_avg: 4.9,
+            price_per_hour: 1800000,
+            bar_association: 'Đoàn Luật sư Hà Nội',
+            license_number: 'LAW232323',
+            specs: ['Dân sự', 'Hình sự']
+        }
+    ];
+
+    for (const data of lawyerDetailsData) {
+        const user = createdUsers[data.email];
+        if (!user) continue;
+
+        // Upsert lawyer details
         await prisma.lawyer_details.upsert({
-            where: { user_id: lawyerUser.id },
+            where: { user_id: user.id },
             update: {
-                bio: 'Luật sư chuyên về dân sự và doanh nghiệp với hơn 5 năm kinh nghiệm.',
-                experience_years: 5,
+                bio: data.bio,
+                experience_years: data.experience_years,
                 is_verified: true,
+                rating_avg: data.rating_avg,
+                price_per_hour: data.price_per_hour,
+                bar_association: data.bar_association,
+                license_number: data.license_number,
                 status: 'AVAILABLE',
             },
             create: {
-                user_id: lawyerUser.id,
-                bio: 'Luật sư chuyên về dân sự và doanh nghiệp với hơn 5 năm kinh nghiệm.',
-                experience_years: 5,
+                user_id: user.id,
+                bio: data.bio,
+                experience_years: data.experience_years,
                 is_verified: true,
-                rating_avg: 4.5,
-                price_per_hour: 50,
+                rating_avg: data.rating_avg,
+                price_per_hour: data.price_per_hour,
+                bar_association: data.bar_association,
+                license_number: data.license_number,
                 status: 'AVAILABLE',
-                bar_association: 'Vietnam Bar Federation',
-                license_number: 'LAW123456',
             },
+        });
+
+        // Delete old specialties for clean seed
+        await prisma.lawyer_specialties.deleteMany({
+            where: { lawyer_id: user.id }
+        });
+
+        // Insert lawyer specialties
+        for (const specName of data.specs) {
+            const specId = specMap[specName];
+            if (specId) {
+                await prisma.lawyer_specialties.create({
+                    data: {
+                        lawyer_id: user.id,
+                        specialty_id: specId
+                    }
+                });
+            }
+        }
+
+        // Delete old certificates for clean seed
+        await prisma.lawyer_certificates.deleteMany({
+            where: { lawyer_id: user.id }
+        });
+
+        // Insert lawyer certificates
+        await prisma.lawyer_certificates.createMany({
+            data: [
+                {
+                    lawyer_id: user.id,
+                    certificate_name: 'Thẻ hành nghề Luật sư',
+                    file_url: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=400',
+                    issued_by: 'Bộ Tư pháp Việt Nam',
+                    issue_date: new Date('2020-01-15')
+                },
+                {
+                    lawyer_id: user.id,
+                    certificate_name: 'Chứng chỉ Đào tạo Nghề Luật sư',
+                    file_url: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=400',
+                    issued_by: 'Học viện Tư pháp',
+                    issue_date: new Date('2018-06-10')
+                }
+            ]
         });
     }
 
@@ -155,12 +417,16 @@ async function main() {
     console.log('Uploading components.html to Cloudinary...');
     const componentsPath = path.join(templateDir, 'components.html');
     if (fs.existsSync(componentsPath)) {
-        await cloudinary.uploader.upload(componentsPath, {
-            public_id: 'components.html',
-            folder: 'templates',
-            resource_type: 'raw',
-            type: 'upload'
-        });
+        try {
+            await cloudinary.uploader.upload(componentsPath, {
+                public_id: 'components.html',
+                folder: 'templates',
+                resource_type: 'raw',
+                type: 'upload'
+            });
+        } catch (e) {
+            console.warn('Cloudinary upload for components.html failed, using mock fallback:', e.message);
+        }
     }
 
     const templatesToSeed = [
@@ -255,12 +521,18 @@ async function main() {
             continue;
         }
 
+        let secureUrl = `https://res.cloudinary.com/drx34env0/raw/upload/v1700000000/templates/${t.fileName}`;
         console.log(`Uploading ${t.fileName} to Cloudinary...`);
-        const uploadResponse = await cloudinary.uploader.upload(filePath, {
-            folder: 'templates',
-            resource_type: 'raw',
-            type: process.env.CLOUDINARY_TYPE || 'upload'
-        });
+        try {
+            const uploadResponse = await cloudinary.uploader.upload(filePath, {
+                folder: 'templates',
+                resource_type: 'raw',
+                type: process.env.CLOUDINARY_TYPE || 'upload'
+            });
+            secureUrl = uploadResponse.secure_url;
+        } catch (e) {
+            console.warn(`Cloudinary upload for ${t.fileName} failed, using mock fallback URL:`, e.message);
+        }
 
         console.log(`Saving template "${t.name}" into database...`);
         await prisma.templates.upsert({
@@ -268,7 +540,7 @@ async function main() {
             update: {
                 name: t.name,
                 description: t.description,
-                file_url: uploadResponse.secure_url,
+                file_url: secureUrl,
                 fields: t.fields,
                 deleted_at: null
             },
@@ -276,7 +548,7 @@ async function main() {
                 id: t.id,
                 name: t.name,
                 description: t.description,
-                file_url: uploadResponse.secure_url,
+                file_url: secureUrl,
                 fields: t.fields
             }
         });
