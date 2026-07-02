@@ -27,6 +27,14 @@ export const ROUTE = {
     MESSAGES: '/messages',
     APPOINTMENT: '/appointment'
   },
+  LAWYER: {
+    ROOT: '/lawyer',
+    DASHBOARD: 'dashboard',
+    APPOINTMENT: 'appointments',
+    MESSAGES: 'messages',
+    PROFILE: 'profile',
+    SETTING: 'setting'
+  },
   FORM_LIBRARY: '/form-library',
   ADMIN: {
     ROOT: '/admin',
