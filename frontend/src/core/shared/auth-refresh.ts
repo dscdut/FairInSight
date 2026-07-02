@@ -6,20 +6,11 @@ import { LOGIN_ROUTE } from '@/core/configs/consts'
 import config from '@/core/configs/env'
 import {
   clearLS,
+  getAccessTokenFromLS,
   getRefreshTokenFromLS,
+  setAccessTokenToLS,
   setRefreshTokenToLS
 } from '@/core/shared/storage'
-
-// Store reference to avoid circular dependency
-let authStoreRef: any = null
-
-export function registerAuthStore(store: any) {
-  authStoreRef = store
-}
-
-function getAccessToken(): string {
-  return authStoreRef?.getState()?.access_token || ''
-}
 
 // Refresh KHI access token còn <= ngưỡng này (giây). 75s: an toàn cho lệch giờ + RTT.
 const REFRESH_BEFORE_SEC = 75
@@ -49,18 +40,15 @@ export function secondsUntilExpiry(token: string): number {
 export function forceLogout(): void {
   clearTokenRefresh()
   clearLS()
-  if (authStoreRef) {
-    authStoreRef.getState().logout()
-  }
   if (window.location.pathname !== LOGIN_ROUTE) {
     window.location.href = LOGIN_ROUTE
   }
 }
 
 /**
- * Gọi /auth/refresh-token → lưu CẢ access + refresh token mới vào Zustand store (in-memory).
- * Trả access token mới. Nhiều nơi gọi đồng thời chỉ chạy 1 request (inflight).
- * Lỗi → forceLogout + throw.
+ * Gọi /auth/refresh-token → lưu CẢ access + refresh token mới (Node BE rotate token).
+ * Trả access token mới. Nhiều nơi gọi đồng thời chỉ chạy 1 request (inflight). Sau khi
+ * có token mới → đặt lại timer proactive. Lỗi → forceLogout + throw.
  */
 export async function doRefresh(): Promise<string> {
   if (inflight) return inflight
@@ -77,26 +65,13 @@ export async function doRefresh(): Promise<string> {
         { refresh_token },
         { headers: { 'Content-Type': 'application/json' } }
       )
-      const resData = res.data?.data ?? res.data
-      const data = resData?.data ?? resData
+      const data = res.data?.data ?? res.data
       const accessToken: string = data.accessToken
       const refreshToken: string | undefined = data.refreshToken
       if (!accessToken) throw new Error('Refresh response thiếu accessToken')
-      
-      // Lưu refreshToken mới vào LocalStorage nếu backend rotate token
-      if (refreshToken) {
-        setRefreshTokenToLS(refreshToken)
-      }
-      
-      // Đồng bộ hóa access token mới vào Zustand store (in-memory)
-      if (authStoreRef) {
-        authStoreRef.getState().loginSuccess({
-          accessToken,
-          refreshToken: refreshToken || refresh_token,
-          user: authStoreRef.getState().user
-        })
-      }
-      
+      setAccessTokenToLS(accessToken)
+      if (refreshToken) setRefreshTokenToLS(refreshToken)
+      scheduleTokenRefresh() // hẹn lại theo exp token mới
       return accessToken
     } catch (err) {
       forceLogout() // refresh token hết 7 ngày / bị revoke → đá ra login
@@ -117,7 +92,7 @@ export async function doRefresh(): Promise<string> {
  */
 export function scheduleTokenRefresh(): void {
   clearTokenRefresh()
-  const token = getAccessToken()
+  const token = getAccessTokenFromLS()
   if (!token) return
   const remain = secondsUntilExpiry(token)
   if (remain === Number.POSITIVE_INFINITY) return // không đọc được exp → để reactive lo

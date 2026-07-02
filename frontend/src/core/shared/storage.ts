@@ -7,12 +7,14 @@ import {
 import { type UserResponseType } from '@/models/interface/user.interface'
 
 export const LocalStorageEventTarget = new EventTarget()
-export const setAccessTokenToLS = (_access_token: string) => {}
+export const setAccessTokenToLS = (access_token: string) =>
+  localStorage.setItem(ACCESS_TOKEN_LOCAL_STORAGE_KEY, access_token)
 
 export const setRefreshTokenToLS = (refresh_token: string) =>
   localStorage.setItem(REFRESH_TOKEN_LOCAL_STORAGE_KEY, refresh_token)
 
-export const setToken = (_access_token: string, refresh_token: string) => {
+export const setToken = (access_token: string, refresh_token: string) => {
+  localStorage.setItem(ACCESS_TOKEN_LOCAL_STORAGE_KEY, access_token)
   localStorage.setItem(REFRESH_TOKEN_LOCAL_STORAGE_KEY, refresh_token)
 }
 
@@ -24,7 +26,7 @@ export const clearLS = () => {
   LocalStorageEventTarget.dispatchEvent(clearLSEvent)
 }
 
-export const getAccessTokenFromLS = () => ''
+export const getAccessTokenFromLS = () => localStorage.getItem(ACCESS_TOKEN_LOCAL_STORAGE_KEY) || ''
 
 export const getRefreshTokenFromLS = () => localStorage.getItem(REFRESH_TOKEN_LOCAL_STORAGE_KEY) || ''
 
