@@ -72,13 +72,17 @@ class Repository extends BaseRepository {
             }
         };
 
+        const orderBy = filter.sortByRating === 'true' || filter.sortByRating === true
+            ? { lawyer_details: { rating_avg: 'desc' } }
+            : { created_at: 'desc' };
+
         const [items, total] = await Promise.all([
             prisma.users.findMany({
                 where,
                 include,
                 skip,
                 take: size,
-                orderBy: { created_at: 'desc' }
+                orderBy
             }),
             prisma.users.count({ where })
         ]);

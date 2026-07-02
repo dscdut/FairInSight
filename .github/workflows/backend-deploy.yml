@@ -18,7 +18,7 @@ jobs:
         env:
           PUPPETEER_SKIP_DOWNLOAD: true
         run: |
-          cd /home/runner/apps/FairInSight
+          cd /home/deploy/apps/FairInSight
 
           git pull origin dev
 

@@ -40,6 +40,13 @@ export const createDocumentApi = (client: AxiosInstance) => ({
     const res = (await client.post(API_DOCUMENTS, data)) as UserDocument
     return res
   },
+  async saveDraft(data: {
+    templateId: string
+    content: Record<string, unknown>
+  }): Promise<UserDocument> {
+    const res = (await client.post('/drafts', data)) as UserDocument
+    return res
+  },
   async deleteDocument(id: string): Promise<unknown> {
     const res = (await client.delete(API_DOCUMENT_DETAIL(id))) as unknown
     return res

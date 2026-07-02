@@ -14,7 +14,8 @@ import {
   TrendingUp,
   Users,
   UserCheck,
-  MessageCircle
+  MessageCircle,
+  User
 } from 'lucide-react'
 
 import { ROUTE } from '@/core/constants/path'
@@ -310,5 +311,38 @@ export const userSideBarLinks: TSidebarLinks[] = [
     titleKey: 'setting',
     icon: <Settings className='w-5 h-5' />,
     path: ROUTE.PROFILE.ROOT
+  }
+]
+
+export const lawyerSideBarLinks: TSidebarLinks[] = [
+  {
+    title: 'Trang chủ',
+    titleKey: 'home',
+    icon: <Home className='w-5 h-5' />,
+    path: `${ROUTE.LAWYER.ROOT}/${ROUTE.LAWYER.DASHBOARD}`
+  },
+  {
+    title: 'Lịch hẹn tư vấn',
+    titleKey: 'appointments',
+    icon: <Calendar className='w-5 h-5' />,
+    path: `${ROUTE.LAWYER.ROOT}/${ROUTE.LAWYER.APPOINTMENT}`
+  },
+  {
+    title: 'Tin nhắn',
+    titleKey: 'messages',
+    icon: <MessageCircle className='w-5 h-5' />,
+    path: `${ROUTE.LAWYER.ROOT}/${ROUTE.LAWYER.MESSAGES}`
+  },
+  {
+    title: 'Hồ sơ chuyên môn',
+    titleKey: 'profile',
+    icon: <User className='w-5 h-5' />,
+    path: `${ROUTE.LAWYER.ROOT}/${ROUTE.LAWYER.PROFILE}`
+  },
+  {
+    title: 'Cài đặt',
+    titleKey: 'setting',
+    icon: <Settings className='w-5 h-5' />,
+    path: `${ROUTE.LAWYER.ROOT}/${ROUTE.LAWYER.SETTING}`
   }
 ]

@@ -10,6 +10,7 @@ import http from 'http';
 import app from '../index';
 import { PORT } from '../env';
 import { logger } from '../../packages/logger';
+import { initSocket } from '../socket';
 
 const dubugHelper = debug('prisma:server');
 
@@ -45,6 +46,7 @@ app.set('port', port);
  */
 
 const server = http.createServer(app);
+initSocket(server);
 /**
  * Event listener for HTTP server "error" event.
  */

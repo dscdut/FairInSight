@@ -2,7 +2,6 @@ import { useState, useCallback } from 'react'
 
 import { Search, User } from 'lucide-react'
 
-import { getLawyerListMock } from '@/_mocks/lawyer.mock'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -59,20 +58,24 @@ export default function LawyerList() {
     setIsContactModalOpen(true)
   }, [])
 
-  const { data: listResponse } = useLawyerList(currentPage, pageSize, {
+  const { data: listResponse, isLoading } = useLawyerList(currentPage, pageSize, {
     category: selectedCategory,
     city: selectedCity,
     searchQuery: debouncedSearchQuery,
     sortBy
   })
 
-  // Fallback to mock data for initial load before React Query finishes
-  const displayData = listResponse || getLawyerListMock(currentPage, pageSize, {
-    category: selectedCategory,
-    city: selectedCity,
-    searchQuery: debouncedSearchQuery,
-    sortBy
-  })
+  const displayData = listResponse || {
+    data: {
+      items: [],
+      pagination: {
+        page: currentPage,
+        size: pageSize,
+        total: 0,
+        totalPages: 0
+      }
+    }
+  }
 
   const filteredLawyers = displayData.data.items
   const pagination = displayData.data.pagination
@@ -161,7 +164,12 @@ export default function LawyerList() {
       </p>
 
       {/* Grid listing */}
-      {filteredLawyers.length === 0 ? (
+      {isLoading ? (
+        <div className='w-full py-16 text-center'>
+          <div className='animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-3'></div>
+          <p className='text-sm text-text-description'>Đang tải danh sách luật sư...</p>
+        </div>
+      ) : filteredLawyers.length === 0 ? (
         <div className='w-full py-16 text-center'>
           <User className='w-12 h-12 mx-auto text-text-tertiary mb-3' />
           <h1 className='text-h3 text-text-tertiary'>Không tìm thấy luật sư</h1>

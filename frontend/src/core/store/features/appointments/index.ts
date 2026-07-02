@@ -16,12 +16,14 @@ export interface AppointmentRequest {
   message: string
   status: 'pending' | 'confirmed' | 'rejected'
   attachments: Attachment[]
+  rejectReason?: string
 }
 
 interface AppointmentState {
   requests: AppointmentRequest[]
   addRequest: (request: Omit<AppointmentRequest, 'id' | 'date' | 'status'>) => void
   cancelRequest: (id: string) => void
+  updateRequestStatus: (id: string, status: 'confirmed' | 'rejected', rejectReason?: string) => void
 }
 
 const initialMockRequests: AppointmentRequest[] = []
@@ -47,6 +49,12 @@ export const useAppointmentStore = create<AppointmentState>()(
       cancelRequest: (id) =>
         set((state) => ({
           requests: state.requests.filter((r) => r.id !== id)
+        })),
+      updateRequestStatus: (id, status, rejectReason) =>
+        set((state) => ({
+          requests: state.requests.map((r) =>
+            r.id === id ? { ...r, status, rejectReason } : r
+          )
         }))
     }),
     {

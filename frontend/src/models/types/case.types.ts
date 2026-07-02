@@ -9,6 +9,10 @@ export interface Lawyer {
   name: string;
   avatar: string;
   specialty: string;
+  rating?: number;
+  experienceYears?: number;
+  pricePerHour?: number;
+  bio?: string;
 }
 
 export interface AnalysisResponse {

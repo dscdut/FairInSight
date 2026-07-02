@@ -2,7 +2,7 @@ import { AuthService } from '../../modules/auth/service/auth.service';
 import { RegisterDto, LoginDto, ForgotPasswordDto, VerifyOtpDto, ResetPasswordDto, UpdateMyProfileDto, RefreshTokenDto, LogoutDto } from '../../modules/auth';
 import { ValidHttpResponse } from '../../../packages/handler/response/validHttp.response';
 
-class Controller {
+class Controller { 
     constructor() {
         this.service = AuthService;
     }
