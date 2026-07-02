@@ -76,11 +76,10 @@ export const AuthResolver = Module.builder()
             route: '/refresh-token',
             method: 'post',
             interceptors: [RefreshTokenInterceptor],
-            middleware: [authMiddleware],
             body: 'RefreshTokenDto',
             controller: AuthController.refreshToken,
-            preAuthorization: true,
         },
+
         {
             route: '/logout',
             method: 'post',
