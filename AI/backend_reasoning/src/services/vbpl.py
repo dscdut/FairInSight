@@ -27,6 +27,10 @@ _ITEM_ID = re.compile(r"^(\d+|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a
 # Multispace gọn lại nhưng GIỮ xuống dòng (UnitTreeBuilder cắt Điều theo dòng).
 _MULTISPACE = re.compile(r"[ \t ]+")
 _MULTIBLANK = re.compile(r"\n{3,}")
+# VBPL editor hay tách SỐ Điều ra nhiều <span> rời ("Điều 1"+"3" → "Điều 1 3" sau khi
+# get_text(' ') chèn space). Gộp lại chữ số bị tách NGAY SAU "Điều" để không vỡ số Điều.
+# Chỉ đụng cụm "Điều <số> <số>..." — an toàn, không chạm nội dung khác.
+_ART_NUM_SPLIT = re.compile(r"(Điều)\s+(\d(?:\s+\d){1,3})\b", re.I)
 
 
 def parse_vbpl_url(url: str) -> Optional[str]:
@@ -127,6 +131,8 @@ def _strip_html(html: str) -> str:
         if el.find(_BLOCK_TAGS):
             continue  # block cha — để block con (lá) xử, tránh trùng nội dung
         txt = _MULTISPACE.sub(" ", el.get_text(" ", strip=True)).strip()
+        # VBPL tách số Điều ra <span> rời → "Điều 1 3" → gộp lại "Điều 13".
+        txt = _ART_NUM_SPLIT.sub(lambda m: m.group(1) + " " + m.group(2).replace(" ", ""), txt)
         if txt:
             leaf_lines.append(txt)
     text = "\n".join(leaf_lines)
