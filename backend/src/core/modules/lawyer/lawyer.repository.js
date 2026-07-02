@@ -128,6 +128,90 @@ class Repository extends BaseRepository {
             include
         });
     }
+
+    async updateLawyerProfile(userId, { userPayload, lawyerDetailsPayload, specializations }) {
+        return prisma.$transaction(async tx => {
+            // Update users table
+            if (Object.keys(userPayload).length > 0) {
+                await tx.users.update({
+                    where: { id: userId },
+                    data: userPayload,
+                });
+            }
+
+            // Update lawyer_details using upsert to prevent issues if details do not exist
+            if (Object.keys(lawyerDetailsPayload).length > 0) {
+                await tx.lawyer_details.upsert({
+                    where: { user_id: userId },
+                    create: {
+                        user_id: userId,
+                        ...lawyerDetailsPayload,
+                    },
+                    update: lawyerDetailsPayload,
+                });
+            }
+
+            // Update specializations if provided
+            if (Array.isArray(specializations)) {
+                const foundSpecialties = await tx.specialties.findMany({
+                    where: {
+                        name: { in: specializations },
+                    },
+                });
+
+                // Delete old specialties
+                await tx.lawyer_specialties.deleteMany({
+                    where: { lawyer_id: userId },
+                });
+
+                // Insert new specialties
+                if (foundSpecialties.length > 0) {
+                    await tx.lawyer_specialties.createMany({
+                        data: foundSpecialties.map(spec => ({
+                            lawyer_id: userId,
+                            specialty_id: spec.id,
+                        })),
+                    });
+                }
+            }
+
+            // Fetch updated lawyer details
+            const include = {
+                roles: true,
+                lawyer_details: {
+                    include: {
+                        lawyer_specialties: {
+                            include: {
+                                specialties: true
+                            }
+                        },
+                        lawyer_experiences: {
+                            where: { deleted_at: null },
+                            orderBy: { start_date: 'desc' }
+                        },
+                        lawyer_certificates: {
+                            where: { deleted_at: null }
+                        },
+                        ratings: {
+                            where: { deleted_at: null },
+                            include: {
+                                users: true
+                            },
+                            orderBy: { created_at: 'desc' }
+                        }
+                    }
+                }
+            };
+
+            return tx.users.findFirst({
+                where: {
+                    id: userId,
+                    deleted_at: null,
+                },
+                include,
+            });
+        });
+    }
 }
 
 
