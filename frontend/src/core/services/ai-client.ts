@@ -5,13 +5,10 @@ import axios, { HttpStatusCode } from 'axios'
 
 import config from '@/core/configs/env'
 import isEqual from '@/core/configs/is-equal'
-import { authApi } from '@/core/services/auth.service'
-import { forceLogout } from '@/core/shared/auth-refresh'
+import { forceLogout, doRefresh } from '@/core/shared/auth-refresh'
 import {
   getAccessTokenFromLS,
-  getRefreshTokenFromLS,
-  setAccessTokenToLS,
-  setRefreshTokenToLS
+  getRefreshTokenFromLS
 } from '@/core/shared/storage'
 
 // Hàng đợi refresh: nhiều request 401 cùng lúc → chỉ refresh 1 lần, các request khác
@@ -43,10 +40,6 @@ aiClient.interceptors.response.use(
   (response) => response.data,
   async (error) => {
     const originalRequest = error.config
-
-    // Token AI là token Node phát (sống 15m). Hết hạn → AI BE verify fail → 401.
-    // Bắt 401 (1 lần/request) → refresh bằng refresh_token → retry. KHÔNG refresh cho
-    // chính request refresh (tránh lặp vô hạn).
     const isRefreshCall = originalRequest?.url?.includes('refresh')
     if (
       error.response &&
@@ -75,17 +68,13 @@ aiClient.interceptors.response.use(
           forceLogout() // không còn refresh token → đá về /login
           return Promise.reject(error)
         }
-
-        // Node BE rotate token: lưu CẢ refresh token mới (xem axios-client.ts).
-        const { accessToken, refreshToken } = await authApi.refreshToken(refresh_token)
-        setAccessTokenToLS(accessToken)
-        if (refreshToken) setRefreshTokenToLS(refreshToken)
+        
+        const accessToken = await doRefresh()
         originalRequest.headers.Authorization = `Bearer ${accessToken}`
         processQueue(null, accessToken)
         return aiClient(originalRequest)
       } catch (refreshError) {
         processQueue(refreshError, null)
-        forceLogout() // refresh token hết 7 ngày / bị revoke → đá về /login
         return Promise.reject(error)
       } finally {
         isRefreshing = false

@@ -172,7 +172,7 @@ export default function TemplatePreviewModal({ template, onClose, onUse }: Templ
             </div>
 
             {/* Body — iframe render hình dạng biểu mẫu */}
-            <div className='flex-1 bg-background-tertiary overflow-hidden flex items-center justify-center p-4'>
+            <div className='flex-1 bg-background-tertiary overflow-hidden flex items-center justify-center'>
               {loading ? (
                 <div className='flex flex-col items-center gap-2 text-text-description'>
                   <Loader2 className='w-7 h-7 animate-spin text-primary' />
