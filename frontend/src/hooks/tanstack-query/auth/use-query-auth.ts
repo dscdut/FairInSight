@@ -158,12 +158,27 @@ export const useUserInfo = () => {
 
 export const useUpdateProfile = () => {
   const queryClient = useQueryClient()
+  const updateUser = useAuthStore((state) => state.updateUser)
+  const user = useAuthStore((state) => state.user)
 
   return useMutation({
     mutationKey: ['updateProfile'],
     mutationFn: (data: Account) => authApi.updateProfile(data),
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       toastifyCommon.success('Cập nhật thông tin thành công!')
+      
+      // Sync the newly updated profile data into the authStore (LocalStorage)
+      if (res && res.data && user) {
+        updateUser({
+          ...user,
+          fullName: res.data.fullName || user.fullName,
+          phone: res.data.phone || user.phone,
+          location: res.data.location || user.location,
+          avatarUrl: res.data.avatarUrl || user.avatarUrl,
+          dateOfBirth: res.data.dateOfBirth || user.dateOfBirth
+        })
+      }
+
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.userInfo] })
     },
     onError: (error: AxiosError) => {
