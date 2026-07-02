@@ -152,7 +152,8 @@ export const useUserInfo = () => {
         phone: account.phone,
         location: account.location,
         avatarUrl: account.avatarUrl,
-        roleName: account.roleName as UserRole
+        roleName: account.roleName as UserRole,
+        status: account.status
       })
     }
   }, [query.data, updateUser])
