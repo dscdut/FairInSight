@@ -10,6 +10,8 @@ import { AuthResolver } from './auth/auth.resolver';
 import { LawResolver } from './law/law.resolver';
 import { AnalysisResolver } from './analysis/analysis.resolver';
 import { DraftResolver } from './draft/draft.resolver';
+import { ChatRequestResolver } from './chat-request/chat-request.resolver';
+import { ConsultationResolver } from './consultation/consultation.resolver';
 
 export const ModuleResolver = HandlerResolver
     .builder()
@@ -24,5 +26,7 @@ export const ModuleResolver = HandlerResolver
         TemplateResolver,
         DocumentResolver,
         AnalysisResolver,
-        DraftResolver
+        DraftResolver,
+        ChatRequestResolver,
+        ConsultationResolver
     ]);

@@ -32,13 +32,44 @@ class Service {
    * Allows email and full_name updates with validation
    */
     async upsertOne(updateUserDto, userId) {
+        const user = await this.repository.findById(userId);
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
         const updateModel = {
             ...(updateUserDto.email && { email: updateUserDto.email }),
-            ...(updateUserDto.full_name && { full_name: updateUserDto.full_name })
+            ...(updateUserDto.full_name && { full_name: updateUserDto.full_name }),
+            ...(updateUserDto.phone !== undefined && { phone: updateUserDto.phone }),
+            ...(updateUserDto.location !== undefined && { location: updateUserDto.location }),
+            ...(updateUserDto.avatar_url !== undefined && { avatar_url: updateUserDto.avatar_url })
         };
 
         if (Object.keys(updateModel).length > 0) {
             await this.repository.updateById(userId, updateModel);
+        }
+
+        const isLawyer = (user.roles?.name || '').toUpperCase() === 'LAWYER';
+        if (isLawyer) {
+            const lawyerDetailsModel = {
+                ...(updateUserDto.bio !== undefined && { bio: updateUserDto.bio }),
+                ...(updateUserDto.experience_years !== undefined && { experience_years: updateUserDto.experience_years }),
+                ...(updateUserDto.price_per_hour !== undefined && { price_per_hour: updateUserDto.price_per_hour }),
+                ...(updateUserDto.bar_association !== undefined && { bar_association: updateUserDto.bar_association }),
+                ...(updateUserDto.license_number !== undefined && { license_number: updateUserDto.license_number })
+            };
+
+            if (Object.keys(lawyerDetailsModel).length > 0) {
+                await prisma.lawyer_details.upsert({
+                    where: { user_id: userId },
+                    create: {
+                        user_id: userId,
+                        ...lawyerDetailsModel,
+                        is_verified: true
+                    },
+                    update: lawyerDetailsModel
+                });
+            }
         }
     }
 

@@ -68,6 +68,9 @@ export const mapLawyerListItem = user => {
         successfulCases: lawyerDetails.successful_cases || 0,
         specializations,
         location: user.location || '',
+        city: user.location || '',
+        pricePerHour: lawyerDetails.price_per_hour ? Number(lawyerDetails.price_per_hour) : 0,
+        experienceYears: lawyerDetails.experience_years || 0,
     };
 };
 
