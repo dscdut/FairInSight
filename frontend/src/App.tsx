@@ -4,13 +4,14 @@ import { Agentation } from 'agentation'
 
 import { ThemeProvider } from '@/app/providers/theme-provider'
 import AutoScrollToTop from '@/components/scroll/auto-scroll-to-top'
+import { authApi } from '@/core/services/auth.service'
 import { scheduleTokenRefresh } from '@/core/shared/auth-refresh'
 import { getAccessTokenFromLS } from '@/core/shared/storage'
 import { useAuthStore } from '@/core/store/features/auth/authStore'
 import useRoutesElements from '@/hooks/routes/use-router-element'
+import { type Account } from '@/models/interface/auth.interface'
 
 import '@/styles/theme.css'
-import { useUserInfo } from './hooks/tanstack-query/auth/use-query-auth'
 import { type UserRole } from './models/user/types'
 
 const AppContent = () => {
@@ -22,21 +23,22 @@ const App = () => {
   const [isAppLoading, setIsAppLoading] = useState(true)
   const logout = useAuthStore((state) => state.logout)
   const updateUser = useAuthStore((state) => state.updateUser)
-  const { data: userData } = useUserInfo()
-
   useEffect(() => {
     const initializeApp = async () => {
       const accessToken = getAccessTokenFromLS()
       if (accessToken) {
         try {
+          const userData = await authApi.getUserInfo() as Account
+          const currentUser = useAuthStore.getState().user
           updateUser({
-            userId: userData?.id || '',
-            fullName: userData?.fullName || '',
-            email: userData?.email || '',
-            phone: userData?.phone || '',
-            location: userData?.location || '',
-            avatarUrl: userData?.avatarUrl || '',
-            roleName: userData?.roleName as UserRole
+            userId: userData.id || '',
+            fullName: userData.fullName || '',
+            email: userData.email || '',
+            phone: userData.phone || '',
+            location: userData.location || '',
+            avatarUrl: userData.avatarUrl || '',
+            roleName: userData.roleName as UserRole || currentUser?.roleName || 'USER',
+            status: userData.status || currentUser?.status || 'ACTIVE'
           })
           scheduleTokenRefresh()
         } catch (error: any) {
@@ -50,7 +52,7 @@ const App = () => {
     }
 
     initializeApp()
-  }, [logout, updateUser, userData?.avatarUrl, userData?.email, userData?.fullName, userData?.id, userData?.location, userData?.phone, userData?.roleName])
+  }, [logout, updateUser])
 
   if (isAppLoading) {
     return (

@@ -83,11 +83,12 @@ axiosClient.interceptors.response.use(
       controllers.delete(response.config.url)
     }
 
-    // Check if response indicates user is banned
+    // Check if response indicates user is banned (only for auth/profile endpoints of the current user)
     const dataObj = response.data as any
     const user = dataObj?.data?.user || dataObj?.user
     const userStatus = user?.status || dataObj?.data?.status || dataObj?.status
-    if (userStatus === 'BANNED' || userStatus === 'banned') {
+    const isAuthRequestUrl = response.config.url && response.config.url.includes('/auth/')
+    if (isAuthRequestUrl && (userStatus === 'BANNED' || userStatus === 'banned')) {
       handleBannedUser(
         user?.banReason || dataObj?.data?.banReason || dataObj?.banReason,
         user?.bannedAt || dataObj?.data?.bannedAt || dataObj?.bannedAt
@@ -100,17 +101,19 @@ axiosClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config
 
-    // Check if error response indicates user is banned
+    // Check if error response indicates user is banned (only for auth/profile endpoints of the current user)
     const errorStatus = error.response?.status
     const errorData = error.response?.data as any
     const errorMessage = errorData?.message || ''
+    const isAuthRequestUrl = originalRequest?.url && originalRequest.url.includes('/auth/')
 
     if (
-      errorStatus === 403 ||
+      isAuthRequestUrl &&
+      (errorStatus === 403 ||
       errorStatus === 401 ||
       errorMessage.toLowerCase().includes('banned') ||
       errorData?.status === 'BANNED' ||
-      errorData?.status === 'banned'
+      errorData?.status === 'banned')
     ) {
       if (
         errorMessage.toLowerCase().includes('banned') ||
