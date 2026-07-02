@@ -105,9 +105,11 @@ def _build_payload(messages: list, model: str, temperature: float) -> dict:
 
 
 # --- 9router (OpenAI-format) ---------------------------------------------------
-# Khi settings.USE_NINE_ROUTER=True, mọi complete*/complete_json* đi qua đây thay
-# vì Ollama. Payload "tiếng OpenAI" (KHÔNG think/keep_alive), parse choices[0]; vẫn
-# _record(...) để token được đếm (response có usage.{prompt,completion}_tokens).
+# Khi settings.USE_NINE_ROUTER=True, 9router là provider ƯU TIÊN của complete*/
+# complete_json*; nếu lỗi hết CHAT_RETRIES thì RỚT thẳng về local qwen3 (máy bạn,
+# OLLAMA_BASE_URL) — BỎ QUA mac-mini — thay vì 500. Xem fallthrough trong
+# complete()/complete_sync(). Payload "tiếng OpenAI" (KHÔNG think/keep_alive), parse
+# choices[0]; vẫn _record(...) để token được đếm (response có usage.{...}_tokens).
 def _openai_payload(messages: list, model: str, temperature: float) -> dict:
     # max_tokens = GIỚI HẠN OUTPUT (không phải context window). Groq free-tier chặn
     # request có max_tokens lớn (qwen3-32b 413 khi =8192) → dùng NINE_ROUTER_MAX_TOKENS
@@ -183,13 +185,20 @@ async def complete(
     # [LLM-TRACE] log gọn input/output mỗi lượt gọi LLM để xem "đưa gì vào, trả ra gì".
     _log(f"\n{'>'*70}\n[LLM-INPUT] system={(system or '')[:200]!r}\n[LLM-INPUT] user=\n{prompt[:2500]}\n{'>'*70}")
 
+    # 9router ưu tiên; lỗi hết retry → rớt THẲNG về local qwen3 (bỏ qua mac-mini).
     if settings.USE_NINE_ROUTER:
-        out = await _call_openai(messages, settings.NINE_ROUTER_MODEL, temperature)
-        _log(f"\n{'<'*70}\n[LLM-OUTPUT] (9router {settings.NINE_ROUTER_MODEL})\n{out[:2500]}\n{'<'*70}")
-        return out
+        try:
+            out = await _call_openai(messages, settings.NINE_ROUTER_MODEL, temperature)
+            _log(f"\n{'<'*70}\n[LLM-OUTPUT] (9router {settings.NINE_ROUTER_MODEL})\n{out[:2500]}\n{'<'*70}")
+            return out
+        except Exception as e:  # noqa: BLE001 — 9router chết → local qwen3
+            _log(f"[LLM-FALLBACK] 9router lỗi hết retry → local qwen3 ({settings.OLLAMA_FALLBACK_MODEL}): {e}")
+            providers = [(settings.OLLAMA_BASE_URL, settings.OLLAMA_FALLBACK_MODEL)]
+    else:
+        providers = settings.CHAT_PROVIDERS
 
     last_err: Optional[Exception] = None
-    for base_url, model in settings.CHAT_PROVIDERS:
+    for base_url, model in providers:
         payload = _build_payload(messages, model, temperature)
         for attempt in range(1, settings.CHAT_RETRIES + 1):
             try:
@@ -220,11 +229,18 @@ def complete_sync(prompt: str, *, system: Optional[str] = None, temperature: flo
         messages.append({"role": "system", "content": system})
     messages.append({"role": "user", "content": prompt})
 
+    # 9router ưu tiên; lỗi hết retry → rớt THẲNG về local qwen3 (bỏ qua mac-mini).
     if settings.USE_NINE_ROUTER:
-        return _call_openai_sync(messages, settings.NINE_ROUTER_MODEL, temperature)
+        try:
+            return _call_openai_sync(messages, settings.NINE_ROUTER_MODEL, temperature)
+        except Exception as e:  # noqa: BLE001 — 9router chết → local qwen3
+            _log(f"[LLM-FALLBACK] 9router lỗi hết retry → local qwen3 ({settings.OLLAMA_FALLBACK_MODEL}): {e}")
+            providers = [(settings.OLLAMA_BASE_URL, settings.OLLAMA_FALLBACK_MODEL)]
+    else:
+        providers = settings.CHAT_PROVIDERS
 
     last_err: Optional[Exception] = None
-    for base_url, model in settings.CHAT_PROVIDERS:
+    for base_url, model in providers:
         payload = _build_payload(messages, model, temperature)
         for attempt in range(1, settings.CHAT_RETRIES + 1):
             try:
