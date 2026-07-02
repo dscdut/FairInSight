@@ -148,8 +148,8 @@ export const useUserInfo = () => {
   return useQuery({
     queryKey: [QUERY_KEYS.userInfo],
     queryFn: async () => {
-      const userData = await authApi.getUserInfo() as any
-      return userData?.data || userData
+      const userData = await authApi.getUserInfo() as Account
+      return userData
     },
     enabled: isAuthenticated,
     placeholderData: placeholderUser
@@ -164,11 +164,11 @@ export const useUpdateProfile = () => {
   return useMutation({
     mutationKey: ['updateProfile'],
     mutationFn: (data: Account) => authApi.updateProfile(data),
-    onSuccess: (res: any) => {
+    onSuccess: (res: Account) => {
       toastifyCommon.success('Cập nhật thông tin thành công!')
       
       // Sync the newly updated profile data into the authStore (LocalStorage)
-      const updatedProfile = res?.data || res
+      const updatedProfile = res
       if (updatedProfile && user) {
         updateUser({
           ...user,

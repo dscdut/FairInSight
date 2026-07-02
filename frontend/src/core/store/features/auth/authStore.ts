@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 
 import { getPersistedAuth } from '@/core/shared/auth'
-import { clearTokenRefresh, scheduleTokenRefresh } from '@/core/shared/auth-refresh'
+import { clearTokenRefresh, scheduleTokenRefresh, registerAuthStore } from '@/core/shared/auth-refresh'
 import { clearLS, setToken, setUserToLS } from '@/core/shared/storage'
 import { type LoginResponse } from '@/models/interface/auth.interface'
 
@@ -88,3 +88,5 @@ export const useAuthStore = create<AuthStore>((set) => ({
     })
   }
 }))
+
+registerAuthStore(useAuthStore)

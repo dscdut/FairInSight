@@ -31,7 +31,7 @@ export default function ProfileEditDialog({ user, isOpen, onOpenChange }: Profil
 
     // Sanitize payload: Joi validator on backend rejects 'null' values.
     // Replace all null/undefined values with empty string or omit them.
-    const payload: any = {
+    const payload: Account = {
       fullName: fullName || '',
       phone: phone || '',
       location: location || '',
