@@ -11,9 +11,15 @@ import useRoutesElements from '@/hooks/routes/use-router-element'
 
 import '@/styles/theme.css'
 
+// Tách Routes thành component con để lắng nghe sự thay đổi của React Router (Location)
+// và Zustand auth state, đảm bảo re-render và chuyển trang chính xác.
+const AppContent = () => {
+  const router = useRoutesElements()
+  return <>{router}</>
+}
+
 const App = () => {
   const [isInitializing, setIsInitializing] = useState(true)
-  const router = useRoutesElements()
   const logout = useAuthStore((state) => state.logout)
 
   useEffect(() => {
@@ -48,7 +54,7 @@ const App = () => {
   return (
     <ThemeProvider>
       <AutoScrollToTop behavior='smooth' />
-      {router}
+      <AppContent />
       {import.meta.env.DEV && <Agentation />}
     </ThemeProvider>
   )

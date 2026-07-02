@@ -77,7 +77,8 @@ export async function doRefresh(): Promise<string> {
         { refresh_token },
         { headers: { 'Content-Type': 'application/json' } }
       )
-      const data = res.data?.data ?? res.data
+      const resData = res.data?.data ?? res.data
+      const data = resData?.data ?? resData
       const accessToken: string = data.accessToken
       const refreshToken: string | undefined = data.refreshToken
       if (!accessToken) throw new Error('Refresh response thiếu accessToken')
