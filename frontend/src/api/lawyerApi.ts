@@ -25,16 +25,21 @@ interface LawyerListItem {
   avatar: string | null
   specializations: string[]
   city?: string
+  averageRating?: number
+  experienceYears?: number
+  pricePerHour?: number
+  bio?: string
 }
 
 /**
  * Lấy danh sách luật sư THẬT từ Node BE (GET /api/v1/lawyers, public).
  * Lọc theo specialization nếu map được domain; map về type card Lawyer.
  */
-export async function fetchLawyers(domain?: string | null): Promise<Lawyer[]> {
+export async function fetchLawyers(domain?: string | null, sortByRating?: boolean): Promise<Lawyer[]> {
   const specialty = domainToSpecialty(domain)
-  const params = new URLSearchParams({ page: '1', size: '6' })
+  const params = new URLSearchParams({ page: '1', size: '20' })
   if (specialty) params.set('specialization', specialty)
+  if (sortByRating) params.set('sortByRating', 'true')
 
   const token = getAccessTokenFromLS()
   const headers: Record<string, string> = {}
@@ -52,5 +57,9 @@ export async function fetchLawyers(domain?: string | null): Promise<Lawyer[]> {
     name: it.fullName,
     avatar: it.avatar || '',
     specialty: it.specializations?.join(', ') || specialty || 'Tư vấn pháp luật',
+    rating: it.averageRating,
+    experienceYears: it.experienceYears,
+    pricePerHour: it.pricePerHour,
+    bio: it.bio
   }))
 }
