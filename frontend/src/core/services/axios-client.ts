@@ -162,16 +162,12 @@ axiosClient.interceptors.response.use(
           return Promise.reject(error)
         }
 
-        // Node BE ROTATE token: refresh trả CẢ accessToken + refreshToken mới (refresh
-        // token cũ bị upsert ghi đè). PHẢI lưu cả 2 — nếu chỉ lưu access thì lần refresh
-        // sau dùng refresh token cũ đã vô hiệu → fail → đá ra login sớm (trước 7 ngày).
         const accessToken = await doRefresh()
         originalRequest.headers.Authorization = `Bearer ${accessToken}`
         processQueue(null, accessToken)
         return axiosClient(originalRequest)
       } catch (refreshError) {
         processQueue(refreshError, null)
-        forceLogout() // refresh token hết 7 ngày / bị revoke → đá về /login
         return Promise.reject(error)
       } finally {
         isRefreshing = false
