@@ -148,8 +148,8 @@ export const useUserInfo = () => {
   return useQuery({
     queryKey: [QUERY_KEYS.userInfo],
     queryFn: async () => {
-      const userData = await authApi.getUserInfo()
-      return userData
+      const userData = await authApi.getUserInfo() as any
+      return userData?.data || userData
     },
     enabled: isAuthenticated,
     placeholderData: placeholderUser
@@ -168,14 +168,14 @@ export const useUpdateProfile = () => {
       toastifyCommon.success('Cập nhật thông tin thành công!')
       
       // Sync the newly updated profile data into the authStore (LocalStorage)
-      if (res && res.data && user) {
+      const updatedProfile = res?.data || res
+      if (updatedProfile && user) {
         updateUser({
           ...user,
-          fullName: res.data.fullName || user.fullName,
-          phone: res.data.phone || user.phone,
-          location: res.data.location || user.location,
-          avatarUrl: res.data.avatarUrl || user.avatarUrl,
-          dateOfBirth: res.data.dateOfBirth || user.dateOfBirth
+          fullName: updatedProfile.fullName || user.fullName,
+          phone: updatedProfile.phone || user.phone,
+          location: updatedProfile.location || user.location,
+          avatarUrl: updatedProfile.avatarUrl || user.avatarUrl
         })
       }
 
