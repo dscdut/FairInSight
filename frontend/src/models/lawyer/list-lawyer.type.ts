@@ -10,7 +10,7 @@ export interface Lawyer {
   averageRating: number;
   successfulCases: number;
   specializations: string[];
-  city: string | VietnamCity;
+  location: string | VietnamCity;
 }
 
 export interface Pagination {

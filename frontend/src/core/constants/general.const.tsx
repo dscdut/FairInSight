@@ -13,7 +13,8 @@ import {
   Users,
   UserCheck,
   MessageCircle,
-  User
+  User,
+  Settings
 } from 'lucide-react'
 
 import { ROUTE } from '@/core/constants/path'

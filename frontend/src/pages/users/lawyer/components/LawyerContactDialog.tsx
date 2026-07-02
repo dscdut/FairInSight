@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import FileUpload from '@/components/upload-file/file-upload'
 import toastifyCommon from '@/core/lib/toastify-common'
 import { consultationApi } from '@/core/services/consultation.service'
+import { lawApi } from '@/core/services/law.service'
 import { useAppointmentStore } from '@/core/store/features/appointments'
 import { useUserInfo } from '@/hooks/tanstack-query/auth/use-query-auth'
 import { type Lawyer } from '@/models/lawyer/list-lawyer.type'
@@ -48,7 +49,7 @@ export function LawyerContactDialog({
   const [contactForm, setContactForm] = useState({ name: '', phone: '', email: '', message: '' })
   const [selectedFiles, setSelectedFiles] = useState<UploadedFile[]>([])
   const [prepopulatedFiles, setPrepopulatedFiles] = useState<any[]>([])
-  const [submitting, setSubmitting] = useState(false)
+  // const [submitting, setSubmitting] = useState(false)
 
   const { data: user } = useUserInfo()
   const navigate = useNavigate()
@@ -73,7 +74,7 @@ export function LawyerContactDialog({
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSubmitting(true)
+    // setSubmitting(true)
     try {
       // Create a real consultation process in the database with the user's manually typed context/message
       await consultationApi.createConsultation({
@@ -111,7 +112,7 @@ export function LawyerContactDialog({
       console.error('Failed to create consultation:', err)
       toastifyCommon.error('Đăng ký tư vấn thất bại. Vui lòng thử lại!')
     } finally {
-      setSubmitting(false)
+      // setSubmitting(false)
     }
   }
 
@@ -137,7 +138,7 @@ export function LawyerContactDialog({
                 <div>
                   <h4 className='text-p-medium font-bold text-text-primary'>{lawyer.fullName}</h4>
                   <p className='text-xs text-text-description font-medium flex items-center gap-1 mt-0.5'>
-                    <MapPin className='w-3 h-3' /> {lawyer.city}
+                    <MapPin className='w-3 h-3' /> {lawyer.location}
                   </p>
                   <div className='flex gap-4 items-center mt-1.5'>
                     <span className='text-xs font-bold text-warning-secondary flex items-center gap-0.5'>
@@ -193,7 +194,7 @@ export function LawyerContactDialog({
                 </div>
                 <div>
                   <h4 className='text-sm font-semibold text-text-main'>Luật sư {lawyer.fullName}</h4>
-                  <p className='text-xs text-text-description'>{lawyer.city}</p>
+                  <p className='text-xs text-text-description'>{lawyer.location}</p>
                 </div>
               </div>
 
@@ -268,9 +269,8 @@ export function LawyerContactDialog({
                                 )
                               )
                             })
-                            .catch((err) => {
-                              // eslint-disable-next-line no-console
-                              console.error('Failed to upload file:', err)
+                            .catch((error) => {
+                              console.error('Failed to upload file:', error)
                               setSelectedFiles((prev) =>
                                 prev.map((item) =>
                                   item.name === file.name && item.isUploading
@@ -378,7 +378,7 @@ export function LawyerContactDialog({
                   </Button>
                   <Button
                     type='submit'
-                    disabled={submitting}
+                    // disabled={submitting}
                     className='w-full'
                     disabled={selectedFiles.some((f) => f.isUploading)}
                   >

@@ -12,10 +12,8 @@ import {
   setRefreshTokenToLS
 } from '@/core/shared/storage'
 
-// Refresh KHI access token còn <= ngưỡng này (giây). 75s: an toàn cho lệch giờ + RTT.
 const REFRESH_BEFORE_SEC = 75
 let refreshTimer: ReturnType<typeof setTimeout> | null = null
-// Chống refresh chồng (timer + nhiều 401 cùng lúc gọi doRefresh): chia sẻ 1 promise.
 let inflight: Promise<string> | null = null
 
 /** Giải mã payload JWT (base64url) → object. null nếu hỏng. KHÔNG cần lib jwt-decode. */
@@ -87,11 +85,6 @@ export async function doRefresh(): Promise<string> {
   }
 }
 
-/**
- * PROACTIVE: hẹn timer tự refresh khi access token còn ~75s. Gọi lúc app mount (nếu có
- * token) + sau login. Clear timer cũ trước khi đặt mới (tránh nhiều timer). Nếu token đã
- * sắp/đã hết → refresh ngay.
- */
 export function scheduleTokenRefresh(): void {
   clearTokenRefresh()
   const token = getAccessTokenFromLS()
@@ -106,7 +99,6 @@ export function scheduleTokenRefresh(): void {
   }, delayMs)
 }
 
-/** Hủy timer (logout). */
 export function clearTokenRefresh(): void {
   if (refreshTimer) {
     clearTimeout(refreshTimer)

@@ -41,7 +41,7 @@ export default function LawyerProfile() {
       averageRating: detailSummary.averageRating || 0,
       successfulCases: detailSummary.successfulCases || 0,
       specializations: detailSummary.specializations || [],
-      city: detailSummary.location || 'Việt Nam'
+      location: detailSummary.location || 'Việt Nam'
     }
   }, [id, detailSummary])
 
@@ -276,7 +276,7 @@ export default function LawyerProfile() {
                 <h3 className='text-h4 font-semibold text-text-main border-b border-border-primary pb-2'>Lĩnh vực chuyên môn</h3>
                 <div className='flex flex-wrap gap-2.5'>
                   {detail.specializations && detail.specializations.length > 0 ? (
-                    detail.specializations.map((spec) => (
+                    detail.specializations.map((spec: string) => (
                       <Badge
                         key={spec}
                         variant='secondary'
@@ -337,7 +337,7 @@ export default function LawyerProfile() {
                         Mốc sự nghiệp nổi bật
                       </h4>
                       <ul className='list-disc pl-5 text-xs text-text-description space-y-1.5'>
-                        {detail.careerMilestones.map((milestone, idx) => (
+                        {detail.careerMilestones.map((milestone: string, idx: number) => (
                           <li key={idx} className='leading-relaxed'>{milestone}</li>
                         ))}
                       </ul>

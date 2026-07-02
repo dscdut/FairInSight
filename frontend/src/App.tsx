@@ -4,14 +4,14 @@ import { Agentation } from 'agentation'
 
 import { ThemeProvider } from '@/app/providers/theme-provider'
 import AutoScrollToTop from '@/components/scroll/auto-scroll-to-top'
-import { authApi } from '@/core/services/auth.service'
 import { scheduleTokenRefresh } from '@/core/shared/auth-refresh'
 import { getAccessTokenFromLS } from '@/core/shared/storage'
 import { useAuthStore } from '@/core/store/features/auth/authStore'
 import useRoutesElements from '@/hooks/routes/use-router-element'
-import { type Account } from '@/models/interface/auth.interface'
 
 import '@/styles/theme.css'
+import { useUserInfo } from './hooks/tanstack-query/auth/use-query-auth'
+import { type UserRole } from './models/user/types'
 
 const AppContent = () => {
   const router = useRoutesElements()
@@ -22,27 +22,26 @@ const App = () => {
   const [isAppLoading, setIsAppLoading] = useState(true)
   const logout = useAuthStore((state) => state.logout)
   const updateUser = useAuthStore((state) => state.updateUser)
+  const { data: userData } = useUserInfo()
 
   useEffect(() => {
     const initializeApp = async () => {
       const accessToken = getAccessTokenFromLS()
       if (accessToken) {
         try {
-          // Lấy thông tin user ngay khi khởi tạo ứng dụng để nạp vào Zustand store
-          const userData = await authApi.getUserInfo() as Account
           updateUser({
-            userId: userData.id,
-            fullName: userData.fullName,
-            email: userData.email,
-            phone: userData.phone,
-            location: userData.location,
-            avatarUrl: userData.avatarUrl,
-            roleName: userData.roleName as any
+            userId: userData?.id || '',
+            fullName: userData?.fullName || '',
+            email: userData?.email || '',
+            phone: userData?.phone || '',
+            location: userData?.location || '',
+            avatarUrl: userData?.avatarUrl || '',
+            roleName: userData?.roleName as UserRole
           })
           scheduleTokenRefresh()
-        } catch (err: any) {
-          console.error('Failed to fetch user info on app initialize:', err)
-          if (err.response && [401, 403].includes(err.response.status)) {
+        } catch (error: any) {
+          console.error('Failed to fetch user info on app initialize:', error)
+          if (error.response && [401, 403].includes(error.response.status)) {
             logout()
           }
         }
@@ -51,7 +50,7 @@ const App = () => {
     }
 
     initializeApp()
-  }, [logout, updateUser])
+  }, [logout, updateUser, userData?.avatarUrl, userData?.email, userData?.fullName, userData?.id, userData?.location, userData?.phone, userData?.roleName])
 
   if (isAppLoading) {
     return (

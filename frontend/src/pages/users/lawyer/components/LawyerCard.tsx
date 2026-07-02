@@ -60,7 +60,7 @@ export const LawyerCard = memo(function LawyerCard({
           </h3>
           <div className='flex items-center justify-center gap-1 text-text-description text-xs'>
             <MapPin className='w-4 h-4 text-text-tertiary' />
-            {lawyer.city}
+            {lawyer.location}
           </div>
         </div>
 

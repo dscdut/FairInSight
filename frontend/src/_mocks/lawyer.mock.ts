@@ -12,7 +12,7 @@ export const MOCK_LAWYERS: Lawyer[] = [
     averageRating: 4.9,
     successfulCases: 120,
     specializations: ['Doanh nghiệp & Thương mại', 'Lao động'],
-    city: 'Đà Nẵng'
+    location: 'Đà Nẵng'
   },
   {
     id: 'lyr-2',
@@ -23,7 +23,7 @@ export const MOCK_LAWYERS: Lawyer[] = [
     averageRating: 4.8,
     successfulCases: 95,
     specializations: ['Dân sự & Thừa kế'],
-    city: 'Hà Nội'
+    location: 'Hà Nội'
   },
   {
     id: 'lyr-3',
@@ -34,7 +34,7 @@ export const MOCK_LAWYERS: Lawyer[] = [
     averageRating: 5.0,
     successfulCases: 210,
     specializations: ['Hình sự', 'Hành chính'],
-    city: 'TP. Hồ Chí Minh'
+    location: 'TP. Hồ Chí Minh'
   },
   {
     id: 'lyr-4',
@@ -45,7 +45,7 @@ export const MOCK_LAWYERS: Lawyer[] = [
     averageRating: 4.7,
     successfulCases: 65,
     specializations: ['Sở hữu trí tuệ', 'Đất đai & Bất động sản'],
-    city: 'Cần Thơ'
+    location: 'Cần Thơ'
   },
   {
     id: 'lyr-5',
@@ -56,7 +56,7 @@ export const MOCK_LAWYERS: Lawyer[] = [
     averageRating: 4.9,
     successfulCases: 85,
     specializations: ['Doanh nghiệp & Thương mại'],
-    city: 'Đà Nẵng'
+    location: 'Đà Nẵng'
   },
   {
     id: 'lyr-6',
@@ -67,7 +67,7 @@ export const MOCK_LAWYERS: Lawyer[] = [
     averageRating: 4.6,
     successfulCases: 42,
     specializations: ['Hôn nhân & Gia đình', 'Dân sự & Thừa kế'],
-    city: 'Hải Phòng'
+    location: 'Hải Phòng'
   },
   {
     id: 'lyr-7',
@@ -78,7 +78,7 @@ export const MOCK_LAWYERS: Lawyer[] = [
     averageRating: 4.8,
     successfulCases: 67,
     specializations: ['Lao động', 'Hành chính'],
-    city: 'Quảng Nam'
+    location: 'Quảng Nam'
   },
   {
     id: 'lyr-8',
@@ -89,7 +89,7 @@ export const MOCK_LAWYERS: Lawyer[] = [
     averageRating: 4.9,
     successfulCases: 180,
     specializations: ['Đất đai & Bất động sản'],
-    city: 'Đà Nẵng'
+    location: 'Đà Nẵng'
   },
   {
     id: 'lyr-9',
@@ -100,7 +100,7 @@ export const MOCK_LAWYERS: Lawyer[] = [
     averageRating: 4.8,
     successfulCases: 140,
     specializations: ['Đất đai & Bất động sản', 'Dân sự & Thừa kế'],
-    city: 'Hà Nội'
+    location: 'Hà Nội'
   },
   {
     id: 'lyr-10',
@@ -111,7 +111,7 @@ export const MOCK_LAWYERS: Lawyer[] = [
     averageRating: 4.9,
     successfulCases: 165,
     specializations: ['Doanh nghiệp & Thương mại'],
-    city: 'TP. Hồ Chí Minh'
+    location: 'TP. Hồ Chí Minh'
   },
   {
     id: 'lyr-11',
@@ -122,7 +122,7 @@ export const MOCK_LAWYERS: Lawyer[] = [
     averageRating: 4.6,
     successfulCases: 50,
     specializations: ['Sở hữu trí tuệ'],
-    city: 'Đà Nẵng'
+    location: 'Đà Nẵng'
   },
   {
     id: 'lyr-12',
@@ -133,7 +133,7 @@ export const MOCK_LAWYERS: Lawyer[] = [
     averageRating: 4.8,
     successfulCases: 135,
     specializations: ['Hôn nhân & Gia đình'],
-    city: 'TP. Hồ Chí Minh'
+    location: 'TP. Hồ Chí Minh'
   }
 ]
 
@@ -152,7 +152,7 @@ export const getLawyerListMock = (
   size: number = 8,
   filters?: {
     category?: string
-    city?: string
+    location?: string
     searchQuery?: string
     sortBy?: 'default' | 'rating' | 'cases'
   }
@@ -174,8 +174,8 @@ export const getLawyerListMock = (
     filtered = filtered.filter((l) => l.specializations.includes(category))
   }
 
-  if (filters?.city && filters.city !== 'Tất cả') {
-    filtered = filtered.filter((l) => l.city === filters.city)
+  if (filters?.location && filters.location !== 'Tất cả') {
+    filtered = filtered.filter((l) => l.location === filters.location)
   }
 
   if (filters?.sortBy === 'rating') {
