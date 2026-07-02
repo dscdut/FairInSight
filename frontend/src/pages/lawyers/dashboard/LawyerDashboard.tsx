@@ -1,23 +1,42 @@
+import { useState, useEffect } from 'react'
+
 import { DollarSign, Calendar, Star, Clock, CheckCircle2, MessageSquare, Briefcase } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+
 import { FadeUp } from '@/components/animated/animated-component'
 import { Button } from '@/components/ui'
 import { ROUTE } from '@/core/constants/path'
+import { chatRequestApi, type ChatRequestItem } from '@/core/services/chat-request.service'
 import { useAuthStore } from '@/core/store/features/auth/authStore'
-import { useAppointmentStore } from '@/core/store/features/appointments'
 
 export default function LawyerDashboard() {
   const user = useAuthStore((state) => state.user)
   const navigate = useNavigate()
-  const requestsList = useAppointmentStore((state) => state.requests)
+  const [requestsList, setRequestsList] = useState<ChatRequestItem[]>([])
 
-  const pendingRequests = requestsList.filter((r) => r.status === 'pending')
-  const confirmedRequests = requestsList.filter((r) => r.status === 'confirmed')
+  useEffect(() => {
+    async function loadStats() {
+      try {
+        const data = await chatRequestApi.getReceivedRequests()
+        setRequestsList(data || [])
+      } catch (err) {
+        console.error('Failed to load received requests:', err)
+      }
+    }
+    loadStats()
+  }, [])
+
+  const pendingRequests = requestsList.filter((r) => r.status.toUpperCase() === 'PENDING')
+  const confirmedRequests = requestsList.filter((r) => r.status.toUpperCase() === 'ACCEPTED')
+
+  // Calculate earnings based on completed consultations (mock/estimate: 500k vnd per completed req)
+  const completedRequests = requestsList.filter(r => r.status.toUpperCase() === 'COMPLETED')
+  const totalEarnings = completedRequests.length * 500000
 
   const lawyerStats = [
     {
-      label: 'Tổng thu nhập',
-      value: '24,500,000 đ',
+      label: 'Tổng thu nhập (Tạm tính)',
+      value: `${totalEarnings.toLocaleString('vi-VN')} đ`,
       color: 'bg-emerald-500/10 text-emerald-500',
       icon: DollarSign
     },
@@ -35,7 +54,7 @@ export default function LawyerDashboard() {
     },
     {
       label: 'Đánh giá trung bình',
-      value: '4.9 / 5.0 (38)',
+      value: '5.0 / 5.0 (Mới)',
       color: 'bg-purple-500/10 text-purple-500',
       icon: Star
     }
@@ -144,15 +163,15 @@ export default function LawyerDashboard() {
                 >
                   <div className='flex items-center gap-4'>
                     <div className='w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary shrink-0'>
-                      {req.id.slice(-2)}
+                      {req.users?.full_name ? req.users.full_name.split(' ').pop()?.slice(0, 2) : 'KH'}
                     </div>
-                    <div>
-                      <h4 className='font-semibold text-text-main text-sm'>{req.topicVI}</h4>
-                      <p className='text-xs text-text-description mt-0.5'>Yêu cầu từ mã khách: {req.id}</p>
+                    <div className='text-left'>
+                      <h4 className='font-semibold text-text-main text-sm'>{req.analysis?.context_summary || 'Tư vấn chuyên sâu'}</h4>
+                      <p className='text-xs text-text-description mt-0.5'>Khách hàng: {req.users?.full_name || 'Khách hàng ẩn danh'}</p>
                       <div className='flex items-center gap-3 mt-2 text-xs text-text-description'>
                         <span className='flex items-center gap-1'>
                           <Calendar className='w-3.5 h-3.5 text-primary' />
-                          {req.date}
+                          {new Date(req.created_at).toLocaleDateString('vi-VN')}
                         </span>
                         <span className='flex items-center gap-1'>
                           <Clock className='w-3.5 h-3.5 text-indigo-500' />
@@ -223,7 +242,13 @@ export default function LawyerDashboard() {
               </div>
               <div className='flex justify-between text-xs text-text-description mt-1'>
                 <span>Độ hoàn thành 85%</span>
-                <span className='text-primary font-bold hover:underline cursor-pointer' onClick={() => navigate(`${ROUTE.LAWYER.ROOT}/${ROUTE.LAWYER.PROFILE}`)}>Bổ sung</span>
+                <button
+                  type='button'
+                  className='text-primary font-bold hover:underline cursor-pointer bg-transparent border-none p-0 outline-none'
+                  onClick={() => navigate(`${ROUTE.LAWYER.ROOT}/${ROUTE.LAWYER.PROFILE}`)}
+                >
+                  Bổ sung
+                </button>
               </div>
             </div>
           </div>

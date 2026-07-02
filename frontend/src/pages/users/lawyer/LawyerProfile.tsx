@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 import { ArrowLeft, Star, ShieldCheck, DollarSign, Briefcase, Award, MapPin, MessageSquare } from 'lucide-react'
 import { useParams, useNavigate } from 'react-router-dom'
@@ -8,11 +8,33 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { getOptimizedImageUrl } from '@/core/helpers/image'
+import toastifyCommon from '@/core/lib/toastify-common'
+import { chatRequestApi } from '@/core/services/chat-request.service'
 import { useLawyerDetail } from '@/hooks/lawyers/use-lawyer'
 
 export default function LawyerProfile() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const [isSending, setIsSending] = useState(false)
+  const [isSent, setIsSent] = useState(false)
+
+  const handleRequestConsultation = async () => {
+    if (!id) return
+    setIsSending(true)
+    try {
+      await chatRequestApi.createChatRequest({
+        lawyerId: id,
+        analysisId: ''
+      })
+      setIsSent(true)
+      toastifyCommon.success('Gửi yêu cầu tư vấn thành công! Luật sư sẽ liên hệ với bạn sớm nhất.')
+    } catch (err) {
+      console.error(err)
+      toastifyCommon.error('Gửi yêu cầu thất bại. Vui lòng thử lại sau.')
+    } finally {
+      setIsSending(false)
+    }
+  }
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' })
@@ -132,7 +154,7 @@ export default function LawyerProfile() {
           <Card className='p-6 border-border-secondary bg-background-primary space-y-4 rounded-lg'>
             <h3 className='text-h4 font-bold text-text-primary border-b border-border-primary pb-2.5'>Lĩnh vực chuyên môn</h3>
             <div className='flex flex-wrap gap-2.5'>
-              {detail.specializations.map((spec) => (
+              {detail.specializations.map((spec: string) => (
                 <Badge
                   key={spec}
                   variant='secondary'
@@ -199,9 +221,25 @@ export default function LawyerProfile() {
               </div>
             </div>
 
-            <Button className='w-full py-5 rounded-md bg-primary hover:bg-primary-600 text-white font-bold gap-2 text-sm cursor-pointer shadow-md shadow-primary/15 transition-all'>
-              <MessageSquare className='w-4 h-4' />
-              Yêu cầu tư vấn
+            <Button
+              onClick={handleRequestConsultation}
+              disabled={isSent || isSending}
+              className={`w-full py-5 rounded-md font-bold gap-2 text-sm cursor-pointer shadow-md transition-all ${
+                isSent
+                  ? 'bg-slate-100 text-slate-400 border border-slate-200 hover:bg-slate-100 cursor-not-allowed shadow-none'
+                  : 'bg-primary hover:bg-primary-600 text-white shadow-primary/15'
+              }`}
+            >
+              {isSending ? (
+                <div className='w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin'></div>
+              ) : isSent ? (
+                'Đã gửi yêu cầu tư vấn'
+              ) : (
+                <>
+                  <MessageSquare className='w-4 h-4' />
+                  Yêu cầu tư vấn
+                </>
+              )}
             </Button>
             
             <p className='text-[11px] text-text-description text-center leading-relaxed'>

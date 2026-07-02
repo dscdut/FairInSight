@@ -1,506 +1,1191 @@
 import { useState, useRef, useEffect } from 'react'
 
-import { Search, Send, Paperclip, Phone, Video, Info, MoreVertical, ArrowLeft, MessageCircle, Image as ImageIcon, FileText, X } from 'lucide-react'
+import { Search, ArrowLeft, MessageCircle, AlertCircle, ChevronRight, Phone, Video, Sparkles, MonitorUp, RotateCcw } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
 
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+import toastifyCommon from '@/core/lib/toastify-common'
 import { cn } from '@/core/lib/utils'
+import { consultationApi, type ConsultationProcess, type ConsultationStage, type SubmissionMethod } from '@/core/services/consultation.service'
+import { getSocket } from '@/core/services/socket'
+import { templateApi } from '@/core/services/template.service'
+import { useAuthStore } from '@/core/store/features/auth/authStore'
+import { type Template } from '@/models/types/form-library'
 
-interface Attachment {
-  id: string
-  name: string
-  type: 'image' | 'file'
-  url?: string
-  size?: string
-}
+import LawyerStageChatting from './components/LawyerStageChatting'
+import LawyerStageCompleted from './components/LawyerStageCompleted'
+import LawyerStagePdfGeneration from './components/LawyerStagePdfGeneration'
+import LawyerStagePending from './components/LawyerStagePending'
+import LawyerStagePortalSubmitting from './components/LawyerStagePortalSubmitting'
 
-interface ChatMessage {
-  id: string
-  sender: 'me' | 'other'
-  content: string
-  timestamp: string
-  attachments?: Attachment[]
-}
-
-interface Conversation {
-  id: string
-  name: string
-  avatar: string
-  role: string
-  online: boolean
-  unreadCount: number
-  lastMessage: string
-  lastTime: string
-  messages: ChatMessage[]
-}
-
-const INITIAL_CONVERSATIONS: Conversation[] = [
-  {
-    id: 'conv-1',
-    name: 'Khách hàng Trần Văn An',
-    avatar: '',
-    role: 'Vụ việc: Tranh chấp quyền sử dụng đất đai',
-    online: true,
-    unreadCount: 1,
-    lastMessage: 'Tôi đã đính kèm các giấy tờ chứng nhận quyền sử dụng đất gửi Luật sư.',
-    lastTime: '10:35',
-    messages: [
-      { id: '1', sender: 'other', content: 'Xin chào Luật sư. Tôi đang gặp rắc rối về vụ tranh chấp mảnh đất phía sau nhà.', timestamp: '10:15' },
-      { id: '2', sender: 'me', content: 'Chào anh An. Anh gửi giúp tôi bản chụp sổ đỏ cùng các giấy tờ liên quan để tôi nghiên cứu trước nhé.', timestamp: '10:25' },
-      { id: '3', sender: 'other', content: 'Tôi đã đính kèm các giấy tờ chứng nhận quyền sử dụng đất gửi Luật sư.', timestamp: '10:35' }
-    ]
-  },
-  {
-    id: 'conv-2',
-    name: 'Khách hàng Nguyễn Thị Bình',
-    avatar: '',
-    role: 'Vụ việc: Tư vấn rà soát hợp đồng thương mại',
-    online: false,
-    unreadCount: 0,
-    lastMessage: 'Vâng, tôi sẽ chuẩn bị các hồ sơ công ty và gửi lại cho luật sư vào chiều nay.',
-    lastTime: 'Hôm qua',
-    messages: [
-      { id: '1', sender: 'other', content: 'Chào luật sư, tôi muốn nhờ luật sư xem giúp các điều khoản phạt vi phạm trong hợp đồng cung ứng này.', timestamp: 'Hôm qua 14:00' },
-      { id: '2', sender: 'me', content: 'Chào chị Bình. Chị gửi bản thảo hợp đồng qua đây, đặc biệt chú ý phần điều khoản phạt và trường hợp bất khả kháng nhé.', timestamp: 'Hôm qua 15:30' },
-      { id: '3', sender: 'other', content: 'Vâng, tôi sẽ chuẩn bị các hồ sơ công ty và gửi lại cho luật sư vào chiều nay.', timestamp: 'Hôm qua 16:00' }
-    ]
-  }
+const STAGES: { stage: ConsultationStage; label: string; desc: string }[] = [
+  { stage: 'PENDING', label: '1. Chờ duyệt', desc: 'Duyệt yêu cầu tư vấn' },
+  { stage: 'CHATTING', label: '2. Trao đổi', desc: 'Thảo luận với khách' },
+  { stage: 'PDF_GENERATION', label: '3. Bản báo cáo', desc: 'Soạn thảo ý kiến tư vấn' },
+  { stage: 'PORTAL_SUBMITTING', label: '4. Dịch vụ công', desc: 'Nộp hồ sơ Cổng DVC' },
+  { stage: 'COMPLETED', label: '5. Hoàn thành', desc: 'Khách đánh giá hồ sơ' }
 ]
 
 export default function LawyerMessages() {
-  const [conversations, setConversations] = useState<Conversation[]>(INITIAL_CONVERSATIONS)
-  const [activeId, setActiveId] = useState<string>('conv-1')
+  const user = useAuthStore((state) => state.user)
+  const [processes, setProcesses] = useState<ConsultationProcess[]>([])
+  const [activeProcessId, setActiveProcessId] = useState<string | null>(null)
+  const [activeStage, setActiveStage] = useState<ConsultationStage>('PENDING')
   const [searchText, setSearchText] = useState<string>('')
   const [inputText, setInputText] = useState<string>('')
-  const [attachments, setAttachments] = useState<Attachment[]>([])
-  const [isTyping, setIsTyping] = useState<boolean>(false)
+  const [loading, setLoading] = useState<boolean>(true)
   const [showMobileList, setShowMobileList] = useState<boolean>(true)
 
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const imageInputRef = useRef<HTMLInputElement>(null)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  // Report creation states
+  const [adviceSummary, setAdviceSummary] = useState<string>('')
+  const [submissionMethod, setSubmissionMethod] = useState<SubmissionMethod>('MANUAL')
+  const [submittingReport, setSubmittingReport] = useState<boolean>(false)
+
+  // DVC portal update loading state
+  const [updatingPortal, setUpdatingPortal] = useState<boolean>(false)
+
+  // Call and AI assistant states
+  const [callType, setCallType] = useState<'voice' | 'video' | null>(null)
+  const [isCalling, setIsCalling] = useState<boolean>(false)
+  const [callRole, setCallRole] = useState<'caller' | 'callee' | null>(null)
+  const [callStatus, setCallStatus] = useState<'ringing' | 'connecting' | 'connected' | 'ended' | null>(null)
+  const [callRoomTab, setCallRoomTab] = useState<'report' | 'board' | 'pdf'>('report')
+  const [boardNotes, setBoardNotes] = useState<string>('Biên bản thảo luận:\n- Nhận dạng vụ việc: Tranh chấp hợp đồng đặt cọc mua bán nhà đất\n- Phương án xử lý sơ bộ: Yêu cầu bồi thường cọc và phạt cọc gấp đôi\n- Ghi chú bổ sung:\n  ')
+  const [aiToggles, setAiToggles] = useState({
+    autoRecord: false,
+    autoSTT: true,
+    autoSummarize: true,
+    autoTTS: false
+  })
+  const [isSharingScreen, setIsSharingScreen] = useState<boolean>(false)
+  const [templates, setTemplates] = useState<Template[]>([])
+
+  const activeProcess = processes.find((p) => p.id === activeProcessId)
+  const textContent = ((activeProcess?.analysis?.result || '') + ' ' + (activeProcess?.analysis?.context_summary || '')).toLowerCase();
+  const suggestedTemplates = templates.filter(t => {
+    if (textContent.includes('nhượng quyền') && t.title.includes('nhượng quyền')) return true;
+    if ((textContent.includes('doanh nghiệp') || textContent.includes('đăng ký') || textContent.includes('thành lập')) && t.title.includes('doanh nghiệp')) return true;
+    if ((textContent.includes('thuê') || textContent.includes('văn phòng') || textContent.includes('nhà')) && t.title.includes('thuê')) return true;
+    return false;
+  });
+  const selectedTemplate = templates.find(t => t.id === activeProcess?.template_id);
+
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const localVideoRef = useRef<HTMLVideoElement>(null)
+  const remoteVideoRef = useRef<HTMLVideoElement>(null)
+  const peerConnectionRef = useRef<RTCPeerConnection | null>(null)
+  const localStreamRef = useRef<MediaStream | null>(null)
+  const remoteStreamRef = useRef<MediaStream | null>(null)
+  const screenStreamRef = useRef<MediaStream | null>(null)
+  const pendingOfferRef = useRef<any>(null)
+  const pendingIceCandidatesRef = useRef<any[]>([])
 
-  const activeConversation = conversations.find((c) => c.id === activeId) || conversations[0]
+  const loadProcesses = async (selectFirst = false) => {
+    try {
+      const data = await consultationApi.getConsultations()
+      setProcesses(data || [])
+      if (data && data.length > 0) {
+        if (selectFirst || !activeProcessId) {
+          setActiveProcessId(data[0].id)
+          setActiveStage(data[0].current_stage)
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load lawyer consultation processes:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
-  // SEO Optimization
   useEffect(() => {
-    document.title = 'Hộp thư tư vấn của Luật sư | FairInsight'
+    document.title = 'Hộp thư tư vấn Luật sư | LegalAI'
+    loadProcesses(true)
+
+    const fetchTemplates = async () => {
+      try {
+        const data = await templateApi.listTemplates()
+        setTemplates(data || [])
+      } catch (err) {
+        console.error('Failed to load templates:', err)
+      }
+    }
+    fetchTemplates()
   }, [])
 
-  // Scroll to top of the message list by default on initial page mount/load
+  // Listen for real-time WebSocket updates
+  useEffect(() => {
+    if (!activeProcessId) return
+    const socket = getSocket()
+
+    // Join process room
+    socket.emit('join_process', activeProcessId)
+
+    // Listen for events
+    socket.on('process_updated', () => {
+      loadProcesses(false)
+    })
+
+    socket.on('message_received', () => {
+      loadProcesses(false)
+    })
+
+    // WebRTC signaling
+    socket.on('call_incoming', ({ callType: incomingType }) => {
+      setCallType(incomingType)
+      setCallRole('callee')
+      setCallStatus('ringing')
+      setIsCalling(true)
+    })
+
+    socket.on('call_accepted', () => {
+      if (callRole === 'caller') {
+        startPeerConnection(true)
+      }
+    })
+
+    socket.on('webrtc_offer', async ({ offer }) => {
+      pendingOfferRef.current = offer
+      await processPendingOffer()
+    })
+
+    socket.on('webrtc_answer', async ({ answer }) => {
+      if (peerConnectionRef.current) {
+        try {
+          await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(answer))
+          await processPendingIceCandidates()
+        } catch (err) {
+          console.error('Error setting remote description from answer:', err)
+        }
+      }
+    })
+
+    socket.on('webrtc_ice_candidate', async ({ candidate }) => {
+      if (peerConnectionRef.current && peerConnectionRef.current.remoteDescription) {
+        try {
+          await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate))
+        } catch (e) {
+          console.error('Error adding ICE candidate:', e)
+        }
+      } else {
+        pendingIceCandidatesRef.current.push(candidate)
+      }
+    })
+
+    socket.on('end_call', () => {
+      handleHangup(false)
+    })
+
+    socket.on('board_notes_updated', ({ notes }) => {
+      setBoardNotes(notes)
+    })
+
+    return () => {
+      socket.off('process_updated')
+      socket.off('message_received')
+      socket.off('call_incoming')
+      socket.off('call_accepted')
+      socket.off('webrtc_offer')
+      socket.off('webrtc_answer')
+      socket.off('webrtc_ice_candidate')
+      socket.off('end_call')
+      socket.off('board_notes_updated')
+    }
+  }, [activeProcessId, callRole, callType])
+
   useEffect(() => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
     }
-  }, [activeConversation.messages])
+  }, [activeProcessId, activeStage, processes])
 
-  // Clear unread count when clicking conversation
   useEffect(() => {
-    setConversations((prev) =>
-      prev.map((c) => (c.id === activeId ? { ...c, unreadCount: 0 } : c))
-    )
-  }, [activeId])
+    if (isCalling && (callStatus === 'connecting' || callStatus === 'connected')) {
+      if (localVideoRef.current && localStreamRef.current && !localVideoRef.current.srcObject) {
+        localVideoRef.current.srcObject = localStreamRef.current
+      }
+      if (remoteVideoRef.current && remoteStreamRef.current && !remoteVideoRef.current.srcObject) {
+        remoteVideoRef.current.srcObject = remoteStreamRef.current
+      }
+    }
+  }, [callStatus, isCalling])
 
-  // Auto-grow textarea height based on content length
+  // Update editor states when active process changes
   useEffect(() => {
-    const textarea = textareaRef.current
-    if (textarea) {
-      textarea.style.height = 'auto'
-      const maxHeight = 160
-      textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`
+    if (activeProcess) {
+      setAdviceSummary(activeProcess.advice_summary || '')
+      setSubmissionMethod(activeProcess.submission_method || 'MANUAL')
     }
-  }, [inputText])
+  }, [activeProcessId])
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .slice(-2)
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-  }
-
-  const handleAttach = (files: FileList | null, type: 'file' | 'image') => {
-    if (files && files.length > 0) {
-      const selectedFiles = Array.from(files)
-      const newAttachments: Attachment[] = selectedFiles.map((file) => {
-        const sizeMB = (file.size / (1024 * 1024)).toFixed(1) + ' MB'
-        return {
-          id: `att-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          name: file.name,
-          type,
-          size: sizeMB,
-          url: type === 'image' ? URL.createObjectURL(file) : undefined
-        }
-      })
-      setAttachments((prev) => [...prev, ...newAttachments])
-    }
-  }
-
-  const handleRemoveAttachment = (id: string) => {
-    setAttachments((prev) => prev.filter((att) => att.id !== id))
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSend(e)
-    }
-  }
-
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!inputText.trim() && attachments.length === 0) return
+    if (!inputText.trim() || !activeProcessId) return
 
-    const newMessage: ChatMessage = {
-      id: `msg-${Date.now()}`,
-      sender: 'me',
-      content: inputText,
-      timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-      attachments: [...attachments]
+    const textToSend = inputText
+    setInputText('')
+
+    try {
+      await consultationApi.sendMessage(activeProcessId, textToSend)
+      await loadProcesses(false)
+    } catch (err) {
+      console.error(err)
+      toastifyCommon.error('Không thể gửi tin nhắn. Vui lòng thử lại!')
     }
+  }
 
-    // Update conversation with user message
-    setConversations((prev) =>
-      prev.map((c) => {
-        if (c.id === activeId) {
-          const displayMsg = inputText.trim() 
-            ? inputText 
-            : `[Đã gửi ${attachments.length} tài liệu]`
-          return {
-            ...c,
-            lastMessage: displayMsg,
-            lastTime: newMessage.timestamp,
-            messages: [...c.messages, newMessage]
+  const handleReject = async () => {
+    if (!window.confirm('Bạn có chắc chắn muốn từ chối/hủy yêu cầu tư vấn này không?')) return
+    try {
+      await consultationApi.cancelConsultation(activeProcessId!)
+      toastifyCommon.success('Từ chối yêu cầu tư vấn thành công!')
+      await loadProcesses(false)
+    } catch (err) {
+      console.error(err)
+      toastifyCommon.error('Không thể từ chối yêu cầu. Vui lòng thử lại!')
+    }
+  }
+
+  const handleEndChat = async () => {
+    if (!activeProcessId) return
+    if (!window.confirm('Bạn có chắc chắn muốn kết thúc thảo luận trực tuyến và chuyển sang soạn báo cáo kết luận không?')) return
+    try {
+      await consultationApi.updateStage(activeProcessId, 'PDF_GENERATION')
+      toastifyCommon.success('Đã chuyển sang giai đoạn soạn thảo báo cáo kết quả!')
+      setActiveStage('PDF_GENERATION')
+      await loadProcesses(false)
+    } catch (err) {
+      console.error(err)
+      toastifyCommon.error('Chuyển giai đoạn thất bại!')
+    }
+  }
+
+  const processPendingOffer = async () => {
+    if (peerConnectionRef.current && pendingOfferRef.current) {
+      const offer = pendingOfferRef.current
+      pendingOfferRef.current = null
+      
+      try {
+        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(offer))
+        const answer = await peerConnectionRef.current.createAnswer()
+        await peerConnectionRef.current.setLocalDescription(answer)
+        
+        const socket = getSocket()
+        socket.emit('webrtc_answer', { roomId: activeProcessId, answer })
+        await processPendingIceCandidates()
+      } catch (err) {
+        console.error('Error processing pending offer:', err)
+      }
+    }
+  }
+
+  const processPendingIceCandidates = async () => {
+    if (peerConnectionRef.current && peerConnectionRef.current.remoteDescription) {
+      const candidates = pendingIceCandidatesRef.current
+      pendingIceCandidatesRef.current = []
+      for (const candidate of candidates) {
+        try {
+          await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate))
+        } catch (e) {
+          console.error('Failed to add queued ICE candidate:', e)
+        }
+      }
+    }
+  }
+
+  const startPeerConnection = async (isInitiator: boolean) => {
+    try {
+      setCallStatus('connecting')
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: callType === 'video',
+        audio: true
+      })
+      localStreamRef.current = stream
+      
+      const pc = new RTCPeerConnection({
+        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+      })
+      peerConnectionRef.current = pc
+
+      stream.getTracks().forEach((track) => {
+        pc.addTrack(track, stream)
+      })
+
+      pc.ontrack = (event) => {
+        setCallStatus('connected')
+        if (event.streams[0]) {
+          remoteStreamRef.current = event.streams[0]
+          if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = event.streams[0]
           }
         }
-        return c
-      })
-    )
-
-    setInputText('')
-    setAttachments([])
-
-    // Trigger mock client response
-    setIsTyping(true)
-    setTimeout(() => {
-      setIsTyping(false)
-      const clientReply: ChatMessage = {
-        id: `msg-reply-${Date.now()}`,
-        sender: 'other',
-        content: `Dạ vâng, cảm ơn Luật sư đã hướng dẫn chi tiết. Tôi sẽ thực hiện theo hướng dẫn ạ.`,
-        timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
       }
 
-      setConversations((prev) =>
-        prev.map((c) => {
-          if (c.id === activeId) {
-            return {
-              ...c,
-              lastMessage: clientReply.content,
-              lastTime: clientReply.timestamp,
-              messages: [...c.messages, clientReply]
-            }
-          }
-          return c
-        })
-      )
-    }, 2000)
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          const socket = getSocket()
+          socket.emit('webrtc_ice_candidate', {
+            roomId: activeProcessId,
+            candidate: event.candidate
+          })
+        }
+      }
+
+      const socket = getSocket()
+
+      if (isInitiator) {
+        const offer = await pc.createOffer()
+        await pc.setLocalDescription(offer)
+        socket.emit('webrtc_offer', { roomId: activeProcessId, offer })
+      } else {
+        // Callee processes pending offer if it arrived early
+        await processPendingOffer()
+      }
+    } catch (err) {
+      console.error('Failed to start peer connection:', err)
+      toastifyCommon.error('Không thể truy cập camera hoặc microphone!')
+      handleHangup(false)
+    }
   }
 
-  const filteredConversations = conversations.filter((c) =>
-    c.name.toLowerCase().includes(searchText.toLowerCase())
-  )
+  const handleStopScreenShareSilently = async () => {
+    if (screenStreamRef.current) {
+      screenStreamRef.current.getTracks().forEach((track) => track.stop())
+      screenStreamRef.current = null
+    }
+    if (peerConnectionRef.current && localStreamRef.current) {
+      const videoTrack = localStreamRef.current.getVideoTracks()[0]
+      const sender = peerConnectionRef.current.getSenders().find((s) => s.track?.kind === 'video')
+      if (sender && videoTrack) {
+        await sender.replaceTrack(videoTrack)
+      }
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = localStreamRef.current
+      }
+    }
+    setIsSharingScreen(false)
+  }
+
+  const toggleScreenShare = async () => {
+    if (!peerConnectionRef.current) return
+    try {
+      if (isSharingScreen) {
+        await handleStopScreenShareSilently()
+      } else {
+        const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true })
+        screenStreamRef.current = screenStream
+        const screenTrack = screenStream.getVideoTracks()[0]
+        const sender = peerConnectionRef.current.getSenders().find((s) => s.track?.kind === 'video')
+        if (sender && screenTrack) {
+          await sender.replaceTrack(screenTrack)
+        }
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = screenStream
+        }
+        screenTrack.onended = () => {
+          handleStopScreenShareSilently()
+        }
+        setIsSharingScreen(true)
+      }
+    } catch (err) {
+      console.error('Failed to toggle screen share:', err)
+      toastifyCommon.error('Không thể chia sẻ màn hình!')
+    }
+  }
+
+  const handleHangup = (notifyPeer = true) => {
+    if (notifyPeer && activeProcessId) {
+      const socket = getSocket()
+      socket.emit('end_call', { roomId: activeProcessId })
+    }
+
+    if (screenStreamRef.current) {
+      screenStreamRef.current.getTracks().forEach((track) => track.stop())
+      screenStreamRef.current = null
+    }
+
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach((track) => track.stop())
+      localStreamRef.current = null
+    }
+
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close()
+      peerConnectionRef.current = null
+    }
+
+    remoteStreamRef.current = null
+    pendingOfferRef.current = null
+    pendingIceCandidatesRef.current = []
+    setIsCalling(false)
+    setIsSharingScreen(false)
+    setCallType(null)
+    setCallRole(null)
+    setCallStatus(null)
+    if (localVideoRef.current) localVideoRef.current.srcObject = null
+    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null
+  }
+
+  const handleCall = (type: 'voice' | 'video') => {
+    if (!activeProcessId) return
+    setCallType(type)
+    setCallRole('caller')
+    setCallStatus('ringing')
+    setIsCalling(true)
+
+    const socket = getSocket()
+    socket.emit('call_user', { roomId: activeProcessId, callType: type })
+  }
+
+  const handleAcceptCall = () => {
+    const socket = getSocket()
+    socket.emit('accept_call', { roomId: activeProcessId })
+    startPeerConnection(false)
+  }
+
+  const handleAcceptConsultation = async () => {
+    if (!activeProcessId) return
+    try {
+      await consultationApi.updateStage(activeProcessId, 'CHATTING')
+      toastifyCommon.success('Đã chấp nhận yêu cầu tư vấn! Bắt đầu trò chuyện.')
+      setActiveStage('CHATTING')
+      await loadProcesses(false)
+    } catch (err) {
+      console.error(err)
+      toastifyCommon.error('Duyệt hồ sơ thất bại!')
+    }
+  }
+
+  const handleSelectTemplate = async (templateId: string) => {
+    if (!activeProcessId) return
+    try {
+      await consultationApi.selectTemplate(activeProcessId, templateId)
+      toastifyCommon.success('Đã đề xuất biểu mẫu thành công cho khách hàng!')
+      await loadProcesses(false)
+    } catch (err) {
+      console.error(err)
+      toastifyCommon.error('Đề xuất biểu mẫu thất bại!')
+    }
+  }
+
+  const handleExportPDF = () => {
+    if (activeProcess?.pdf_url) {
+      window.open(activeProcess.pdf_url, '_blank');
+      return;
+    }
+    const printEl = document.getElementById('pdf-document-print');
+    if (!printEl) return;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${selectedTemplate?.title || 'Văn bản tư vấn pháp lý'}</title>
+          <style>
+            body {
+              font-family: Times, "Times New Roman", Georgia, serif;
+              padding: 40px;
+              font-size: 13px;
+              line-height: 1.6;
+              color: #111;
+            }
+            .text-center { text-align: center; }
+            .space-y-1 > * { margin-bottom: 4px; }
+            .mb-6 { margin-bottom: 24px; }
+            .uppercase { text-transform: uppercase; }
+            .font-bold { font-weight: bold; }
+            .border-b { border-bottom: 1px solid #000; }
+            .pb-2 { padding-bottom: 8px; }
+            .pb-1 { padding-bottom: 4px; }
+            .mt-12 { margin-top: 48px; }
+            .grid { display: grid; }
+            .grid-cols-2 { grid-template-columns: 1fr 1fr; }
+            .gap-4 { gap: 16px; }
+            .pl-3 { padding-left: 12px; }
+            .border-l-2 { border-left: 2px solid #ddd; }
+            .italic { font-style: italic; }
+            .flex { display: flex; }
+            .justify-between { justify-content: space-between; }
+            .min-w-[150px] { min-w: 150px; }
+            .underline { text-decoration: underline; }
+            .decoration-dotted { text-decoration-style: dotted; }
+          </style>
+        </head>
+        <body>
+          ${printEl.innerHTML}
+          <script>
+            window.onload = function() {
+              window.print();
+              window.close();
+            }
+          <\/script>
+        </body>
+      </html>
+    `);
+  };
+
+  const handlePublishReport = async () => {
+    if (!activeProcessId || !adviceSummary.trim()) {
+      toastifyCommon.error('Ý kiến kết luận của luật sư không được để trống!')
+      return
+    }
+
+    setSubmittingReport(true)
+    try {
+      await consultationApi.submitPdf(activeProcessId, { adviceSummary, submissionMethod })
+      toastifyCommon.success('Xuất bản bản báo cáo tư vấn PDF thành công!')
+      
+      const nextStage = 'PORTAL_SUBMITTING'
+      setActiveStage(nextStage)
+      await loadProcesses(false)
+    } catch (err) {
+      console.error(err)
+      toastifyCommon.error('Lỗi khi xuất bản báo cáo!')
+    } finally {
+      setSubmittingReport(false)
+    }
+  }
+
+  const handleRevertStage = async (targetStage: ConsultationStage) => {
+    if (!activeProcessId) return
+    if (!window.confirm(`Bạn có chắc chắn muốn chuyển lùi hồ sơ về giai đoạn "${targetStage}" không?`)) return
+    try {
+      await consultationApi.updateStage(activeProcessId, targetStage)
+      toastifyCommon.success(`Đã chuyển lùi hồ sơ về giai đoạn thành công!`)
+      setActiveStage(targetStage)
+      await loadProcesses(false)
+    } catch (err) {
+      console.error(err)
+      toastifyCommon.error('Chuyển lùi giai đoạn thất bại!')
+    }
+  }
+
+  const handleUpdatePortalStatus = async (status: 'APPROVED' | 'REJECTED', feedback: string) => {
+    if (!activeProcessId) return
+    setUpdatingPortal(true)
+    try {
+      await consultationApi.mockPortalCallback(activeProcessId, { status, feedback })
+      toastifyCommon.success('Cập nhật kết quả giải quyết hồ sơ thành công!')
+      setActiveStage('COMPLETED')
+      await loadProcesses(false)
+    } catch (err) {
+      console.error(err)
+      toastifyCommon.error('Lỗi khi gửi kết quả giải quyết!')
+    } finally {
+      setUpdatingPortal(false)
+    }
+  }
+
+  interface ClientGroup {
+    clientId: string
+    fullName: string
+    avatarUrl: string
+    processes: ConsultationProcess[]
+  }
+
+  const clientGroups: ClientGroup[] = []
+  processes.forEach((p) => {
+    const clientId = p.user_id
+    const clientName = p.users?.full_name || 'Khách hàng ẩn danh'
+    const avatarUrl = p.users?.avatar_url || ''
+
+    let group = clientGroups.find((g) => g.clientId === clientId)
+    if (!group) {
+      group = { clientId, fullName: clientName, avatarUrl, processes: [] }
+      clientGroups.push(group)
+    }
+    group.processes.push(p)
+  })
+
+  const filteredGroups = clientGroups
+    .map((g) => {
+      const matchesClient = g.fullName.toLowerCase().includes(searchText.toLowerCase())
+      const matchingProcesses = g.processes.filter((p) => {
+        const summary = p.analysis?.context_summary || 'Tư vấn chuyên sâu'
+        return matchesClient || summary.toLowerCase().includes(searchText.toLowerCase())
+      })
+      return { ...g, processes: matchingProcesses }
+    })
+    .filter((g) => g.processes.length > 0)
+
+  const isStageReached = (process: ConsultationProcess, stageToCheck: ConsultationStage) => {
+    const order: ConsultationStage[] = ['PENDING', 'CHATTING', 'PDF_GENERATION', 'PORTAL_SUBMITTING', 'COMPLETED', 'REVIEWED']
+    let current = process.current_stage
+    if (current === 'REVIEWED') current = 'COMPLETED'
+    
+    let target = stageToCheck
+    if (target === 'REVIEWED') target = 'COMPLETED'
+
+    const currentIndex = order.indexOf(current)
+    const targetIndex = order.indexOf(target)
+    return targetIndex <= currentIndex
+  }
+
+  const getStageStatusColor = (process: ConsultationProcess, stageToCheck: ConsultationStage) => {
+    if (process.current_stage === stageToCheck) return 'border-primary bg-primary text-white animate-pulse'
+    if (isStageReached(process, stageToCheck)) return 'border-emerald-500 bg-emerald-50 text-emerald-600'
+    return 'border-slate-200 bg-slate-50 text-slate-400'
+  }
 
   return (
-    <main className='flex h-[calc(100vh-140px)] w-full overflow-hidden rounded-2xl border border-border-secondary bg-background-primary shadow-sm animate-in fade-in duration-300'>
-      {/* List column */}
+    <main className='flex h-[calc(100vh-100px)] w-full overflow-hidden rounded-xl border border-border-secondary bg-background-primary shadow-sm animate-in fade-in duration-300'>
+      {/* Left Column: Process List */}
       <section
-        aria-label='Danh sách khách hàng'
         className={cn(
-          'w-full md:w-[320px] lg:w-[360px] border-r border-border-secondary flex flex-col bg-background-primary shrink-0 transition-all duration-300 md:flex',
+          'w-full md:w-[340px] lg:w-[380px] border-r border-border-secondary flex flex-col bg-background-primary shrink-0 transition-all duration-300 md:flex',
           showMobileList ? 'flex' : 'hidden'
         )}
       >
         <header className='p-4 border-b border-border-secondary space-y-3.5'>
           <h1 className='text-lg font-bold text-text-primary flex items-center gap-2'>
             <MessageCircle className='w-5 h-5 text-primary' />
-            Hộp thư tư vấn
+            Hồ sơ yêu cầu từ Khách hàng
           </h1>
           <div className='relative'>
             <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-description' />
             <Input
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              placeholder='Tìm kiếm khách hàng...'
+              placeholder='Tìm kiếm khách hàng, hồ sơ...'
               className='pl-9 bg-background-secondary border-border-secondary h-9.5 text-sm rounded-lg focus-visible:ring-primary'
             />
           </div>
         </header>
 
-        <div className='flex-1 overflow-y-auto p-2 space-y-1' role='tablist'>
-          {filteredConversations.map((c) => {
-            const isSelected = c.id === activeId
-            return (
-              <button
-                key={c.id}
-                role='tab'
-                aria-selected={isSelected}
-                onClick={() => {
-                  setActiveId(c.id)
-                  setShowMobileList(false)
-                }}
-                className={cn(
-                  'w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all duration-200 group relative',
-                  isSelected
-                    ? 'bg-primary/5 border border-primary/20 text-text-primary shadow-sm'
-                    : 'hover:bg-background-secondary border border-transparent text-text-secondary hover:text-text-primary'
-                )}
-              >
-                <div className='relative shrink-0'>
-                  <div className='w-11 h-11 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center border border-primary/15 text-sm'>
-                    {getInitials(c.name)}
+        <div className='flex-1 overflow-y-auto p-2 space-y-4'>
+          {loading ? (
+            <div className='flex items-center justify-center p-8'>
+              <div className='w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin'></div>
+            </div>
+          ) : filteredGroups.length === 0 ? (
+            <p className='text-xs text-text-description text-center mt-8'>Chưa có yêu cầu tư vấn nào.</p>
+          ) : (
+            filteredGroups.map((group) => {
+              return (
+                <div key={group.clientId} className='space-y-2 border-b border-slate-100 pb-3 last:border-0 last:pb-0'>
+                  {/* Client Item Header */}
+                  <div className='flex items-center gap-2.5 px-2 py-1.5'>
+                    <div className='w-9 h-9 rounded-full bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0'>
+                      {group.avatarUrl ? (
+                        <img src={group.avatarUrl} alt={group.fullName} className='w-full h-full object-cover' />
+                      ) : (
+                        <MessageCircle className='w-4.5 h-4.5 text-slate-400' />
+                      )}
+                    </div>
+                    <div className='min-w-0 text-left'>
+                      <h4 className='text-xs font-bold text-text-primary truncate'>{group.fullName}</h4>
+                      <p className='text-[10px] text-text-description font-medium'>{group.processes.length} hồ sơ tư vấn</p>
+                    </div>
                   </div>
-                  {c.online && (
-                    <span className='absolute bottom-0 right-0 w-3 h-3 bg-success-primary border-2 border-background-primary rounded-full' />
-                  )}
-                </div>
 
-                <div className='flex-1 min-w-0'>
-                  <div className='flex items-center justify-between'>
-                    <h2 className='text-sm font-bold truncate group-hover:text-primary transition-colors'>
-                      {c.name}
-                    </h2>
-                    <span className='text-[10px] text-text-description whitespace-nowrap'>{c.lastTime}</span>
+                  {/* Processes list for this Client */}
+                  <div className='pl-3.5 space-y-2.5 border-l-2 border-slate-100 ml-4.5'>
+                    {group.processes.map((p) => {
+                      const isSelected = p.id === activeProcessId
+                      return (
+                        <div
+                          key={p.id}
+                          className={cn(
+                            'p-2.5 rounded-xl border transition-all duration-200 space-y-2.5 text-left',
+                            isSelected
+                              ? 'bg-slate-50 border-primary/30 shadow-sm'
+                              : 'hover:bg-slate-50/50 border-border-secondary'
+                          )}
+                        >
+                          <button
+                            onClick={() => {
+                              setActiveProcessId(p.id)
+                              setActiveStage(p.current_stage === 'REVIEWED' ? 'COMPLETED' : p.current_stage)
+                              setShowMobileList(false)
+                            }}
+                            className='w-full text-left space-y-1'
+                          >
+                            <div className='flex items-center justify-between'>
+                              <span className='text-[9px] uppercase font-bold text-primary tracking-wider'>
+                                Mã: {p.id.slice(0, 8).toUpperCase()}
+                              </span>
+                              <span className='text-[9px] text-text-description'>
+                                {new Date(p.created_at).toLocaleDateString('vi-VN')}
+                              </span>
+                            </div>
+                            <h5 className='font-bold text-text-primary text-xs line-clamp-1'>
+                              {p.analysis?.context_summary || 'Tư vấn chuyên sâu'}
+                            </h5>
+                          </button>
+
+                          {/* Stage Tree / Timeline */}
+                          {isSelected && (
+                            <div className='pt-2 border-t border-slate-100 space-y-1.5'>
+                              <p className='text-[9px] font-semibold text-text-description mb-1.5'>Tiến trình xử lý:</p>
+                              <div className='flex flex-col gap-1.5'>
+                                {STAGES.map((s) => {
+                                  const reached = isStageReached(p, s.stage)
+                                  const active = activeStage === s.stage
+                                  return (
+                                    <button
+                                      key={s.stage}
+                                      onClick={() => {
+                                        if (reached) setActiveStage(s.stage)
+                                      }}
+                                      className={cn(
+                                        'flex items-center gap-2 p-1.5 rounded-lg text-left text-[11px] font-medium transition-all duration-200 w-full',
+                                        active
+                                          ? 'bg-primary/5 text-primary'
+                                          : reached
+                                          ? 'text-slate-700 hover:bg-slate-100/50'
+                                          : 'text-slate-400 opacity-60 cursor-not-allowed'
+                                      )}
+                                      disabled={!reached}
+                                    >
+                                      <div
+                                        className={cn(
+                                          'w-4 h-4 rounded-full border flex items-center justify-center font-bold text-[9px] shrink-0',
+                                          getStageStatusColor(p, s.stage)
+                                        )}
+                                      >
+                                        {reached && s.stage !== p.current_stage ? '✓' : ''}
+                                      </div>
+                                      <div className='min-w-0'>
+                                        <p className='leading-tight truncate'>{s.label}</p>
+                                      </div>
+                                      {active && <ChevronRight className='w-3 h-3 ml-auto text-primary' />}
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
-                  <p className='text-xs text-text-tertiary font-medium mt-0.5'>{c.role}</p>
-                  <p className='text-xs text-text-description truncate mt-1 leading-normal font-medium'>
-                    {c.lastMessage}
-                  </p>
                 </div>
-
-                {c.unreadCount > 0 && (
-                  <span className='absolute right-3 bottom-3 bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-5 h-5 flex items-center justify-center shrink-0'>
-                    {c.unreadCount}
-                  </span>
-                )}
-              </button>
-            )
-          })}
+              )
+            })
+          )}
         </div>
       </section>
 
-      {/* Chat messages column */}
+      {/* Right Column: Dynamic Stage Content */}
       <section
-        aria-label='Khung trò chuyện'
         className={cn(
           'flex-1 flex flex-col h-full min-w-0 bg-background-secondary transition-all duration-300 md:flex',
           !showMobileList ? 'flex' : 'hidden'
         )}
       >
-        {/* Chat Header */}
-        <header className='flex items-center justify-between px-4 py-3 bg-background-primary border-b border-border-secondary shadow-sm shrink-0'>
-          <div className='flex items-center gap-3 min-w-0'>
-            <button
-              onClick={() => setShowMobileList(true)}
-              className='md:hidden p-1.5 rounded-lg text-text-secondary hover:bg-background-secondary shrink-0'
-              aria-label='Quay lại danh sách tin nhắn'
-            >
-              <ArrowLeft className='w-5 h-5' />
-            </button>
-
-            <div className='relative shrink-0'>
-              <div className='w-10 h-10 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center border border-primary/15 text-sm'>
-                {getInitials(activeConversation.name)}
+        {activeProcess ? (
+          <>
+            {/* Header */}
+            <header className='flex items-center justify-between px-4 py-3.5 bg-background-primary border-b border-border-secondary shadow-sm shrink-0 text-left'>
+              <div className='flex items-center gap-3 min-w-0'>
+                <button
+                  onClick={() => setShowMobileList(true)}
+                  className='md:hidden p-1.5 rounded-lg text-text-secondary hover:bg-background-secondary shrink-0'
+                >
+                  <ArrowLeft className='w-5 h-5' />
+                </button>
+                <div className='min-w-0'>
+                  <h2 className='text-sm font-bold text-text-primary truncate'>
+                    {activeProcess.analysis?.context_summary || 'Tư vấn chuyên sâu'}
+                  </h2>
+                  <p className='text-xs text-text-description truncate mt-0.5'>
+                    Khách hàng: {activeProcess.users?.full_name || 'Khách hàng ẩn danh'}
+                  </p>
+                </div>
               </div>
-              {activeConversation.online && (
-                <span className='absolute bottom-0 right-0 w-2.5 h-2.5 bg-success-primary border-2 border-background-primary rounded-full' />
+              <div className='flex items-center gap-3 shrink-0'>
+                {activeStage === 'CHATTING' && (
+                  <div className='flex items-center gap-1.5 border-r border-border-secondary pr-3 mr-1.5'>
+                    <button
+                      onClick={() => handleCall('voice')}
+                      className='p-1.5 rounded-lg text-text-secondary hover:bg-slate-100 hover:text-primary transition-colors'
+                      title='Cuộc gọi thoại'
+                    >
+                      <Phone className='w-4.5 h-4.5' />
+                    </button>
+                    <button
+                      onClick={() => handleCall('video')}
+                      className='p-1.5 rounded-lg text-text-secondary hover:bg-slate-100 hover:text-primary transition-colors'
+                      title='Cuộc gọi video'
+                    >
+                      <Video className='w-4.5 h-4.5' />
+                    </button>
+                  </div>
+                )}
+                {activeStage !== 'PENDING' && (
+                  <Button
+                    onClick={() => {
+                      const prevStageMap: Record<ConsultationStage, ConsultationStage> = {
+                        PENDING: 'PENDING',
+                        CHATTING: 'PENDING',
+                        PDF_GENERATION: 'CHATTING',
+                        PORTAL_SUBMITTING: 'PDF_GENERATION',
+                        COMPLETED: activeProcess.submission_method === 'PORTAL' ? 'PORTAL_SUBMITTING' : 'PDF_GENERATION',
+                        REVIEWED: 'COMPLETED',
+                        REJECTED: 'PENDING'
+                      }
+                      handleRevertStage(prevStageMap[activeStage])
+                    }}
+                    variant='outline'
+                    size='sm'
+                    className='text-[10px] h-7 font-bold px-2 flex items-center gap-1 border-slate-200 hover:bg-slate-50 rounded-lg text-slate-600'
+                    title='Quay lại giai đoạn trước'
+                  >
+                    <RotateCcw className='w-3 h-3' />
+                    Lui bước
+                  </Button>
+                )}
+                <div className='bg-primary/10 text-primary font-bold text-xs px-2.5 py-1 rounded-full'>
+                  Giai đoạn: {STAGES.find((s) => s.stage === activeStage)?.label || activeStage}
+                </div>
+              </div>
+            </header>
+
+            {/* Content Panel */}
+            <div className='flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/35 text-left'>
+              {activeProcess.current_stage === 'REJECTED' ? (
+                <div className='max-w-2xl mx-auto space-y-4'>
+                  <Card className='p-6 border border-border-secondary bg-background-primary shadow-sm text-center space-y-4'>
+                    <div className='w-12 h-12 rounded-full bg-red-50 text-red-500 flex items-center justify-center mx-auto border border-red-100'>
+                      <AlertCircle className='w-6 h-6' />
+                    </div>
+                    <h3 className='font-bold text-base text-text-main'>Yêu cầu tư vấn đã bị từ chối hoặc hủy bỏ</h3>
+                    <p className='text-sm text-text-description max-w-sm mx-auto'>
+                      Yêu cầu tư vấn này đã kết thúc ở trạng thái Đã hủy/Từ chối.
+                    </p>
+                  </Card>
+                </div>
+              ) : (
+                <>
+                  {/* STAGE 1: PENDING */}
+                  {activeStage === 'PENDING' && (
+                    <LawyerStagePending
+                      activeProcess={activeProcess}
+                      handleAcceptConsultation={handleAcceptConsultation}
+                      handleReject={handleReject}
+                    />
+                  )}
+
+                  {/* STAGE 2: CHATTING */}
+                  {activeStage === 'CHATTING' && (
+                    <LawyerStageChatting
+                      activeProcess={activeProcess}
+                      user={user}
+                      inputText={inputText}
+                      setInputText={setInputText}
+                      handleSend={handleSend}
+                      handleEndChat={handleEndChat}
+                      scrollContainerRef={scrollContainerRef}
+                    />
+                  )}
+
+                  {/* STAGE 3: PDF_GENERATION */}
+                  {activeStage === 'PDF_GENERATION' && (
+                    <LawyerStagePdfGeneration
+                      activeProcess={activeProcess}
+                      templates={templates}
+                      suggestedTemplates={suggestedTemplates}
+                      selectedTemplate={selectedTemplate}
+                      handleSelectTemplate={handleSelectTemplate}
+                      adviceSummary={adviceSummary}
+                      setAdviceSummary={setAdviceSummary}
+                      submissionMethod={submissionMethod}
+                      setSubmissionMethod={setSubmissionMethod}
+                      handlePublishReport={handlePublishReport}
+                      submittingReport={submittingReport}
+                      handleExportPDF={handleExportPDF}
+                    />
+                  )}
+
+                  {/* STAGE 4: PORTAL_SUBMITTING */}
+                  {activeStage === 'PORTAL_SUBMITTING' && (
+                    <LawyerStagePortalSubmitting
+                      activeProcess={activeProcess}
+                      updatingPortal={updatingPortal}
+                      handleUpdatePortalStatus={handleUpdatePortalStatus}
+                    />
+                  )}
+
+                  {/* STAGE 5: COMPLETED */}
+                  {activeStage === 'COMPLETED' && (
+                    <LawyerStageCompleted
+                      activeProcess={activeProcess}
+                    />
+                  )}
+                </>
               )}
             </div>
-
-            <div className='min-w-0'>
-              <h2 className='text-sm font-bold text-text-primary truncate'>{activeConversation.name}</h2>
-              <p className='text-[11px] text-text-description font-medium truncate flex items-center gap-1.5 mt-0.5'>
-                {activeConversation.online ? (
-                  <>
-                    <span className='w-1.5 h-1.5 rounded-full bg-success-primary animate-pulse' />
-                    <span>Đang hoạt động</span>
-                  </>
-                ) : (
-                  <span>Ngoại tuyến</span>
-                )}
-                <span className='text-text-tertiary'>•</span>
-                <span>{activeConversation.role}</span>
-              </p>
-            </div>
+          </>
+        ) : (
+          <div className='flex-1 flex flex-col items-center justify-center p-8 bg-slate-50/20'>
+            <MessageCircle className='w-12 h-12 text-slate-300 mb-3' />
+            <p className='text-sm text-text-description font-medium'>Chọn một hồ sơ từ danh sách bên trái để bắt đầu quản lý tiến trình.</p>
           </div>
-
-          <div className='flex items-center gap-1 shrink-0'>
-            <Button variant='ghost' size='icon' className='h-9 w-9 text-text-secondary hover:text-text-primary rounded-lg'>
-              <Phone className='w-4.5 h-4.5' />
-            </Button>
-            <Button variant='ghost' size='icon' className='h-9 w-9 text-text-secondary hover:text-text-primary rounded-lg'>
-              <Video className='w-4.5 h-4.5' />
-            </Button>
-            <Button variant='ghost' size='icon' className='h-9 w-9 text-text-secondary hover:text-text-primary rounded-lg'>
-              <Info className='w-4.5 h-4.5' />
-            </Button>
-            <Button variant='ghost' size='icon' className='h-9 w-9 text-text-secondary hover:text-text-primary rounded-lg'>
-              <MoreVertical className='w-4.5 h-4.5' />
-            </Button>
-          </div>
-        </header>
-
-        {/* Message area */}
-        <div ref={scrollContainerRef} className='flex-1 overflow-y-auto p-4 space-y-4 min-h-0 bg-background-secondary/50'>
-          {activeConversation.messages.map((m) => {
-            const isMe = m.sender === 'me'
-            return (
-              <div key={m.id} className={cn('flex w-full', isMe ? 'justify-end' : 'justify-start')}>
-                <div className={cn('flex flex-col max-w-[75%]', isMe ? 'items-end' : 'items-start')}>
-                  <div
-                    className={cn(
-                      'p-3 text-sm leading-relaxed rounded-2xl shadow-sm',
-                      isMe
-                        ? 'bg-gradient-to-r from-primary to-primary-400 text-white rounded-tr-none'
-                        : 'bg-background-primary border border-border-primary text-text-primary rounded-tl-none'
-                    )}
-                  >
-                    <div>{m.content}</div>
-
-                    {m.attachments && m.attachments.length > 0 && (
-                      <div className='mt-2 space-y-1.5'>
-                        {m.attachments.map((att) => (
-                          <div
-                            key={att.id}
-                            className={cn(
-                              'flex items-center gap-2 p-1.5 rounded-lg text-xs max-w-[240px] border shadow-sm',
-                              isMe 
-                                ? 'bg-white/10 border-white/20 text-white font-normal' 
-                                : 'bg-background-secondary border-border-secondary text-text-primary font-medium'
-                            )}
-                          >
-                            <div className={cn(
-                              'w-8 h-8 rounded flex items-center justify-center shrink-0',
-                              isMe ? 'bg-white/15 text-white' : 'bg-primary/10 text-primary'
-                            )}>
-                              <FileText className='w-4.5 h-4.5' />
-                            </div>
-                            <div className='min-w-0 flex-1 text-left'>
-                              <p className='font-bold truncate text-[10.5px] leading-tight'>{att.name}</p>
-                              <p className={cn(
-                                'text-[9px] mt-0.5 font-medium',
-                                isMe ? 'text-white/80' : 'text-text-description'
-                              )}>{att.size}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <span className='text-[10px] text-text-description font-medium mt-1 px-1'>{m.timestamp}</span>
-                </div>
-              </div>
-            )
-          })}
-
-          {isTyping && (
-            <div className='flex w-full justify-start'>
-              <div className='flex flex-col items-start'>
-                <div className='p-3 bg-background-primary border border-border-primary rounded-2xl rounded-tl-none flex items-center gap-1.5 shadow-sm'>
-                  <span className='w-2 h-2 rounded-full bg-text-description animate-bounce [animation-delay:-0.3s]' />
-                  <span className='w-2 h-2 rounded-full bg-text-description animate-bounce [animation-delay:-0.15s]' />
-                  <span className='w-2 h-2 rounded-full bg-text-description animate-bounce' />
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Input area */}
-        <div className='p-3 lg:p-4 bg-background-primary shrink-0 border-t border-border-secondary'>
-          <input
-            type='file'
-            ref={fileInputRef}
-            onChange={(e) => handleAttach(e.target.files, 'file')}
-            className='hidden'
-            multiple
-          />
-          <input
-            type='file'
-            ref={imageInputRef}
-            onChange={(e) => handleAttach(e.target.files, 'image')}
-            accept='image/*'
-            className='hidden'
-            multiple
-          />
-
-          {attachments.length > 0 && (
-            <div className='flex flex-wrap gap-2 mb-3 px-1.5'>
-              {attachments.map((att) => (
-                <div
-                  key={att.id}
-                  className='flex items-center gap-2 bg-background-secondary border border-border-secondary pl-2 pr-1 py-1 rounded-lg text-xs'
-                >
-                  <FileText className='w-3.5 h-3.5 text-primary' />
-                  <span className='font-semibold truncate max-w-[120px]'>{att.name}</span>
-                  <button
-                    onClick={() => handleRemoveAttachment(att.id)}
-                    className='p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800'
-                  >
-                    <X className='w-3 h-3 text-text-description' />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <form onSubmit={handleSend} className='flex items-end gap-2'>
-            <div className='flex gap-1.5 shrink-0 mb-1'>
-              <Button
-                type='button'
-                variant='ghost'
-                size='icon'
-                onClick={() => imageInputRef.current?.click()}
-                className='w-9 h-9 hover:bg-secondary rounded-lg text-text-secondary hover:text-text-primary'
-              >
-                <ImageIcon className='w-4.5 h-4.5' />
-              </Button>
-              <Button
-                type='button'
-                variant='ghost'
-                size='icon'
-                onClick={() => fileInputRef.current?.click()}
-                className='w-9 h-9 hover:bg-secondary rounded-lg text-text-secondary hover:text-text-primary'
-              >
-                <Paperclip className='w-4.5 h-4.5' />
-              </Button>
-            </div>
-
-            <div className='flex-1 relative'>
-              <Textarea
-                ref={textareaRef}
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder='Nhập nội dung tư vấn gửi khách hàng...'
-                className='w-full resize-none min-h-[38px] max-h-[160px] py-2 px-3 pr-10 rounded-xl border border-border-secondary bg-background-secondary focus-visible:ring-primary focus-visible:ring-offset-0 text-sm scrollbar-none'
-                rows={1}
-              />
-            </div>
-
-            <Button
-              type='submit'
-              size='icon'
-              className='w-9.5 h-9.5 rounded-xl bg-primary hover:bg-primary-600 text-white shrink-0 mb-0.5 shadow-sm active:scale-95 transition-all'
-            >
-              <Send className='w-4.5 h-4.5' />
-            </Button>
-          </form>
-        </div>
+        )}
       </section>
+
+      {/* Interactive WebRTC Call Modal / Meeting Room */}
+      {isCalling && (
+        <div className='fixed inset-0 bg-slate-50 text-text-primary z-50 flex flex-col md:flex-row animate-in fade-in duration-300 font-sans'>
+          {callStatus === 'ringing' ? (
+            // Ringing Overlay (Caller/Callee Ringing UI)
+            <div className='flex-1 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm'>
+              <div className='bg-background-primary border border-border-secondary rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center space-y-6 animate-in zoom-in-95 duration-200'>
+                {callRole === 'callee' ? (
+                  <div className='space-y-6'>
+                    <div className='relative w-20 h-20 mx-auto flex items-center justify-center bg-primary/10 rounded-full text-primary border border-primary/20'>
+                      {callType === 'voice' ? <Phone className='w-8 h-8 animate-bounce' /> : <Video className='w-8 h-8 animate-bounce' />}
+                      <span className='absolute inset-0 rounded-full border-2 border-primary animate-ping opacity-75' />
+                    </div>
+                    <div>
+                      <h3 className='font-bold text-lg text-text-main'>Cuộc gọi đến</h3>
+                      <p className='text-xs text-text-description mt-1.5'>
+                        Khách hàng đang yêu cầu cuộc gọi {callType === 'voice' ? 'thoại' : 'video'}...
+                      </p>
+                    </div>
+                    <div className='flex justify-center gap-4'>
+                      <Button
+                        onClick={handleAcceptCall}
+                        className='bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-6 rounded-xl shadow-sm'
+                      >
+                        Trả lời
+                      </Button>
+                      <Button
+                        onClick={() => handleHangup(true)}
+                        className='bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-xl shadow-sm'
+                      >
+                        Từ chối
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className='space-y-6'>
+                    <div className='relative w-20 h-20 mx-auto flex items-center justify-center bg-primary/10 rounded-full text-primary border border-primary/20'>
+                      {callType === 'voice' ? <Phone className='w-8 h-8 animate-pulse' /> : <Video className='w-8 h-8 animate-pulse' />}
+                      <span className='absolute inset-0 rounded-full border-2 border-primary animate-ping opacity-75' />
+                    </div>
+                    <div>
+                      <h3 className='font-bold text-lg text-text-main'>Đang gọi...</h3>
+                      <p className='text-xs text-text-description mt-1.5'>Đang chờ khách hàng kết nối máy...</p>
+                    </div>
+                    <div className='flex justify-center'>
+                      <Button
+                        onClick={() => handleHangup(true)}
+                        className='bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-xl shadow-sm'
+                      >
+                        Hủy cuộc gọi
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            // Active Call Room Layout (Split View)
+            <>
+              {/* Left Workspace Panel */}
+              <div className='flex-1 flex flex-col min-w-0 bg-slate-50 h-full overflow-hidden'>
+                {/* Workspace Header */}
+                <div className='flex items-center justify-between border-b border-border-secondary bg-slate-50/80 px-6 py-3 shrink-0'>
+                  <div className='flex items-center gap-2'>
+                    <Sparkles className='w-4.5 h-4.5 text-primary' />
+                    <h3 className='text-xs font-bold uppercase tracking-wider text-text-main'>Không gian làm việc chung</h3>
+                  </div>
+                  <div className='flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-lg border border-slate-200'>
+                    <button
+                      onClick={() => setCallRoomTab('report')}
+                      className={cn(
+                        'text-[10px] font-bold py-1.5 px-3 rounded-lg transition-all uppercase tracking-wider',
+                        callRoomTab === 'report' ? 'bg-white text-primary border border-slate-200 shadow-sm' : 'text-text-secondary hover:text-text-main'
+                      )}
+                    >
+                      Báo cáo AI
+                    </button>
+                    <button
+                      onClick={() => setCallRoomTab('board')}
+                      className={cn(
+                        'text-[10px] font-bold py-1.5 px-3 rounded-lg transition-all uppercase tracking-wider',
+                        callRoomTab === 'board' ? 'bg-white text-primary border border-slate-200 shadow-sm' : 'text-text-secondary hover:text-text-main'
+                      )}
+                    >
+                      Bảng thảo luận
+                    </button>
+                    <button
+                      onClick={() => setCallRoomTab('pdf')}
+                      className={cn(
+                        'text-[10px] font-bold py-1.5 px-3 rounded-lg transition-all uppercase tracking-wider',
+                        callRoomTab === 'pdf' ? 'bg-white text-primary border border-slate-200 shadow-sm' : 'text-text-secondary hover:text-text-main'
+                      )}
+                    >
+                      Tài liệu PDF
+                    </button>
+                  </div>
+                </div>
+
+                {/* Workspace Body */}
+                <div className='flex-1 overflow-y-auto bg-slate-50/30 p-6 min-h-0'>
+                  {callRoomTab === 'report' && (
+                    <div className='text-left max-w-3xl mx-auto'>
+                      <div className='p-6 bg-white border border-border-secondary rounded-2xl shadow-sm text-text-primary prose prose-slate prose-sm max-w-none leading-relaxed whitespace-pre-wrap'>
+                        {activeProcess?.analysis?.result ? (
+                          <ReactMarkdown>{activeProcess.analysis.result}</ReactMarkdown>
+                        ) : (
+                          <p className='text-text-description italic text-center'>Đang tải tài liệu phân tích pháp lý...</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {callRoomTab === 'board' && (
+                    <div className='max-w-3xl mx-auto h-full flex flex-col min-h-[400px]'>
+                      <div className='flex-1 p-6 bg-white border border-border-secondary rounded-2xl shadow-sm flex flex-col space-y-4 text-left'>
+                        <div className='flex items-center justify-between border-b border-border-secondary pb-3'>
+                          <div>
+                            <h4 className='text-xs font-bold text-text-main uppercase tracking-wider'>Bản ghi chú cuộc họp</h4>
+                            <p className='text-[10px] text-text-description mt-0.5'>Cả hai bên có thể cùng ghi chú ý chính</p>
+                          </div>
+                          <span className='text-[9px] bg-emerald-50 text-emerald-600 font-semibold px-2 py-0.5 rounded border border-emerald-200'>Đồng bộ thời gian thực</span>
+                        </div>
+                        <textarea
+                          value={boardNotes}
+                          onChange={(e) => setBoardNotes(e.target.value)}
+                          className='flex-1 w-full bg-slate-50 border border-border-secondary text-text-primary rounded-xl p-4 text-xs font-mono resize-none focus:outline-none focus:ring-1 focus:ring-primary leading-relaxed min-h-[300px]'
+                          placeholder='Nhập nội dung thảo luận tại đây...'
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {callRoomTab === 'pdf' && (
+                    <div className='flex items-center justify-center min-h-[450px]'>
+                      <div className='w-full max-w-lg bg-white text-slate-900 rounded-2xl p-8 shadow-2xl aspect-[1/1.4] overflow-y-auto select-none border border-slate-200 text-left font-serif text-[11px] leading-relaxed relative mx-auto my-4'>
+                        <div className='absolute top-3 right-3 text-[9px] bg-slate-100 px-2 py-0.5 rounded font-sans text-slate-500'>Độc quyền LegalAI</div>
+                        <h3 className='font-bold text-center text-sm border-b-2 border-slate-800 pb-2.5 mb-4 uppercase tracking-wider font-sans'>Báo Cáo Phân Tích Pháp Lý Sơ Bộ</h3>
+                        <p className='mb-2'><strong>Kính gửi:</strong> {activeProcess?.users?.full_name || 'Khách hàng'}</p>
+                        <p className='mb-4'><strong>Người thực hiện:</strong> Hệ thống Phân tích Tự động & Xác thực bởi Luật sư</p>
+                        <div className='space-y-4 font-sans text-xs'>
+                          <div>
+                            <h4 className='font-bold border-b border-slate-300 pb-1 mb-1.5 uppercase font-sans text-[10px] text-slate-800'>1. Tóm Tắt Bối Cảnh</h4>
+                            <p className='text-slate-600 italic'>{activeProcess?.analysis?.context_summary || 'Chưa cập nhật.'}</p>
+                          </div>
+                          <div>
+                            <h4 className='font-bold border-b border-slate-300 pb-1 mb-1.5 uppercase font-sans text-[10px] text-slate-800'>2. Chẩn Đoán Chi Tiết</h4>
+                            <p className='text-slate-600 whitespace-pre-line text-[11px] leading-relaxed'>{activeProcess?.analysis?.result?.slice(0, 400) || 'Đang lập chẩn đoán...'}</p>
+                          </div>
+                          <p className='text-[9px] text-slate-400 mt-8 pt-4 border-t border-slate-200 text-center font-sans'>Tài liệu này được kết xuất động phục vụ cuộc gọi đàm thoại giữa Khách hàng và Luật sư.</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Right Media Panel */}
+              <div className='w-full md:w-80 lg:w-96 border-l border-border-secondary bg-white flex flex-col h-full shrink-0 text-left relative overflow-hidden'>
+                {/* Peer streams */}
+                <div className='relative w-full aspect-[4/3] bg-slate-950 border-b border-border-secondary flex items-center justify-center overflow-hidden shrink-0'>
+                  {callType === 'video' ? (
+                    <>
+                      <video ref={remoteVideoRef} autoPlay playsInline className='w-full h-full object-cover' />
+                      <video ref={localVideoRef} autoPlay playsInline muted className='absolute top-3 right-3 w-20 h-28 object-cover rounded-lg border border-white/30 shadow-lg bg-slate-950' />
+                    </>
+                  ) : (
+                    <div className='space-y-3.5 text-center'>
+                      <div className='w-14 h-14 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto text-primary animate-pulse'>
+                        <Phone className='w-6 h-6' />
+                      </div>
+                      <p className='text-xs text-text-description'>Đang đàm thoại thoại bảo mật...</p>
+                      <video ref={remoteVideoRef} autoPlay playsInline className='hidden' />
+                      <video ref={localVideoRef} autoPlay playsInline muted className='hidden' />
+                    </div>
+                  )}
+
+                  {/* Connecting status overlay */}
+                  {callStatus === 'connecting' && (
+                    <div className='absolute inset-0 bg-slate-950/85 flex flex-col items-center justify-center gap-3'>
+                      <div className='w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin' />
+                      <p className='text-[10px] text-slate-400 font-semibold tracking-wider uppercase'>Đang đồng bộ cuộc gọi...</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Call & Participant Details */}
+                <div className='flex-1 p-4 flex flex-col justify-between overflow-y-auto min-h-0 bg-slate-50/30'>
+                  <div className='space-y-5'>
+                    <div>
+                      <h4 className='text-[10px] font-bold text-text-secondary uppercase tracking-wider'>Đang đàm thoại cùng</h4>
+                      <h3 className='text-sm font-bold text-text-main mt-1'>
+                        {activeProcess?.users?.full_name || 'Khách hàng'}
+                      </h3>
+                      <p className='text-[10px] text-text-description mt-0.5'>Trạng thái: {callStatus === 'connected' ? 'Đã kết nối' : 'Đang kết nối'}</p>
+                    </div>
+
+                    {/* AI assistance quick options */}
+                    <div className='space-y-3.5 border-t border-border-secondary pt-4'>
+                      <h4 className='text-[10px] font-bold text-text-secondary uppercase tracking-wider flex items-center gap-1.5'>
+                        <Sparkles className='w-3.5 h-3.5 text-primary' /> Trợ lý AI Cuộc gọi
+                      </h4>
+                      
+                      <div className='space-y-3 text-[11px]'>
+                        <div className='flex items-center justify-between'>
+                          <span className='text-text-primary font-medium'>Ghi âm cuộc gọi</span>
+                          <button
+                            onClick={() => setAiToggles(prev => ({ ...prev, autoRecord: !prev.autoRecord }))}
+                            className={cn('text-[9px] px-2 py-0.5 rounded font-bold transition-all border', aiToggles.autoRecord ? 'bg-primary/10 text-primary border-primary/20' : 'bg-slate-100 text-text-secondary border-slate-200')}
+                          >
+                            {aiToggles.autoRecord ? 'BẬT' : 'TẮT'}
+                          </button>
+                        </div>
+                        <div className='flex items-center justify-between'>
+                          <span className='text-text-primary font-medium'>Gỡ băng đàm thoại (STT)</span>
+                          <button
+                            onClick={() => setAiToggles(prev => ({ ...prev, autoSTT: !prev.autoSTT }))}
+                            className={cn('text-[9px] px-2 py-0.5 rounded font-bold transition-all border', aiToggles.autoSTT ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-slate-100 text-text-secondary border-slate-200')}
+                          >
+                            {aiToggles.autoSTT ? 'BẬT' : 'TẮT'}
+                          </button>
+                        </div>
+                        <div className='flex items-center justify-between'>
+                          <span className='text-text-primary font-medium'>Tự động tóm tắt</span>
+                          <button
+                            onClick={() => setAiToggles(prev => ({ ...prev, autoSummarize: !prev.autoSummarize }))}
+                            className={cn('text-[9px] px-2 py-0.5 rounded font-bold transition-all border', aiToggles.autoSummarize ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-slate-100 text-text-secondary border-slate-200')}
+                          >
+                            {aiToggles.autoSummarize ? 'BẬT' : 'TẮT'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className='border-t border-border-secondary pt-4 mt-4 shrink-0 flex items-center justify-between gap-2.5'>
+                    <Button
+                      onClick={toggleScreenShare}
+                      className={cn(
+                        'flex-1 font-bold py-2 px-3 rounded-xl shadow-sm text-[10px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all duration-200 border',
+                        isSharingScreen
+                          ? 'bg-amber-500 hover:bg-amber-600 text-white border-amber-600'
+                          : 'bg-slate-100 hover:bg-slate-200 text-text-primary border-slate-200'
+                      )}
+                    >
+                      <MonitorUp className='w-3.5 h-3.5' />
+                      {isSharingScreen ? 'Dừng chia sẻ' : 'Chia sẻ màn hình'}
+                    </Button>
+                    <Button
+                      onClick={() => handleHangup(true)}
+                      className='bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-xl shrink-0 shadow-sm text-[10px] uppercase tracking-wider border border-red-600'
+                    >
+                      Gác máy
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </main>
   )
 }

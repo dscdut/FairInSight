@@ -1,7 +1,9 @@
 import { useState } from 'react'
+
 import { Settings, Bell, Clock, Shield, Key } from 'lucide-react'
-import { Card, CardTitle } from '@/components/ui/card'
+
 import { Button } from '@/components/ui/button'
+import { Card, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import toastifyCommon from '@/core/lib/toastify-common'
 
