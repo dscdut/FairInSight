@@ -17,10 +17,6 @@ const PROFILE_SELECT = {
     banned_by: true,
     is_email_confirmed: true,
     created_at: true,
-    status: true,
-    roles: {
-        select: { name: true }
-    }
 };
 
 
