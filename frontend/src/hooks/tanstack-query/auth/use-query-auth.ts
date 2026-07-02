@@ -164,11 +164,11 @@ export const useUpdateProfile = () => {
   return useMutation({
     mutationKey: ['updateProfile'],
     mutationFn: (data: Account) => authApi.updateProfile(data),
-    onSuccess: (res: Account) => {
+    onSuccess: (res: any) => {
       toastifyCommon.success('Cập nhật thông tin thành công!')
       
       // Sync the newly updated profile data into the authStore (LocalStorage)
-      const updatedProfile = res
+      const updatedProfile = res?.data || res
       if (updatedProfile && user) {
         updateUser({
           ...user,
