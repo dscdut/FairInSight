@@ -72,7 +72,7 @@ export const useDeleteUser = () => {
 }
 
 export const useBanUser = () => {
-  // const queryClient = useQueryClient()
+  const queryClient = useQueryClient()
   return useMutation({
     mutationKey: [MUTATION_KEYS.banUser],
     mutationFn: ({ id, reason }: { id: string; reason: string }) => usersApi.banUser(id, reason),
@@ -87,6 +87,7 @@ export const useBanUser = () => {
 }
 
 export const useUnbanUser = () => {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationKey: [MUTATION_KEYS.unbanUser],
     mutationFn: ({ id, reason }: { id: string; reason: string }) => usersApi.unbanUser(id, reason),
