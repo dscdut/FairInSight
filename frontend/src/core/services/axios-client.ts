@@ -5,14 +5,10 @@ import { AUTH_ENDPOINTS } from '@/core/configs/consts'
 import config from '@/core/configs/env'
 import isEqual from '@/core/configs/is-equal'
 import { ROUTE } from '@/core/constants/path'
-import { authApi } from '@/core/services/auth.service'
-import { forceLogout } from '@/core/shared/auth-refresh'
+import { forceLogout, doRefresh } from '@/core/shared/auth-refresh'
 import {
   clearLS,
-  getAccessTokenFromLS,
-  getRefreshTokenFromLS,
-  setAccessTokenToLS,
-  setRefreshTokenToLS
+  getRefreshTokenFromLS
 } from '@/core/shared/storage'
 import { useAuthStore } from '@/core/store/features/auth/authStore'
 
@@ -67,7 +63,7 @@ axiosClient.interceptors.request.use(
       controllers.set(config.url, controller)
     }
 
-    const token = getAccessTokenFromLS()
+    const token = useAuthStore.getState().access_token
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -165,12 +161,8 @@ axiosClient.interceptors.response.use(
           return Promise.reject(error)
         }
 
-        // Node BE ROTATE token: refresh trả CẢ accessToken + refreshToken mới (refresh
-        // token cũ bị upsert ghi đè). PHẢI lưu cả 2 — nếu chỉ lưu access thì lần refresh
-        // sau dùng refresh token cũ đã vô hiệu → fail → đá ra login sớm (trước 7 ngày).
-        const { accessToken, refreshToken } = await authApi.refreshToken(refresh_token)
-        setAccessTokenToLS(accessToken)
-        if (refreshToken) setRefreshTokenToLS(refreshToken)
+        // Gọi doRefresh() để lấy AccessToken mới và đồng bộ Zustand store
+        const accessToken = await doRefresh()
         originalRequest.headers.Authorization = `Bearer ${accessToken}`
         processQueue(null, accessToken)
         return axiosClient(originalRequest)
