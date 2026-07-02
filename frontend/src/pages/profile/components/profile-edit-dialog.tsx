@@ -29,13 +29,20 @@ export default function ProfileEditDialog({ user, isOpen, onOpenChange }: Profil
     const dateOfBirth = dobRef.current?.value ? new Date(dobRef.current.value).toISOString() : undefined
     const location = locationRef.current?.value || ''
 
-    updateProfile({
-      fullName,
-      phone,
-      dateOfBirth,
-      location,
-      avatarUrl: user?.avatarUrl
-    }, {
+    // Sanitize payload: Joi validator on backend rejects 'null' values.
+    // Replace all null/undefined values with empty string or omit them.
+    const payload: any = {
+      fullName: fullName || '',
+      phone: phone || '',
+      location: location || '',
+      avatarUrl: user?.avatarUrl || ''
+    }
+
+    if (dateOfBirth) {
+      payload.dateOfBirth = dateOfBirth
+    }
+
+    updateProfile(payload, {
       onSuccess: () => {
         onOpenChange(false)
       }
