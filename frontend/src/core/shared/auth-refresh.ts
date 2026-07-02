@@ -73,8 +73,10 @@ export async function doRefresh(): Promise<string> {
       if (refreshToken) setRefreshTokenToLS(refreshToken)
       scheduleTokenRefresh() // hẹn lại theo exp token mới
       return accessToken
-    } catch (err) {
-      forceLogout() // refresh token hết 7 ngày / bị revoke → đá ra login
+    } catch (err: any) {
+      if (err.response && [400, 401, 403].includes(err.response.status)) {
+        forceLogout() // chỉ logout khi refresh token bị từ chối/hết hạn thực sự
+      }
       throw err
     }
   })()

@@ -40,9 +40,11 @@ const App = () => {
             roleName: userData.roleName as any
           })
           scheduleTokenRefresh()
-        } catch (err) {
+        } catch (err: any) {
           console.error('Failed to fetch user info on app initialize:', err)
-          logout()
+          if (err.response && [401, 403].includes(err.response.status)) {
+            logout()
+          }
         }
       }
       setIsAppLoading(false)
