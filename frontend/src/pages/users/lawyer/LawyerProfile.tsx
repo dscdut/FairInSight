@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react'
 import { ArrowLeft, Star, ShieldCheck, DollarSign, Briefcase, Award, MapPin, MessageSquare } from 'lucide-react'
 import { useParams, useNavigate } from 'react-router-dom'
 
-import { getLawyerListMock } from '@/_mocks/lawyer.mock'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -64,13 +63,10 @@ export default function LawyerProfile() {
 
   const detail = detailResponse.data.summary
 
-  // Find fallback avatar and bio from mock list if not present in API summary
-  const mockLawyers = getLawyerListMock(1, 100).data.items
-  const mockLawyer = mockLawyers.find((l) => l.id === id)
-  const rawAvatarUrl = mockLawyer?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=lawyer'
+  const rawAvatarUrl = detail.avatarUrl || detail.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=lawyer'
   const avatarUrl = getOptimizedImageUrl(rawAvatarUrl, 200)
-  const bioText = mockLawyer?.bio || 'Chuyên gia tư vấn pháp lý chuyên nghiệp.'
-  const cityText = mockLawyer?.city || 'Việt Nam'
+  const bioText = detail.bio || 'Chuyên gia tư vấn pháp lý chuyên nghiệp.'
+  const cityText = detail.location || 'Việt Nam'
 
   return (
     <div className='p-4 md:p-6 max-w-7xl mx-auto space-y-6 text-left'>

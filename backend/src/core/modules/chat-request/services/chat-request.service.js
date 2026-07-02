@@ -4,9 +4,40 @@ import { NotFoundException, InternalServerException, BadRequestException } from 
 class Service {
     async createChatRequest(userId, payload) {
         try {
-            const { lawyerId, analysisId } = payload;
+            let { lawyerId } = payload;
+            const { analysisId } = payload;
+
+            // Verify user exists
+            const userExists = await prisma.users.findFirst({
+                where: { id: userId, deleted_at: null }
+            });
+            if (!userExists) {
+                throw new NotFoundException(`User with ID "${userId}" not found. Please log out and log in again.`);
+            }
 
             const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+            if (lawyerId && !uuidRegex.test(lawyerId)) {
+                // Resolve mock lawyer ID to a real database lawyer UUID if needed
+                const allLawyers = await prisma.users.findMany({
+                    where: {
+                        deleted_at: null,
+                        roles: { name: 'LAWYER' },
+                        lawyer_details: { is_verified: true }
+                    },
+                    orderBy: { created_at: 'asc' }
+                });
+                if (allLawyers.length > 0) {
+                    const match = lawyerId.match(/lyr-(\d+)/);
+                    if (match) {
+                        const index = parseInt(match[1], 10) - 1;
+                        const selectedLawyer = allLawyers[index % allLawyers.length];
+                        lawyerId = selectedLawyer.id;
+                    } else {
+                        lawyerId = allLawyers[0].id;
+                    }
+                }
+            }
+
             if (!lawyerId || !uuidRegex.test(lawyerId)) {
                 throw new NotFoundException(`Lawyer with ID "${lawyerId}" not found`);
             }
