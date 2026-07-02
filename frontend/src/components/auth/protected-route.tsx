@@ -6,7 +6,6 @@ import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui'
 import { ROUTE } from '@/core/constants/path'
 import { STATUS } from '@/core/helpers/key-tanstack'
-import { getAccessTokenFromLS } from '@/core/shared/storage'
 import { useAuthStore } from '@/core/store/features/auth/authStore'
 import { useAuth } from '@/hooks/auth/use-auth'
 
@@ -65,7 +64,7 @@ const ProtectedRoute = ({ children, redirectPath = ROUTE.AUTH.LOGIN }: Protected
   const navigate = useNavigate()
 
   useEffect(() => {
-    const accessToken = getAccessTokenFromLS()
+    const accessToken = useAuthStore.getState().access_token
     if (!accessToken) {
       navigate(ROUTE.HOME, { replace: true })
     }
