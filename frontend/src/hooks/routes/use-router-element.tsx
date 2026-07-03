@@ -26,8 +26,6 @@ const LawInspect = lazy(() => import('@/pages/admin/law-inspect'))
 const PageNotFound = lazy(() => import('@/pages/404/PageNotFound'))
 const Profile = lazy(() => import('@/pages/profile/Profile'))
 const HomePage = lazy(() => import('@/pages/home/HomePage'))
-const LawSearchPage = lazy(() => import('@/pages/law-search/LawSearchPage'))
-const LawDetail = lazy(() => import('@/pages/law-search/LawDetail'))
 const UserDashboard = lazy(() => import('@/pages/users/dashboard/Dashboard'))
 const AIChat = lazy(() => import('@/pages/users/ai-chat/AIChat'))
 const Messages = lazy(() => import('@/pages/users/messages/Messages'))
@@ -39,6 +37,8 @@ const User = lazy(() => import('@/pages/users/user/User'))
 const LawyerList = lazy(() => import('@/pages/users/lawyer/LawyerList'))
 const LawyerProfile = lazy(() => import('@/pages/users/lawyer/LawyerProfile'))
 const Appointments = lazy(() => import('@/pages/users/appointments/Appointments'))
+const LawLibraryPage = lazy(() => import('@/pages/law-search/LawLibraryPage'))
+const LawDetail = lazy(() => import('@/pages/law-search/LawDetail'))
 
 // Lawyer Lazy loaded components
 const LawyerDashboard = lazy(() => import('@/pages/lawyers/dashboard/LawyerDashboard'))
@@ -46,6 +46,7 @@ const LawyerAppointments = lazy(() => import('@/pages/lawyers/appointments/Lawye
 const LawyerMessages = lazy(() => import('@/pages/lawyers/messages/LawyerMessages'))
 const LawyerProfileEdit = lazy(() => import('@/pages/lawyers/profile/LawyerProfileEdit'))
 const LawyerSettings = lazy(() => import('@/pages/lawyers/setting/LawyerSettings'))
+
 
 export default function useRoutesElements() {
   const location = useLocation()
@@ -61,8 +62,8 @@ export default function useRoutesElements() {
           <Route element={<LayoutClient />}>
             <Route path={ROUTE.HOME} element={<HomePage />} />
             <Route
-              path={ROUTE.LAW_SEARCH}
-              element={<LawSearchPage />}
+              path={ROUTE.LAW_LIBRARY}
+              element={<LawLibraryPage />}
             />
             <Route
               path={ROUTE.LAW_DETAIL}

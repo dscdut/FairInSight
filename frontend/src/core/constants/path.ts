@@ -1,5 +1,7 @@
 export const ROUTE = {
   HOME: '/',
+  LAW_LIBRARY: '/law-library',
+  LAW_DETAIL: '/law-library/:id',
   AUTH: {
     LOGIN: '/login',
     REGISTER: '/register',
