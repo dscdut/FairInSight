@@ -27,6 +27,34 @@ class Service {
             throw new InternalServerException(error.message);
         }
     }
+
+    async deleteDraft(userId, draftId) {
+        try {
+            const existing = await prisma.documents.findFirst({
+                where: {
+                    id: draftId,
+                    user_id: userId,
+                    is_draft: true,
+                    deleted_at: null
+                }
+            });
+
+            if (!existing) {
+                throw new NotFoundException(`Draft with ID "${draftId}" not found`);
+            }
+
+            return await prisma.documents.update({
+                where: { id: draftId },
+                data: {
+                    deleted_at: new Date()
+                }
+            });
+        } catch (error) {
+            if (error instanceof NotFoundException) throw error;
+            throw new InternalServerException(error.message);
+        }
+    }
 }
 
 export const DraftService = new Service();
+
