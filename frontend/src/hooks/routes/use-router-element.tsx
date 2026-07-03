@@ -26,6 +26,8 @@ const LawInspect = lazy(() => import('@/pages/admin/law-inspect'))
 const PageNotFound = lazy(() => import('@/pages/404/PageNotFound'))
 const Profile = lazy(() => import('@/pages/profile/Profile'))
 const HomePage = lazy(() => import('@/pages/home/HomePage'))
+const LawSearchPage = lazy(() => import('@/pages/law-search/LawSearchPage'))
+const LawDetail = lazy(() => import('@/pages/law-search/LawDetail'))
 const UserDashboard = lazy(() => import('@/pages/users/dashboard/Dashboard'))
 const AIChat = lazy(() => import('@/pages/users/ai-chat/AIChat'))
 const Messages = lazy(() => import('@/pages/users/messages/Messages'))
@@ -58,6 +60,14 @@ export default function useRoutesElements() {
         {!isAuthenticated ? (
           <Route element={<LayoutClient />}>
             <Route path={ROUTE.HOME} element={<HomePage />} />
+            <Route
+              path={ROUTE.LAW_SEARCH}
+              element={<LawSearchPage />}
+            />
+            <Route
+              path={ROUTE.LAW_DETAIL}
+              element={<LawDetail />}
+            />
           </Route>
         ) : (
           <Route element={<ProtectedRoute redirectPath={ROUTE.AUTH.LOGIN} />}>
