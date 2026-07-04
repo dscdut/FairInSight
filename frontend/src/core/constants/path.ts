@@ -1,11 +1,14 @@
 export const ROUTE = {
   HOME: '/',
+  LAW_LIBRARY: '/law-library',
+  LAW_DETAIL: '/law-library/:id',
   AUTH: {
     LOGIN: '/login',
     REGISTER: '/register',
     VERIFY_ACCOUNT_EMAIL: '/verify-account-email',
     FORGOT_PASSWORD: '/forgot-password',
-    RESET_PASSWORD: '/reset-password'
+    RESET_PASSWORD: '/reset-password',
+    BANNED: '/banned'
   },
   PROFILE: {
     ROOT: '/profile',

@@ -33,8 +33,9 @@ export default function LawyerProfileEdit() {
       setLoading(true)
       try {
         const res = await lawyerApi.getLawyerDetail(currentUserId) as any
-        if (res && res.summary) {
-          const s = res.summary
+        const innerData = res?.data?.data || res?.data || res
+        if (innerData && innerData.summary) {
+          const s = innerData.summary
           setSpecialty(s.specializations?.join(', ') || '')
           setExperience(s.experienceYears ? `${s.experienceYears} năm` : '0 năm')
           setFee(s.consultingFee ? `${s.consultingFee.toLocaleString('vi-VN')} đ/giờ` : '0 đ/giờ')

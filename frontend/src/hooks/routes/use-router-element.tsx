@@ -18,6 +18,7 @@ const Register = lazy(() => import('@/pages/register/Register'))
 const VerifyAcountEmail = lazy(() => import('@/pages/verify-account-email/VerifyAcountEmail'))
 const ForgotPassword = lazy(() => import('@/pages/forgot-password/ForgotPassword'))
 const ResetPassword = lazy(() => import('@/pages/reset-password/ResetPassword'))
+const Banned = lazy(() => import('@/pages/banned/Banned'))
 const Dashboard = lazy(() => import('@/pages/admin/dashboard'))
 const Users = lazy(() => import('@/pages/admin/users'))
 const LegalDocuments = lazy(() => import('@/pages/admin/legal-documents'))
@@ -26,7 +27,6 @@ const PageNotFound = lazy(() => import('@/pages/404/PageNotFound'))
 const Profile = lazy(() => import('@/pages/profile/Profile'))
 const HomePage = lazy(() => import('@/pages/home/HomePage'))
 const UserDashboard = lazy(() => import('@/pages/users/dashboard/Dashboard'))
-const ProfileEdit = lazy(() => import('@/pages/profile/ProfileEdit'))
 const AIChat = lazy(() => import('@/pages/users/ai-chat/AIChat'))
 const Messages = lazy(() => import('@/pages/users/messages/Messages'))
 const LegalAnalysis = lazy(() => import('@/pages/users/legal-analysis/LegalAnalysis'))
@@ -37,6 +37,8 @@ const User = lazy(() => import('@/pages/users/user/User'))
 const LawyerList = lazy(() => import('@/pages/users/lawyer/LawyerList'))
 const LawyerProfile = lazy(() => import('@/pages/users/lawyer/LawyerProfile'))
 const Appointments = lazy(() => import('@/pages/users/appointments/Appointments'))
+const LawLibraryPage = lazy(() => import('@/pages/law-search/LawLibraryPage'))
+const LawDetail = lazy(() => import('@/pages/law-search/LawDetail'))
 
 // Lawyer Lazy loaded components
 const LawyerDashboard = lazy(() => import('@/pages/lawyers/dashboard/LawyerDashboard'))
@@ -44,6 +46,7 @@ const LawyerAppointments = lazy(() => import('@/pages/lawyers/appointments/Lawye
 const LawyerMessages = lazy(() => import('@/pages/lawyers/messages/LawyerMessages'))
 const LawyerProfileEdit = lazy(() => import('@/pages/lawyers/profile/LawyerProfileEdit'))
 const LawyerSettings = lazy(() => import('@/pages/lawyers/setting/LawyerSettings'))
+
 
 export default function useRoutesElements() {
   const location = useLocation()
@@ -58,6 +61,14 @@ export default function useRoutesElements() {
         {!isAuthenticated ? (
           <Route element={<LayoutClient />}>
             <Route path={ROUTE.HOME} element={<HomePage />} />
+            <Route
+              path={ROUTE.LAW_LIBRARY}
+              element={<LawLibraryPage />}
+            />
+            <Route
+              path={ROUTE.LAW_DETAIL}
+              element={<LawDetail />}
+            />
           </Route>
         ) : (
           <Route element={<ProtectedRoute redirectPath={ROUTE.AUTH.LOGIN} />}>
@@ -75,7 +86,6 @@ export default function useRoutesElements() {
               <Route path={ROUTE.USER.ROOT} element={<LayoutMain />}>
                 <Route index element={<UserDashboard />} />
                 <Route path={ROUTE.USER.PROFILE} element={<Profile />} />
-                <Route path={ROUTE.USER.EDIT} element={<ProfileEdit />} />
                 <Route path={ROUTE.USER.CHAT_AI} element={<AIChat />} />
                 <Route path={ROUTE.USER.MESSAGES} element={<Messages />} />
                 <Route path={ROUTE.USER.TEMPLATE} element={<Template />} />
@@ -111,14 +121,7 @@ export default function useRoutesElements() {
         <Route path={ROUTE.AUTH.FORGOT_PASSWORD} element={<ForgotPassword />} />
         <Route path={ROUTE.AUTH.VERIFY_ACCOUNT_EMAIL} element={<VerifyAcountEmail />} />
         <Route path={ROUTE.AUTH.RESET_PASSWORD} element={<ResetPassword />} />
-
-        {/* Client protected routes */}
-        <Route element={<ProtectedRoute redirectPath={ROUTE.AUTH.LOGIN} />}>
-          <Route path={ROUTE.PROFILE.ROOT} element={<LayoutClient />}>
-            <Route index element={<Profile />} />
-            <Route path='edit' element={<ProfileEdit />} />
-          </Route>
-        </Route>
+        <Route path={ROUTE.AUTH.BANNED} element={<Banned />} />
 
         {/* Admin protected routes */}
         <Route element={<ProtectedRoute redirectPath={ROUTE.AUTH.LOGIN} />}>

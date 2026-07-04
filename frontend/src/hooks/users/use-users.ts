@@ -76,20 +76,9 @@ export const useBanUser = () => {
   return useMutation({
     mutationKey: [MUTATION_KEYS.banUser],
     mutationFn: ({ id, reason }: { id: string; reason: string }) => usersApi.banUser(id, reason),
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
       toastifyCommon.success('Khóa tài khoản thành công')
-      queryClient.setQueriesData<UsersListResponse>({ queryKey: [QUERY_KEYS.users] }, (oldData) => {
-        if (!oldData) return oldData
-        return {
-          ...oldData,
-          data: {
-            ...oldData.data,
-            items: oldData.data.items.map((user) =>
-              user.id === variables.id ? { ...user, status: 'banned' } : user
-            )
-          }
-        }
-      })
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.users] })
     },
     onError: (error) => {
       handleError(error, 'Khóa tài khoản thất bại')
@@ -102,20 +91,9 @@ export const useUnbanUser = () => {
   return useMutation({
     mutationKey: [MUTATION_KEYS.unbanUser],
     mutationFn: ({ id, reason }: { id: string; reason: string }) => usersApi.unbanUser(id, reason),
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
       toastifyCommon.success('Kích hoạt tài khoản thành công')
-      queryClient.setQueriesData<UsersListResponse>({ queryKey: [QUERY_KEYS.users] }, (oldData) => {
-        if (!oldData) return oldData
-        return {
-          ...oldData,
-          data: {
-            ...oldData.data,
-            items: oldData.data.items.map((user) =>
-              user.id === variables.id ? { ...user, status: 'active' } : user
-            )
-          }
-        }
-      })
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.users] })
     },
     onError: (error) => {
       handleError(error, 'Kích hoạt tài khoản thất bại')

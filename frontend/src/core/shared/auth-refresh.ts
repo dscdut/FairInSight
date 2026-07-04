@@ -1,5 +1,5 @@
 // Auth refresh trung tâm: proactive (timer theo exp) + lưới reactive (401 ở client).
-// Dùng axios RAW (không qua axios-client/ai-client) để tránh vòng lặp interceptor.
+// Dùng axios RAW (không qua axios-clientư/ai-client) để tránh vòng lặp interceptor.
 import axios from 'axios'
 
 import { LOGIN_ROUTE } from '@/core/configs/consts'
@@ -12,10 +12,8 @@ import {
   setRefreshTokenToLS
 } from '@/core/shared/storage'
 
-// Refresh KHI access token còn <= ngưỡng này (giây). 75s: an toàn cho lệch giờ + RTT.
 const REFRESH_BEFORE_SEC = 75
 let refreshTimer: ReturnType<typeof setTimeout> | null = null
-// Chống refresh chồng (timer + nhiều 401 cùng lúc gọi doRefresh): chia sẻ 1 promise.
 let inflight: Promise<string> | null = null
 
 /** Giải mã payload JWT (base64url) → object. null nếu hỏng. KHÔNG cần lib jwt-decode. */
@@ -73,8 +71,10 @@ export async function doRefresh(): Promise<string> {
       if (refreshToken) setRefreshTokenToLS(refreshToken)
       scheduleTokenRefresh() // hẹn lại theo exp token mới
       return accessToken
-    } catch (err) {
-      forceLogout() // refresh token hết 7 ngày / bị revoke → đá ra login
+    } catch (err: any) {
+      if (err.response && [400, 401, 403].includes(err.response.status)) {
+        forceLogout() // chỉ logout khi refresh token bị từ chối/hết hạn thực sự
+      }
       throw err
     }
   })()
@@ -85,11 +85,6 @@ export async function doRefresh(): Promise<string> {
   }
 }
 
-/**
- * PROACTIVE: hẹn timer tự refresh khi access token còn ~75s. Gọi lúc app mount (nếu có
- * token) + sau login. Clear timer cũ trước khi đặt mới (tránh nhiều timer). Nếu token đã
- * sắp/đã hết → refresh ngay.
- */
 export function scheduleTokenRefresh(): void {
   clearTokenRefresh()
   const token = getAccessTokenFromLS()
@@ -104,7 +99,6 @@ export function scheduleTokenRefresh(): void {
   }, delayMs)
 }
 
-/** Hủy timer (logout). */
 export function clearTokenRefresh(): void {
   if (refreshTimer) {
     clearTimeout(refreshTimer)

@@ -11,8 +11,14 @@ const PROFILE_SELECT = {
     subscriptions: {
         select: { plan_name: true },
     },
+    roles: {
+        select: { name: true },
+    },
+    banned_by: true,
+    is_email_confirmed: true,
     created_at: true,
 };
+
 
 const ROLE_SELECT = {
     roles: {

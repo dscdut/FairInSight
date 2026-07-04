@@ -55,10 +55,11 @@ export const useLawyerDetail = (id?: string) => {
     queryFn: async () => {
       if (!id) return null
       const res = await lawyerApi.getLawyerDetail(id) as any
+      const innerData = res?.data?.data || res?.data || res
       return {
         data: {
-          items: res?.items || [],
-          summary: res?.summary || null
+          items: innerData?.items || [],
+          summary: innerData?.summary || null
         }
       }
     },

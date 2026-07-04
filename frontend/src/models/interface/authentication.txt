@@ -1,0 +1,19 @@
+Hãy viết mã xử lý luồng Xác thực (Authentication) bằng React (sử dụng TypeScript, Zustand làm state manager và Axios làm thư viện gọi API) tuân thủ chính xác theo cấu trúc API sau:
+
+1. Khi Login thành công, response trả về có dạng:
+response.data.data.accessToken (Lưu vào State của Zustand, không lưu localStorage)
+response.data.data.refreshToken (Lưu vào localStorage với key là 'rt_token')
+
+2. Viết Axios Request Interceptor để lấy accessToken từ Zustand store đính vào header 'Authorization: Bearer <token>' cho mỗi request.
+
+3. Viết Axios Response Interceptor xử lý lỗi 401 (Hết hạn Access Token):
+- Đóng băng request lỗi và xếp vào hàng đợi (Queue).
+- Tự động gọi API: POST '/auth/refresh-token' với body truyền lên bắt buộc là JSON Object có key dạng snake_case: { "refresh_token": localStorage.getItem('rt_token') }
+- Nếu thành công: Cập nhật accessToken mới vào Zustand, giải phóng hàng đợi và chạy lại các request cũ.
+- Nếu thất bại hoặc refresh token hết hạn: Xóa sạch token, chuyển hướng về '/login'.
+
+4. Viết luồng xử lý Silent Refresh tại file App.tsx khi người dùng nhấn F5 hoặc mở tab mới:
+- Dùng biến `isAppLoading` quản lý màn hình chờ.
+- Kiểm tra 'rt_token' trong localStorage, nếu có thì tự động gọi API POST '/auth/refresh-token' để lấy accessToken nạp vào Zustand store trước rồi mới set `isAppLoading = false`.
+
+Hãy viết code sạch, tối ưu, xử lý bất đồng bộ chuẩn xác và giải thích bằng comment ngắn gọn.

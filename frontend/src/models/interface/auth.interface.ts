@@ -1,6 +1,7 @@
 import type HttpStatusCode from '@/core/constants/http'
 
 import { type RoleSystem, type RoleUser } from '../types/role.type'
+import { type UserStatus } from '../user/types'
 
 import { type UserResponseType } from './user.interface'
 
@@ -47,7 +48,9 @@ export interface Account {
   dateOfBirth?: string
   location?: string
   subscription?: Subscription
+  subscriptions?: Subscription
   createdAt?: string
+  status?: UserStatus
 }
 
 // define the RegisterReponse interface
