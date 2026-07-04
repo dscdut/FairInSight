@@ -15,6 +15,12 @@ class Controller {
         const data = await this.service.getTemplateById(req.params.id);
         return ValidHttpResponse.toOkResponse(data);
     };
+
+    getTemplateSchema = async req => {
+        const data = await this.service.getTemplateSchema(req.params.id);
+        return ValidHttpResponse.toOkResponse(data);
+    };
 }
 
 export const TemplateController = new Controller();
+
