@@ -15,11 +15,11 @@ export const ListReportsCriteriaDocument = {
         type: 'int',
         description: desc
     }),
-    status: (desc = 'Of three types: pending, processing, and resolved') => SwaggerDocument.ApiParams({
+    status: (desc = 'Of two types: pending and resolved') => SwaggerDocument.ApiParams({
         name: 'status',
         paramsIn: 'query',
         required: true,
-        type: 'date',
+        type: 'string',
         description: desc
     }),
     startDate: desc => SwaggerDocument.ApiParams({

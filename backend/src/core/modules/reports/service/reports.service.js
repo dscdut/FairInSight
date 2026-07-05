@@ -13,7 +13,7 @@ class Service {
     }
 
     async listReports(listReportsDto) {
-        let allStatus = ["pending", "processing", "resolved"];
+        let allStatus = ["pending", "resolved"];
         if (allStatus.indexOf(listReportsDto.status) == -1) {
             throw new BadRequestException("Invalid Status value");
         }
@@ -69,6 +69,24 @@ class Service {
                 resolved: resolvedReports
             }
         };
+    }
+
+    async getReportById(id) {
+        let report = await this.repository.getReportById(id);
+        if (!report) {
+            throw new BadRequestException("Report not found");
+        }
+        
+        return {
+            data: {
+                targetUserId: report.target_user_id,
+                reporterId: report.reporter_id,
+                reason: report.reason,
+                status: report.status,
+                createdAt: report.created_at,
+                updatedAt: report.updated_at,
+            }
+        }
     }
 
     async getReportsHistory(getReportsHistoryDto) {

@@ -8,6 +8,8 @@ import { uploadMediaSwagger } from 'core/common/swagger';
 import { MediaInterceptor } from 'core/modules/document';
 import { hasAdminRole } from 'core/modules/auth/guard';
 import { ListReportsParams, GetReportsStatsParams, GetReportsHistoryParams } from 'core/common/swagger/reportFilter';
+import { RecordIdInterceptor } from 'core/modules/interceptor/recordId/record-id.interceptor';
+import { RecordId } from 'core/common/swagger/record-id';
 
 export const ReportsResolver = Module.builder()
     .addPrefix({
@@ -17,11 +19,20 @@ export const ReportsResolver = Module.builder()
     })
     .register([
         {
-            route: '/',
+            route: '',
             method: 'get',
             params: ListReportsParams,
             guards: [hasAdminRole],
             controller: ReportsController.listReports,
+            preAuthorization: true,
+        },
+        {
+            route: '/:id',
+            method: 'get',
+            guards: [hasAdminRole],
+            params: [RecordId],
+            interceptor: [RecordIdInterceptor],
+            controller: ReportsController.getReportById,
             preAuthorization: true,
         },
         {

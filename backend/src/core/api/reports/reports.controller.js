@@ -15,6 +15,10 @@ class Controller {
         const data = await this.service.getReportsStats(req.query);
         return ValidHttpResponse.toOkResponse(data);
     }
+    getReportById = async req => {
+        const data = await this.service.getReportById(req.params.id);
+        return ValidHttpResponse.toOkResponse(data);
+    }
     getReportsHistory = async req => {
         const data = await this.service.getReportsHistory(req.query);
         return ValidHttpResponse.toOkResponse(data);

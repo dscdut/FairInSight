@@ -26,13 +26,19 @@ class Repository {
                     gte: startDate,
                     lte: endDate
                 },
-                deleted_at: NullTypes,
+                deleted_at: null,
             },
             select: {
                 target_user_id: true,
                 reporter_id: true,
                 reason: true,
             }
+        });
+    }
+
+    async getReportById(id) {
+        return connection.reports.findFirst({
+            where: { target_user_id: id, deleted_at: null }
         });
     }
 
