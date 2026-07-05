@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 
+import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import {
   Search,
@@ -44,6 +45,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/core/lib/utils'
+import { lawApi } from '@/core/services/law.service'
+import { useDebounce } from '@/hooks/use-debounce'
 import type { Law } from '@/models/types/law.type'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -98,39 +101,6 @@ const POPULAR_DOCS = [
   { id: '3', title: 'Luật Doanh nghiệp 2020', views: 84100, date: '2020-06-17' },
   { id: '4', title: 'Luật Nhà ở 2023', views: 72600, date: '2023-11-27' },
   { id: '5', title: 'Luật Thuế thu nhập cá nhân', views: 63200, date: '2007-11-21' },
-]
-
-const MOCK_LAWS: Law[] = [
-  {
-    id: '1',
-    title: 'Nghị định quy định cơ chế, chính sách đặc thù phát triển kinh tế - xã hội vùng đồng bào dân tộc thiểu số',
-    content: 'Nghị định này quy định cơ chế, chính sách đặc thù nhằm thúc đẩy phát triển kinh tế - xã hội vùng đồng bào dân tộc thiểu số và miền núi.',
-    documentNumber: '135/2026/NĐ-CP',
-    issuedDate: '2026-07-01T00:00:00.000Z',
-    effectiveDate: '2026-08-01T00:00:00.000Z',
-    sourceUrl: '',
-    status: 'ACTIVE',
-    userId: 'system',
-    createdAt: '2026-07-01T00:00:00.000Z',
-    updatedAt: '2026-07-01T00:00:00.000Z',
-    authorName: 'Chính phủ',
-    versions: [],
-  },
-  {
-    id: '2',
-    title: 'Văn bản hợp nhất Quyết định về việc ban hành Quy chế xây dựng, quản lý và thực hiện Chương trình cấp quốc gia về xúc tiến thương mại',
-    content: 'Quy chế xây dựng, quản lý và thực hiện Chương trình cấp quốc gia về xúc tiến thương mại.',
-    documentNumber: '56/VBHN-BCT',
-    issuedDate: '2026-07-01T00:00:00.000Z',
-    effectiveDate: '2026-07-15T00:00:00.000Z',
-    sourceUrl: '',
-    status: 'ACTIVE',
-    userId: 'system',
-    createdAt: '2026-07-01T00:00:00.000Z',
-    updatedAt: '2026-07-01T00:00:00.000Z',
-    authorName: 'Bộ Công Thương',
-    versions: [],
-  },
 ]
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -448,10 +418,30 @@ function LawCard({ law, index }: { law: Law; index: number }) {
 
 interface LawListProps {
   laws: Law[]
+  isLoading: boolean
+  isError: boolean
   query: string
 }
 
-function LawList({ laws, query }: LawListProps) {
+function LawList({ laws, isLoading, isError, query }: LawListProps) {
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 gap-3 text-[var(--text-tertiary)]">
+        <AlertCircle className="w-10 h-10 text-[var(--error-primary)] opacity-60" />
+        <p className="font-medium text-[var(--text-primary)]">Không thể tải dữ liệu</p>
+        <p className="text-sm">Vui lòng thử lại sau hoặc kiểm tra kết nối mạng.</p>
+      </div>
+    )
+  }
+
   if (laws.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-3 text-[var(--text-tertiary)]">
@@ -761,6 +751,7 @@ function PopularDocsSidebar() {
 
 export default function LawLibraryPage() {
   const [query, setQuery] = useState('')
+  const [committedQuery, setCommittedQuery] = useState('')
   const [filters, setFilters] = useState<SearchFilters>({
     searchIn: 'title',
     status: 'ALL',
@@ -769,30 +760,33 @@ export default function LawLibraryPage() {
   })
   const [currentPage, setCurrentPage] = useState(1)
 
-  // Client-side filter of mock data
-  const filteredLaws = useMemo(() => {
-    let result = [...MOCK_LAWS]
-    if (query) {
-      const q = query.toLowerCase()
-      result = result.filter(law =>
-        law.title.toLowerCase().includes(q) ||
-        law.content.toLowerCase().includes(q) ||
-        law.documentNumber.toLowerCase().includes(q)
-      )
-    }
-    if (filters.status !== 'ALL') {
-      result = result.filter(l => l.status === filters.status)
-    }
-    return result
-  }, [query, filters.status])
+  // Debounce to avoid redundant API calls while user types
+  const debouncedQuery = useDebounce(committedQuery, 400)
 
-  const totalPages = Math.max(1, Math.ceil(filteredLaws.length / PAGE_SIZE))
-  const pagedLaws = filteredLaws.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+  const apiParams = useMemo(() => ({
+    page: currentPage,
+    size: PAGE_SIZE,
+    search: debouncedQuery || undefined,
+    status: filters.status !== 'ALL' ? filters.status : undefined,
+  }), [debouncedQuery, filters.status, currentPage])
 
-  const handleSearch = useCallback(() => setCurrentPage(1), [])
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['laws', apiParams],
+    queryFn: () => lawApi.listLaws(apiParams),
+    placeholderData: prev => prev,
+  })
+
+  const laws = data?.items ?? []
+  const pagination = data?.pagination
+
+  const handleSearch = useCallback(() => {
+    setCommittedQuery(query)
+    setCurrentPage(1)
+  }, [query])
 
   const handleSuggestion = useCallback((s: string) => {
     setQuery(s)
+    setCommittedQuery(s)
     setCurrentPage(1)
   }, [])
 
@@ -819,13 +813,18 @@ export default function LawLibraryPage() {
           <div className="flex-1 min-w-0">
             <SearchFiltersBar
               filters={filters}
-              total={filteredLaws.length}
+              total={pagination?.total ?? laws.length}
               onFilterChange={handleFilterChange}
             />
 
-            <LawList laws={pagedLaws} query={query} />
+            <LawList
+              laws={laws}
+              isLoading={isLoading}
+              isError={isError}
+              query={debouncedQuery}
+            />
 
-            {totalPages > 1 && (
+            {!isLoading && !isError && (pagination?.totalPages ?? 0) > 1 && (
               <div className="mt-8">
                 <Pagination>
                   <PaginationContent>
@@ -836,23 +835,27 @@ export default function LawLibraryPage() {
                         className={currentPage <= 1 ? 'pointer-events-none opacity-50' : ''}
                       />
                     </PaginationItem>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 7).map(pg => (
-                      <PaginationItem key={pg}>
-                        <PaginationLink
-                          href="#"
-                          isActive={pg === currentPage}
-                          onClick={e => { e.preventDefault(); setCurrentPage(pg) }}
-                        >
-                          {pg}
-                        </PaginationLink>
-                      </PaginationItem>
-                    ))}
-                    {totalPages > 7 && <PaginationItem><PaginationEllipsis /></PaginationItem>}
+                    {Array.from({ length: pagination?.totalPages ?? 1 }, (_, i) => i + 1)
+                      .slice(0, 7)
+                      .map(pg => (
+                        <PaginationItem key={pg}>
+                          <PaginationLink
+                            href="#"
+                            isActive={pg === currentPage}
+                            onClick={e => { e.preventDefault(); setCurrentPage(pg) }}
+                          >
+                            {pg}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+                    {(pagination?.totalPages ?? 0) > 7 && (
+                      <PaginationItem><PaginationEllipsis /></PaginationItem>
+                    )}
                     <PaginationItem>
                       <PaginationNext
                         href="#"
-                        onClick={e => { e.preventDefault(); setCurrentPage(p => Math.min(totalPages, p + 1)) }}
-                        className={currentPage >= totalPages ? 'pointer-events-none opacity-50' : ''}
+                        onClick={e => { e.preventDefault(); setCurrentPage(p => Math.min(pagination?.totalPages ?? 1, p + 1)) }}
+                        className={currentPage >= (pagination?.totalPages ?? 1) ? 'pointer-events-none opacity-50' : ''}
                       />
                     </PaginationItem>
                   </PaginationContent>
