@@ -77,12 +77,30 @@ class Service {
             throw new UnAuthorizedException('Email is not verified');
         }
 
+        let status = 'ACTIVE';
+        if (user.banned_by) {
+            status = 'BANNED';
+        } else if (!user.is_email_confirmed) {
+            status = 'INACTIVE';
+        }
+
         const userData = {
             userId: user.id,
             email: user.email,
             fullName: user.full_name,
             roleName: user.roles?.name ? user.roles.name.toUpperCase() : null,
+            avatarUrl: user.avatar_url ?? null,
+            avatar: user.avatar_url ?? null,
+            status,
+            phone: user.phone ?? null,
+            location: user.location ?? null,
         };
+
+        if (user.banned_by) {
+            userData.banned_at = user.updated_at?.toISOString() || null;
+            userData.bannedAt = user.updated_at?.toISOString() || null;
+            userData.reason = user.ban_reason ?? null;
+        }
 
         const targetUserId = userId ?? user.id;
         const roleNames = await this.#getRoleNames(targetUserId);
@@ -220,7 +238,7 @@ class Service {
         };
     }
 
-    async refreshToken(refreshTokenDto, userId) {
+    async refreshToken(refreshTokenDto) {
         const result = await this.repository.findRefreshToken(refreshTokenDto.refresh_token);
         if (!result) {
             throw new UnAuthorizedException('Invalid or expired refresh token');
@@ -229,6 +247,7 @@ class Service {
             throw new UnAuthorizedException('Invalid or expired refresh token');
         }
 
+        const userId = result.user_id;
         const roleNames = await this.#getRoleNames(userId);
         const { accessToken, refreshToken } = await this.#issueTokens(userId, roleNames);
 
@@ -298,6 +317,13 @@ class Service {
     }
 
     #mapProfile(user) {
+        let status = 'ACTIVE';
+        if (user.banned_by) {
+            status = 'BANNED';
+        } else if (!user.is_email_confirmed) {
+            status = 'INACTIVE';
+        }
+
         return {
             id: user.id,
             avatarUrl: user.avatar_url ?? null,
@@ -306,6 +332,8 @@ class Service {
             phone: user.phone ?? null,
             dateOfBirth: user.date_of_birth ?? null,
             location: user.location ?? null,
+            roleName: user.roles?.name ? user.roles.name.toUpperCase() : null,
+            status,
             subscriptions: user.subscriptions
                 ? { planName: user.subscriptions.plan_name ?? null }
                 : undefined,

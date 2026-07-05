@@ -18,7 +18,7 @@ import {
   useUpdateUserRole
 } from '@/hooks/users/use-users'
 import { type UserItem } from '@/models/user/interfaces'
-import { type UserRole } from '@/models/user/types'
+import { type UserStatus, type UserRole } from '@/models/user/types'
 
 import { BanDialog } from './components/banDialog'
 import { DeleteDialog } from './components/deleteDialog'
@@ -230,7 +230,7 @@ export default function UsersPage() {
   }
 
   return (
-    <main className='p-6 md:p-10 space-y-6 bg-background-secondary/35 min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300'>
+    <main className='p-2 md:p-6 space-y-6 min-h-screen animate-in fade-in slide-in-from-bottom-2 duration-300'>
       {/* Top Header Section - Clean & Uncluttered Layout */}
       <section className='flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 pb-2'>
         <div>
@@ -424,21 +424,21 @@ export default function UsersPage() {
                   sortedUsersList.map((user) => {
                     // Custom status badge styles
                     const statusStyles = {
-                      active: {
+                      ACTIVE: {
                         label: 'Hoạt động',
-                        class: 'bg-success-primary/10 text-success-primary'
+                        class: 'text-success-primary'
                       },
-                      inactive: {
+                      INACTIVE: {
                         label: 'Chờ kích hoạt',
-                        class: 'bg-warning-primary/10 text-warning-primary'
+                        class: 'text-warning-primary'
                       },
-                      banned: {
+                      BANNED: {
                         label: 'Đã khóa',
-                        class: 'bg-error-primary/10 text-error-primary'
+                        class: 'text-error-primary'
                       }
                     }
 
-                    const userStatus = user.status || 'inactive'
+                    const userStatus = (user.status || 'INACTIVE').toUpperCase() as UserStatus
                     const currentStatusConfig = statusStyles[userStatus]
                     const isSelected = selectedUserIds.includes(user.id)
 
@@ -523,7 +523,7 @@ export default function UsersPage() {
                             </Button>
 
                             {/* Ban / Unban toggler */}
-                            {user.status === 'banned' ? (
+                            {user.status?.toUpperCase() === 'BANNED' ? (
                               <Button
                                 size='icon'
                                 variant='ghost'

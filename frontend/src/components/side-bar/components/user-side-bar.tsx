@@ -45,7 +45,7 @@ export default function UserSideBar() {
   return (
     <aside
       className={cn(
-        'flex relative flex-col h-full bg-background-primary border-r border-border-secondary shadow-xl transition-all duration-500 md:flex',
+        'flex relative flex-col h-full bg-background-primary backdrop-blur-xl border-r border-border-secondary shadow-xl transition-all duration-500 md:flex',
         sidebarOpen ? 'w-72' : 'w-20'
       )}
       aria-label='User Sidebar navigation'
@@ -98,25 +98,19 @@ export default function UserSideBar() {
               <Link
                 to={link.path}
                 className={cn(
-                  'flex items-center gap-4 rounded-xl text-small font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary group relative overflow-hidden',
-                  sidebarOpen ? 'px-4 py-3' : 'px-3 py-3 justify-center',
+                  'flex items-center gap-4 rounded-xl text-small font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary group relative overflow-hidden h-12 p-4',
                   isLinkActive
-                    ? 'bg-gradient-to-r from-primary to-primary-400 text-white shadow-lg shadow-primary/25 transform scale-[1.02]'
+                    ? 'bg-gradient-to-r from-primary to-primary-400 text-white shadow-lg shadow-primary/25'
                     : 'text-text-description hover:text-text-main hover:bg-background-secondary hover:shadow-lg hover:transform hover:scale-[1.02]'
                 )}
                 title={!sidebarOpen ? linkText : undefined}
                 style={{ animationDelay: `${index * 50}ms` }}
               >
-                {/* Active indicator */}
-                {isLinkActive && (
-                  <div className='absolute top-0 bottom-0 left-0 w-1 bg-gradient-to-b from-primary to-primary-400 rounded-r-full' />
-                )}
-
                 {/* Icon */}
                 <span
                   className={cn(
-                    'flex-shrink-0 transition-all duration-300 relative z-10',
-                    sidebarOpen ? 'w-5 h-5' : 'w-6 h-6',
+                    'flex-shrink-0 transition-all duration-300 relative z-10 w-5 h-5',
+
                     isLinkActive
                       ? 'text-white'
                       : 'text-tertiary group-hover:text-text-main'
@@ -184,7 +178,7 @@ export default function UserSideBar() {
                   )}
                 >
                   {/* Sử dụng optional chaining an toàn để tránh crash khi chưa có dữ liệu */}
-                  <AvatarImage src='/images/avatar.png' alt={user?.fullName} />
+                  <AvatarImage src={user?.avatarUrl || '/images/avatar.png'} alt={user?.fullName} />
                   <AvatarFallback className='bg-primary text-white font-bold'>
                     {getInitials(user?.fullName || '')}
                   </AvatarFallback>

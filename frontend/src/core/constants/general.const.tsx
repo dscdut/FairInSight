@@ -9,12 +9,12 @@ import {
   Network,
   PieChart,
   Scale,
-  Settings,
-  ShoppingCart,
   TrendingUp,
   Users,
   UserCheck,
-  MessageCircle
+  MessageCircle,
+  User,
+  Settings
 } from 'lucide-react'
 
 import { ROUTE } from '@/core/constants/path'
@@ -38,6 +38,12 @@ export const adminSidebarLinks: TSidebarLinks[] = [
     titleKey: 'law_inspect',
     icon: <Network className='w-5 h-5' />,
     path: ROUTE.ADMIN.LAW_INSPECT
+  },
+  {
+    title: 'Quản lý người dùng',
+    titleKey: 'users',
+    icon: <Users className='w-5 h-5' />,
+    path: ROUTE.ADMIN.USERS,
   },
   {
     title: 'Phân tích',
@@ -64,86 +70,6 @@ export const adminSidebarLinks: TSidebarLinks[] = [
         title: 'Hiệu suất hệ thống',
         titleKey: 'performance',
         path: ROUTE.ADMIN.ANALYTICS.PERFORMANCE
-      }
-    ]
-  },
-  {
-    title: 'Quản lý người dùng',
-    titleKey: 'users',
-    icon: <Users className='w-5 h-5' />,
-    path: ROUTE.ADMIN.USERS,
-    children: [
-      {
-        // title: 'Tất cả người dùng',
-        // path: 'users/all'
-        title: 'All Users',
-        path: 'users'
-      },
-      {
-        title: 'Đang hoạt động',
-        path: 'users/active'
-      },
-      {
-        title: 'Ngừng hoạt động',
-        path: 'users/inactive'
-      },
-      {
-        title: 'Vai trò',
-        path: 'users/roles'
-      },
-      {
-        title: 'Phân quyền',
-        path: 'users/permissions'
-      }
-    ]
-  },
-  {
-    title: 'Thương mại điện tử',
-    icon: <ShoppingCart className='w-5 h-5' />,
-    path: 'ecommerce',
-    children: [
-      {
-        title: 'Đơn hàng',
-        path: 'ecommerce/orders'
-      },
-      {
-        title: 'Sản phẩm',
-        path: 'ecommerce/products'
-      },
-      {
-        title: 'Danh mục',
-        path: 'ecommerce/categories'
-      },
-      {
-        title: 'Kho hàng',
-        path: 'ecommerce/inventory'
-      },
-      {
-        title: 'Mã giảm giá',
-        path: 'ecommerce/coupons'
-      }
-    ]
-  },
-  {
-    title: 'Nội dung',
-    icon: <FileText className='w-5 h-5' />,
-    path: 'content',
-    children: [
-      {
-        title: 'Bài viết',
-        path: 'content/posts'
-      },
-      {
-        title: 'Trang',
-        path: 'content/pages'
-      },
-      {
-        title: 'Thư viện media',
-        path: 'content/media'
-      },
-      {
-        title: 'Bình luận',
-        path: 'content/comments'
       }
     ]
   },
@@ -178,75 +104,12 @@ export const adminSidebarLinks: TSidebarLinks[] = [
   {
     title: 'Tin nhắn',
     icon: <Mail className='w-5 h-5' />,
-    path: 'messages',
-    children: [
-      {
-        title: 'Hộp thư đến',
-        path: 'messages/inbox'
-      },
-      {
-        title: 'Đã gửi',
-        path: 'messages/sent'
-      },
-      {
-        title: 'Bản nháp',
-        path: 'messages/drafts'
-      },
-      {
-        title: 'Mẫu tin nhắn',
-        path: 'messages/templates'
-      }
-    ]
+    path: 'messages'
   },
   {
     title: 'Báo cáo',
     icon: <TrendingUp className='w-5 h-5' />,
     path: 'reports',
-    children: [
-      {
-        title: 'Báo cáo doanh thu',
-        path: 'reports/sales'
-      },
-      {
-        title: 'Báo cáo người dùng',
-        path: 'reports/users'
-      },
-      {
-        title: 'Báo cáo tài chính',
-        path: 'reports/financial'
-      },
-      {
-        title: 'Báo cáo hệ thống',
-        path: 'reports/system'
-      }
-    ]
-  },
-  {
-    title: 'Cài đặt',
-    icon: <Settings className='w-5 h-5' />,
-    path: 'settings',
-    children: [
-      {
-        title: 'Chung',
-        path: 'settings/general'
-      },
-      {
-        title: 'Bảo mật',
-        path: 'settings/security'
-      },
-      {
-        title: 'Thông báo',
-        path: 'settings/notifications'
-      },
-      {
-        title: 'Tích hợp',
-        path: 'settings/integrations'
-      },
-      {
-        title: 'Sao lưu',
-        path: 'settings/backup'
-      }
-    ]
   }
 ]
 
@@ -300,15 +163,42 @@ export const userSideBarLinks: TSidebarLinks[] = [
     path: ROUTE.USER.REPORT
   },
   {
-    title: 'Quản lý người dùng',
-    titleKey: 'users',
-    icon: <Users className='w-5 h-5' />,
-    path: ROUTE.USER.INFO
+    title: 'Trang cá nhân',
+    titleKey: 'profile',
+    icon: <User className='w-5 h-5' />,
+    path: ROUTE.PROFILE.ROOT
+  }
+]
+
+export const lawyerSideBarLinks: TSidebarLinks[] = [
+  {
+    title: 'Trang chủ',
+    titleKey: 'home',
+    icon: <Home className='w-5 h-5' />,
+    path: `${ROUTE.LAWYER.ROOT}/${ROUTE.LAWYER.DASHBOARD}`
+  },
+  {
+    title: 'Lịch hẹn tư vấn',
+    titleKey: 'appointments',
+    icon: <Calendar className='w-5 h-5' />,
+    path: `${ROUTE.LAWYER.ROOT}/${ROUTE.LAWYER.APPOINTMENT}`
+  },
+  {
+    title: 'Tin nhắn',
+    titleKey: 'messages',
+    icon: <MessageCircle className='w-5 h-5' />,
+    path: `${ROUTE.LAWYER.ROOT}/${ROUTE.LAWYER.MESSAGES}`
+  },
+  {
+    title: 'Hồ sơ chuyên môn',
+    titleKey: 'profile',
+    icon: <User className='w-5 h-5' />,
+    path: `${ROUTE.LAWYER.ROOT}/${ROUTE.LAWYER.PROFILE}`
   },
   {
     title: 'Cài đặt',
     titleKey: 'setting',
     icon: <Settings className='w-5 h-5' />,
-    path: ROUTE.PROFILE.ROOT
+    path: `${ROUTE.LAWYER.ROOT}/${ROUTE.LAWYER.SETTING}`
   }
 ]

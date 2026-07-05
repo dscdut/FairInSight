@@ -1,6 +1,6 @@
 export type UserRole = 'ADMIN' | 'USER' | 'MODERATOR' | 'LAWYER'
 
-export type UserStatus = 'active' | 'inactive' | 'banned'
+export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'BANNED'
 
 export type UserSortField = 'created_at' | 'updated_at' | 'email' | 'full_name'
 

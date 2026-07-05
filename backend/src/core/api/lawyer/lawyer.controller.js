@@ -1,6 +1,7 @@
 import { LawyerService } from '../../modules/lawyer/services/lawyer.service';
 import { ValidHttpResponse } from '../../../packages/handler/response/validHttp.response';
 import { parsePaginationAndFilters } from '../../utils';
+import { UpdateLawyerProfileDto } from '../../modules/lawyer/dto';
 
 class Controller {
     constructor() {
@@ -26,6 +27,16 @@ class Controller {
      */
     findById = async req => {
         const data = await this.service.getLawyerById(req.params.id);
+        return ValidHttpResponse.toOkResponse(data);
+    };
+
+    /**
+     * PATCH /api/v1/lawyers/profile
+     * Update authenticated lawyer's profile
+     */
+    updateProfile = async req => {
+        const userId = req.user.payload.id;
+        const data = await this.service.updateProfile(userId, UpdateLawyerProfileDto(req.body));
         return ValidHttpResponse.toOkResponse(data);
     };
 }

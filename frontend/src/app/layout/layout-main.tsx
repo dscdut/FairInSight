@@ -2,6 +2,7 @@ import { type ReactNode, Suspense } from 'react'
 
 import { Outlet } from 'react-router-dom'
 
+import BottomNav from '@/components/bottom-nav/bottom-nav'
 import SideBar from '@/components/side-bar/side-bar'
 import TopBar from '@/components/top-bar/top-bar'
 import LoadingSpinner from '@/components/ui/loading-spinner'
@@ -16,7 +17,7 @@ const LayoutMain = ({ children }: LayoutMainProps) => {
     <div>
       <div className='flex min-h-screen'>
         <SideBar />
-        <div className='flex flex-col flex-1 min-w-0 min-h-0 bg-background-secondary'>
+        <div className='flex flex-col flex-1 min-w-0 min-h-0 bg-background-secondary pb-20 lg:pb-0 relative'>
           <TopBar />
           <main
             className={cn(
@@ -40,8 +41,8 @@ const LayoutMain = ({ children }: LayoutMainProps) => {
               <div className='mx-auto max-w-none h-full'>
                 <div
                   className={cn(
-                    'rounded-2xl border min-h-[calc(100vh-140px)] border-border-secondary',
-                    'shadow-2xl backdrop-blur-xl bg-background-primary',
+                    'sm:rounded-2xl rounded-none sm:border border-none min-h-[calc(100vh-140px)] border-border-secondary',
+                    'shadow-none sm:shadow-2xl backdrop-blur-xl bg-background-primary',
                     'h-full transition-all duration-300 hover:shadow-3xl',
                     'mx-auto',
                     'flex flex-col'
@@ -58,6 +59,7 @@ const LayoutMain = ({ children }: LayoutMainProps) => {
               </div>
             </div>
           </main>
+          <BottomNav />
         </div>
       </div>
     </div>

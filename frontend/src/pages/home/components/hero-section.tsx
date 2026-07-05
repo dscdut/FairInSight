@@ -35,7 +35,7 @@ export const HeroSection = () => {
               <Button variant='default' size='lg' onClick={() => navigate('/login')}>
                 {t('home.hero.getStarted')}
               </Button>
-              <Button onClick={() => window.open('#', '_blank')} variant='secondary' size='lg'>
+              <Button onClick={() => navigate('/law-library')} variant='secondary' size='lg'>
                 {t('home.hero.searchLaw')}
               </Button>
             </div>

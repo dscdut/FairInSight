@@ -1,26 +1,32 @@
 model chat_requests {
-  id             String               @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  user_id        String?              @db.Uuid
-  lawyer_id      String?              @db.Uuid
-  status         chat_request_status? @default(PENDING)
-  created_at     DateTime?            @default(now()) @db.Timestamptz(6)
-  updated_at     DateTime?            @default(now()) @db.Timestamptz(6)
-  deleted_at     DateTime?            @db.Timestamptz(6)
-  lawyer_details lawyer_details?      @relation(fields: [lawyer_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "chat_requests_lawyer_id_foreign")
-  users          users?               @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "chat_requests_user_id_foreign")
+  id                String               @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id           String?              @db.Uuid
+  lawyer_id         String?              @db.Uuid
+  analysis_id       String?              @db.Uuid
+  status            chat_request_status? @default(PENDING)
+  proposed_date     DateTime?            @db.Timestamptz(6)
+  reschedule_reason String?
+  advice_summary    String?
+  created_at        DateTime?            @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime?            @default(now()) @db.Timestamptz(6)
+  deleted_at        DateTime?            @db.Timestamptz(6)
+  lawyer_details    lawyer_details?      @relation(fields: [lawyer_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "chat_requests_lawyer_id_foreign")
+  users             users?               @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "chat_requests_user_id_foreign")
+  analysis          analysis?            @relation(fields: [analysis_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "chat_requests_analysis_id_foreign")
 }
 
 model conversations {
-  id              String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  user_id         String?         @db.Uuid
-  lawyer_id       String?         @db.Uuid
-  context_summary String?
-  created_at      DateTime?       @default(now()) @db.Timestamptz(6)
-  updated_at      DateTime?       @default(now()) @db.Timestamptz(6)
-  deleted_at      DateTime?       @db.Timestamptz(6)
-  lawyer_details  lawyer_details? @relation(fields: [lawyer_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "conversations_lawyer_id_foreign")
-  users           users?          @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "conversations_user_id_foreign")
-  messages        messages[]
+  id                     String                   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id                String?                  @db.Uuid
+  lawyer_id              String?                  @db.Uuid
+  context_summary        String?
+  created_at             DateTime?                @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime?                @default(now()) @db.Timestamptz(6)
+  deleted_at             DateTime?                @db.Timestamptz(6)
+  lawyer_details         lawyer_details?          @relation(fields: [lawyer_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "conversations_lawyer_id_foreign")
+  users                  users?                   @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "conversations_user_id_foreign")
+  messages               messages[]
+  consultation_processes consultation_processes[]
 }
 
 model messages {
@@ -35,8 +41,73 @@ model messages {
   users           users?         @relation(fields: [sender_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "messages_sender_id_foreign")
 }
 
+model consultation_processes {
+  id                String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id           String             @db.Uuid
+  lawyer_id         String             @db.Uuid
+  analysis_id       String?            @db.Uuid
+  current_stage     consultation_stage @default(PENDING)
+  conversation_id   String?            @db.Uuid
+  submission_method submission_type?
+  portal_status     String?            @db.VarChar(50)
+  portal_feedback   String?
+  advice_summary    String?
+  pdf_url           String?
+  rating            Int?
+  review_comment    String?
+  template_id       String?            @db.Uuid
+  template_data     Json?
+  template_status   String?            @db.VarChar(50)
+  created_at        DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime           @default(now()) @db.Timestamptz(6)
+  deleted_at        DateTime?          @db.Timestamptz(6)
+
+  users          users           @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "consultation_processes_user_id_foreign")
+  lawyer_details lawyer_details  @relation(fields: [lawyer_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "consultation_processes_lawyer_id_foreign")
+  analysis       analysis?       @relation(fields: [analysis_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "consultation_processes_analysis_id_foreign")
+  conversations  conversations?  @relation(fields: [conversation_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "consultation_processes_conversation_id_foreign")
+  call_sessions  call_sessions[]
+}
+
+model call_sessions {
+  id               String                @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  process_id       String                @db.Uuid
+  channel          communication_channel
+  started_at       DateTime              @default(now()) @db.Timestamptz(6)
+  ended_at         DateTime?             @db.Timestamptz(6)
+  duration_sec     Int?
+  session_metadata Json?
+  created_at       DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime              @default(now()) @db.Timestamptz(6)
+
+  consultation_processes consultation_processes @relation(fields: [process_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "call_sessions_process_id_foreign")
+}
+
 enum chat_request_status {
   PENDING
   ACCEPTED
   REJECTED
+  RESCHEDULED
+  COMPLETED
+}
+
+enum consultation_stage {
+  PENDING
+  CHATTING
+  PDF_GENERATION
+  PORTAL_SUBMITTING
+  COMPLETED
+  REVIEWED
+  REJECTED
+}
+
+enum communication_channel {
+  TEXT_CHAT
+  VOICE_CALL
+  VIDEO_CALL
+}
+
+enum submission_type {
+  MANUAL
+  PORTAL
 }
