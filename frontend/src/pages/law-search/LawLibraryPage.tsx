@@ -1,42 +1,49 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import { useQuery } from '@tanstack/react-query'
-import { motion } from 'framer-motion'
 import {
   Search,
+  X,
+  ChevronDown,
+  ChevronUp,
   BookOpen,
   Scale,
-  Sparkles,
   Eye,
+  Download,
   Bookmark,
   Share2,
-  ChevronRight,
-  Calendar,
-  Building2,
-  Tag,
-  TrendingUp,
-  Filter,
+  SlidersHorizontal,
   HelpCircle,
-  Download,
-  FileText,
+  Home,
+  ChevronRight,
   AlertCircle,
-  Clock,
-  CheckCircle2,
+  GitBranch,
 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Pagination,
   PaginationContent,
+  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-  PaginationEllipsis,
 } from '@/components/ui/pagination'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import {
   Select,
   SelectContent,
@@ -47,732 +54,918 @@ import {
 import { cn } from '@/core/lib/utils'
 import { lawApi } from '@/core/services/law.service'
 import { useDebounce } from '@/hooks/use-debounce'
-import type { Law } from '@/models/types/law.type'
+import { MOCK_LAWS } from './law-mock'
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-type SearchScope = 'title' | 'content' | 'documentNumber' | 'exactPhrase'
+type SearchScope = 'title' | 'content' | 'documentNumber'
 type StatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE'
-type SortBy = 'newest' | 'popular'
 
-interface SearchFilters {
-  searchIn: SearchScope
-  status: StatusFilter
-  field: string
-  sortBy: SortBy
+interface SidebarState {
+  docGroups: string[]
+  agencies: string[]
+  docTypes: string[]
+  fields: string[]
+  issueFrom: string
+  issueTo: string
 }
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+const DOC_GROUPS = [
+  'Văn bản quy phạm pháp luật',
+  'Văn bản hợp nhất',
+  'Hệ thống hóa văn bản pháp luật',
+  'Văn bản hành chính liên quan',
+]
+
+const AGENCIES = [
+  'Quốc hội',
+  'Ủy ban Thường vụ Quốc hội',
+  'Chính phủ',
+  'Chủ tịch nước',
+  'Thủ tướng Chính phủ',
+  'Bộ Tư pháp',
+  'Bộ Tài chính',
+]
+
+const DOC_TYPES = [
+  'Thông tư liên tịch',
+  'Quyết định',
+  'Lệnh',
+  'Nghị quyết',
+  'Luật',
+  'Nghị định',
+  'Thông tư',
+  'Hiến pháp',
+]
+
+const FIELDS = [
+  'Dân sự',
+  'Hình sự',
+  'Đất đai',
+  'Hợp đồng',
+  'Lao động',
+  'Doanh nghiệp',
+  'Hôn nhân & Gia đình',
+  'Hành chính',
+  'Tài chính & Thuế',
+]
+
+const SORT_OPTIONS = [
+  { value: 'newest', label: 'Mới nhất' },
+  { value: 'oldest', label: 'Cũ nhất' },
+  { value: 'relevant', label: 'Liên quan nhất' },
+  { value: 'effective_recent', label: 'Hiệu lực gần nhất' },
+  { value: 'issued_recent', label: 'Ban hành gần nhất' },
+]
 
 const PAGE_SIZE = 10
 
-const SEARCH_SCOPE_OPTIONS: { value: SearchScope; label: string }[] = [
-  { value: 'title', label: 'Tiêu đề' },
-  { value: 'content', label: 'Nội dung' },
-  { value: 'documentNumber', label: 'Số hiệu' },
-  { value: 'exactPhrase', label: 'Cụm từ chính xác' },
-]
-
-const LEGAL_FIELDS = [
-  { value: 'ALL', label: 'Tất cả lĩnh vực' },
-  { value: 'civil', label: 'Dân sự' },
-  { value: 'business', label: 'Thương mại / Doanh nghiệp' },
-  { value: 'tax', label: 'Thuế' },
-  { value: 'labor', label: 'Lao động' },
-  { value: 'land', label: 'Đất đai' },
-  { value: 'investment', label: 'Đầu tư' },
-  { value: 'admin', label: 'Hành chính' },
-  { value: 'criminal', label: 'Hình sự' },
-]
-
-const QUICK_SUGGESTIONS = [
-  'Hợp đồng lao động',
-  'Thuế thu nhập cá nhân',
-  'Luật Đất đai 2024',
-  'Đăng ký kinh doanh',
-  'Thủ tục hành chính',
-  'Bảo hiểm xã hội',
-  'Luật Nhà ở 2023',
-]
-
-const POPULAR_DOCS = [
-  { id: '1', title: 'Luật Đất đai 2024', views: 128450, date: '2024-01-18' },
-  { id: '2', title: 'Bộ luật Lao động 2019', views: 95230, date: '2019-11-20' },
-  { id: '3', title: 'Luật Doanh nghiệp 2020', views: 84100, date: '2020-06-17' },
-  { id: '4', title: 'Luật Nhà ở 2023', views: 72600, date: '2023-11-27' },
-  { id: '5', title: 'Luật Thuế thu nhập cá nhân', views: 63200, date: '2007-11-21' },
-]
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function formatDate(dateStr: string) {
+function formatDate(str: string) {
+  if (!str) return '—'
   try {
-    return new Date(dateStr).toLocaleDateString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    })
+    return new Date(str).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
   } catch {
-    return dateStr
+    return str
   }
 }
 
-// ─── SearchGuidePopover ───────────────────────────────────────────────────────
+function highlight(text: string, keyword: string) {
+  if (!keyword.trim() || !text) return <>{text}</>
+  const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+  const parts = text.split(regex)
+  return (
+    <>
+      {parts.map((part, i) =>
+        regex.test(part) ? (
+          <mark key={i} className="bg-yellow-200 text-yellow-900 rounded px-0.5 not-italic">
+            {part}
+          </mark>
+        ) : (
+          part
+        )
+      )}
+    </>
+  )
+}
+
+function PageBreadcrumb() {
+  return (
+    <nav className="flex items-center gap-1.5 text-sm text-[var(--text-secondary)] py-3 px-4 border-b border-[var(--border-primary)] bg-[var(--background-primary)]">
+      <a href="/" className="flex items-center gap-1 hover:text-primary transition-colors">
+        <Home className="w-3.5 h-3.5" />
+        Trang chủ
+      </a>
+      <ChevronRight className="w-3.5 h-3.5 text-[var(--text-tertiary)]" />
+      <span className="text-[var(--text-primary)] font-medium">Văn bản quy phạm pháp luật Trung ương</span>
+    </nav>
+  )
+}
+
+interface FilterGroupProps {
+  title: string
+  options: string[]
+  selected: string[]
+  onChange: (vals: string[]) => void
+  defaultOpen?: boolean
+}
+
+function FilterGroup({ title, options, selected, onChange, defaultOpen = false }: FilterGroupProps) {
+  const [open, setOpen] = useState(defaultOpen)
+  const [search, setSearch] = useState('')
+  const [showAll, setShowAll] = useState(false)
+
+  const filtered = useMemo(
+    () => options.filter(o => o.toLowerCase().includes(search.toLowerCase())),
+    [options, search]
+  )
+  const visible = showAll ? filtered : filtered.slice(0, 4)
+
+  const toggle = (val: string) => {
+    onChange(selected.includes(val) ? selected.filter(s => s !== val) : [...selected, val])
+  }
+
+  return (
+    <div className="border-b border-[var(--border-primary)] last:border-0">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between py-3 px-1 text-sm font-semibold text-[var(--text-primary)] hover:text-primary transition-colors"
+      >
+        {title}
+        {open ? <ChevronUp className="w-4 h-4 shrink-0" /> : <ChevronDown className="w-4 h-4 shrink-0" />}
+      </button>
+
+      {open && (
+        <div className="pb-3 space-y-2">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-tertiary)]" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Tìm kiếm"
+              className="w-full pl-8 pr-3 py-1.5 text-xs border border-[var(--border-secondary)] rounded-lg bg-[var(--background-secondary)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-primary transition-colors"
+            />
+          </div>
+
+          <div className="space-y-2">
+            {visible.map(opt => (
+              <label key={opt} className="flex items-center gap-2.5 cursor-pointer group">
+                <Checkbox
+                  checked={selected.includes(opt)}
+                  onCheckedChange={() => toggle(opt)}
+                  className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                />
+                <span className="text-sm text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors leading-snug">
+                  {opt}
+                </span>
+              </label>
+            ))}
+          </div>
+
+          {filtered.length > 4 && (
+            <button
+              onClick={() => setShowAll(v => !v)}
+              className="text-xs text-primary hover:underline"
+            >
+              {showAll ? 'Thu gọn' : `Xem thêm ${filtered.length - 4} mục`}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+interface SidebarFiltersProps {
+  sidebar: SidebarState
+  onChange: (patch: Partial<SidebarState>) => void
+  onReset: () => void
+}
+
+function SidebarFilters({ sidebar, onChange, onReset }: SidebarFiltersProps) {
+  return (
+    <aside className="w-64 shrink-0 sticky top-4 self-start bg-[var(--background-primary)] border border-[var(--border-primary)] rounded-xl overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-primary)]">
+        <span className="text-sm font-bold text-[var(--text-primary)]">Bộ lọc</span>
+        <button onClick={onReset} className="text-xs text-primary hover:underline">
+          Bỏ chọn
+        </button>
+      </div>
+      <div className="px-3 py-1 max-h-[calc(100vh-180px)] overflow-y-auto">
+        <FilterGroup
+          title="Nhóm văn bản"
+          options={DOC_GROUPS}
+          selected={sidebar.docGroups}
+          onChange={v => onChange({ docGroups: v })}
+          defaultOpen
+        />
+        <FilterGroup
+          title="Cơ quan ban hành"
+          options={AGENCIES}
+          selected={sidebar.agencies}
+          onChange={v => onChange({ agencies: v })}
+          defaultOpen
+        />
+        <FilterGroup
+          title="Hình thức văn bản"
+          options={DOC_TYPES}
+          selected={sidebar.docTypes}
+          onChange={v => onChange({ docTypes: v })}
+        />
+        <FilterGroup
+          title="Lĩnh vực"
+          options={FIELDS}
+          selected={sidebar.fields}
+          onChange={v => onChange({ fields: v })}
+        />
+
+        <div className="border-b border-[var(--border-primary)] last:border-0">
+          <button
+            className="w-full flex items-center justify-between py-3 px-1 text-sm font-semibold text-[var(--text-primary)]"
+            onClick={() => {}}
+          >
+            Thời gian ban hành
+            <ChevronDown className="w-4 h-4 shrink-0" />
+          </button>
+          <div className="pb-3 space-y-2">
+            <div>
+              <label className="text-xs text-[var(--text-tertiary)] mb-1 block">Từ ngày</label>
+              <input
+                type="date"
+                value={sidebar.issueFrom}
+                onChange={e => onChange({ issueFrom: e.target.value })}
+                className="w-full px-2 py-1.5 text-xs border border-[var(--border-secondary)] rounded-lg bg-[var(--background-secondary)] text-[var(--text-primary)] focus:outline-none focus:border-primary"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-[var(--text-tertiary)] mb-1 block">Đến ngày</label>
+              <input
+                type="date"
+                value={sidebar.issueTo}
+                onChange={e => onChange({ issueTo: e.target.value })}
+                className="w-full px-2 py-1.5 text-xs border border-[var(--border-secondary)] rounded-lg bg-[var(--background-secondary)] text-[var(--text-primary)] focus:outline-none focus:border-primary"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  )
+}
 
 function SearchGuidePopover() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button className="flex items-center gap-1 text-sm text-white/80 hover:text-white underline underline-offset-2 transition-colors shrink-0">
+        <button className="flex items-center gap-1 text-sm text-primary hover:underline underline-offset-2 transition-colors whitespace-nowrap">
           <HelpCircle className="w-3.5 h-3.5" />
-          Hướng dẫn tìm kiếm
+          Hướng dẫn tra cứu
         </button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-[360px] max-h-[480px] overflow-y-auto p-0 border-[var(--border-secondary)] bg-[var(--background-primary)] shadow-xl"
+        className="w-[340px] max-h-[440px] overflow-y-auto p-0 shadow-xl border-[var(--border-secondary)] bg-[var(--background-primary)]"
         align="end"
         sideOffset={8}
       >
-        <div className="p-4 border-b border-[var(--border-primary)] bg-[var(--background-secondary)]">
-          <div className="flex items-center gap-2">
-            <Scale className="w-4 h-4 text-primary" />
-            <h3 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wide">
-              Hướng dẫn tìm kiếm
-            </h3>
-          </div>
+        <div className="p-3 border-b border-[var(--border-primary)] bg-[var(--background-secondary)] flex items-center gap-2">
+          <Scale className="w-4 h-4 text-primary" />
+          <span className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wide">
+            Hướng dẫn tìm kiếm
+          </span>
         </div>
 
-        <div className="p-4 space-y-5 text-sm text-[var(--text-secondary)]">
-          <section>
-            <h4 className="font-semibold text-[var(--text-primary)] mb-2">Tìm kiếm cơ bản</h4>
+        <div className="p-4 space-y-4 text-sm text-[var(--text-secondary)]">
+          <div>
+            <p className="font-semibold text-[var(--text-primary)] mb-2">Tìm kiếm cơ bản</p>
             <ul className="space-y-2.5">
-              <li>
-                <p>Tìm theo tên văn bản:</p>
-                <code className="text-xs bg-[var(--background-secondary)] text-primary px-2 py-0.5 rounded font-mono">
-                  Bộ luật Dân sự 2015
-                </code>
-              </li>
-              <li>
-                <p>Tìm theo số hiệu:</p>
-                <code className="text-xs bg-[var(--background-secondary)] text-primary px-2 py-0.5 rounded font-mono">
-                  91/2015/QH13
-                </code>
-              </li>
-              <li>
-                <p>Tìm theo từ khoá:</p>
-                <code className="text-xs bg-[var(--background-secondary)] text-primary px-2 py-0.5 rounded font-mono">
-                  giao dịch dân sự, năng lực pháp luật
-                </code>
-              </li>
-            </ul>
-          </section>
-
-          <div className="border-t border-[var(--border-primary)]" />
-
-          <section>
-            <h4 className="font-semibold text-[var(--text-primary)] mb-2">Tìm kiếm nâng cao</h4>
-            <p className="text-xs uppercase tracking-wide text-[var(--text-tertiary)] mb-2 font-medium">
-              Phạm vi tìm kiếm
-            </p>
-            <ul className="space-y-2">
               {[
-                { label: 'Tất cả', desc: 'Tìm trong cả tiêu đề và nội dung văn bản.' },
-                { label: 'Tiêu đề', desc: 'Chỉ tìm trong tiêu đề văn bản.' },
-                { label: 'Nội dung', desc: 'Chỉ tìm trong nội dung toàn văn.' },
-                { label: 'Số hiệu', desc: 'Tìm theo số hiệu chính thức của văn bản.' },
-                { label: 'Cụm từ chính xác', desc: 'Khớp đúng chuỗi từ khoá theo thứ tự.' },
-              ].map(opt => (
-                <li key={opt.label}>
-                  <span className="font-medium text-[var(--text-primary)]">{opt.label}: </span>
-                  {opt.desc}
+                { label: 'Theo tên văn bản', ex: 'Bộ luật Dân sự 2015' },
+                { label: 'Theo số hiệu', ex: '91/2015/QH13' },
+                { label: 'Theo từ khoá', ex: 'dân sự, đất đai, hôn nhân, hợp đồng' },
+              ].map(item => (
+                <li key={item.label}>
+                  <p>{item.label}:</p>
+                  <code className="text-xs bg-[var(--background-secondary)] text-primary px-2 py-0.5 rounded font-mono">
+                    {item.ex}
+                  </code>
                 </li>
               ))}
             </ul>
-          </section>
+          </div>
 
           <div className="border-t border-[var(--border-primary)]" />
 
-          <section>
-            <p className="text-xs uppercase tracking-wide text-[var(--text-tertiary)] mb-2 font-medium">
-              Bộ lọc nâng cao
-            </p>
-            <p>Kết hợp các điều kiện lọc:</p>
-            <ul className="mt-2 space-y-1 text-xs">
-              {['Loại văn bản', 'Cơ quan ban hành', 'Tình trạng hiệu lực', 'Khoảng thời gian'].map(f => (
+          <div>
+            <p className="font-semibold text-[var(--text-primary)] mb-2">Tìm kiếm nâng cao</p>
+            <p className="text-xs uppercase text-[var(--text-tertiary)] font-medium mb-2">Phạm vi tìm kiếm</p>
+            <ul className="space-y-1.5">
+              {[
+                { label: 'Tiêu đề', desc: 'Chỉ tìm trong tiêu đề văn bản.' },
+                { label: 'Nội dung', desc: 'Tìm kiếm trong toàn văn.' },
+                { label: 'Số hiệu', desc: 'Tìm theo số hiệu chính thức.' },
+                { label: 'Chính xác cụm từ trên', desc: 'Khớp chính xác theo thứ tự từ.' },
+              ].map(o => (
+                <li key={o.label}>
+                  <span className="font-medium text-[var(--text-primary)]">{o.label}: </span>
+                  {o.desc}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="border-t border-[var(--border-primary)]" />
+
+          <div>
+            <p className="text-xs uppercase text-[var(--text-tertiary)] font-medium mb-2">Bộ lọc nâng cao</p>
+            <p>Kết hợp các điều kiện:</p>
+            <ul className="mt-1.5 space-y-1 text-xs">
+              {['Nhóm văn bản', 'Cơ quan ban hành', 'Tình trạng hiệu lực', 'Khoảng thời gian', 'Lĩnh vực'].map(f => (
                 <li key={f} className="flex items-center gap-1.5">
-                  <span className="w-1 h-1 rounded-full bg-primary inline-block shrink-0" />
+                  <span className="w-1 h-1 rounded-full bg-primary inline-block" />
                   {f}
                 </li>
               ))}
             </ul>
-          </section>
+          </div>
         </div>
       </PopoverContent>
     </Popover>
   )
 }
 
-// ─── SearchSection ────────────────────────────────────────────────────────────
-
-interface SearchSectionProps {
-  query: string
-  filters: SearchFilters
-  onQueryChange: (v: string) => void
-  onSearch: () => void
-  onFilterChange: (patch: Partial<SearchFilters>) => void
-  onSuggestion: (s: string) => void
+interface AdvancedSearchDialogProps {
+  open: boolean
+  onClose: () => void
+  status: StatusFilter
+  onStatusChange: (v: StatusFilter) => void
+  onApply: () => void
+  onReset: () => void
 }
 
-function SearchSection({
-  query,
-  filters,
-  onQueryChange,
-  onSearch,
-  onFilterChange,
-  onSuggestion,
-}: SearchSectionProps) {
+function AdvancedSearchDialog({ open, onClose, status, onStatusChange, onApply, onReset }: AdvancedSearchDialogProps) {
   return (
-    <>
-      <section className="relative overflow-hidden bg-gradient-to-b from-[#0f1f5c] via-[#1a3a8c] to-[#2a5fd6] pt-14 pb-10 px-4">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-primary/20 rounded-full blur-[80px] pointer-events-none" />
+    <Dialog open={open} onOpenChange={v => !v && onClose()}>
+      <DialogContent className="max-w-lg bg-[var(--background-primary)] border-[var(--border-primary)]">
+        <DialogHeader>
+          <DialogTitle className="text-[var(--text-primary)]">Tìm kiếm nâng cao</DialogTitle>
+        </DialogHeader>
 
-        <div className="container relative z-10 max-w-4xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: -16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45 }}
-          >
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <BookOpen className="w-6 h-6 text-blue-200" />
-              <span className="text-blue-200 text-sm font-bold uppercase tracking-widest">
-                Cơ sở dữ liệu pháp luật
-              </span>
-            </div>
+        <div className="space-y-5 py-2">
+          <div>
+            <Label className="text-[var(--text-secondary)] text-xs mb-2 block uppercase tracking-wide font-semibold">
+              Tình trạng hiệu lực
+            </Label>
+            <RadioGroup
+              value={status}
+              onValueChange={v => onStatusChange(v as StatusFilter)}
+              className="flex gap-6"
+            >
+              {[
+                { value: 'ALL', label: 'Tất cả' },
+                { value: 'ACTIVE', label: 'Còn hiệu lực' },
+                { value: 'INACTIVE', label: 'Hết hiệu lực' },
+              ].map(opt => (
+                <div key={opt.value} className="flex items-center gap-2">
+                  <RadioGroupItem id={`adv-status-${opt.value}`} value={opt.value} />
+                  <Label htmlFor={`adv-status-${opt.value}`} className="text-sm cursor-pointer text-[var(--text-primary)]">
+                    {opt.label}
+                  </Label>
+                </div>
+              ))}
+            </RadioGroup>
+          </div>
 
-            <h1 className="text-3xl md:text-5xl font-bold text-white mb-3 leading-tight">
-              Tra cứu văn bản{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-white">
-                pháp luật
-              </span>
-            </h1>
-
-            <p className="text-white/70 text-base mb-7 max-w-xl mx-auto">
-              Hệ thống thư viện pháp luật điện tử tinh gọn, chính xác và chuyên nghiệp
-            </p>
-
-            <div className="relative flex items-center max-w-3xl mx-auto bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-2 shadow-2xl gap-2">
-              <div className="flex-1 min-w-0">
-                <Input
-                  id="law-search-input"
-                  value={query}
-                  onChange={e => onQueryChange(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && onSearch()}
-                  placeholder="Nhập từ khoá… (ví dụ: ly hôn, đất đai, doanh nghiệp...)"
-                  className="border-transparent bg-transparent text-white placeholder:text-white/50 rounded-xl focus-visible:ring-0 h-12"
-                />
-              </div>
-              <Button
-                onClick={onSearch}
-                size="lg"
-                className="bg-white text-[#0f1f5c] hover:bg-white/90 font-semibold rounded-xl px-7 shrink-0"
-                iconStart={<Search className="w-4 h-4" />}
-              >
-                Tìm kiếm
-              </Button>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mt-4">
-              <span className="text-white/60 text-sm">Tìm kiếm trong:</span>
-              {SEARCH_SCOPE_OPTIONS.map(opt => (
-                <label key={opt.value} className="flex items-center gap-1.5 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="searchIn"
-                    value={opt.value}
-                    checked={filters.searchIn === opt.value}
-                    onChange={() => onFilterChange({ searchIn: opt.value })}
-                    className="accent-white w-3.5 h-3.5"
-                  />
-                  <span className="text-white/80 text-sm">{opt.label}</span>
+          <div>
+            <Label className="text-[var(--text-secondary)] text-xs mb-2 block uppercase tracking-wide font-semibold">
+              Loại văn bản
+            </Label>
+            <div className="grid grid-cols-2 gap-2">
+              {DOC_TYPES.slice(0, 6).map(t => (
+                <label key={t} className="flex items-center gap-2 cursor-pointer">
+                  <Checkbox className="data-[state=checked]:bg-primary data-[state=checked]:border-primary" />
+                  <span className="text-sm text-[var(--text-secondary)]">{t}</span>
                 </label>
               ))}
-              <SearchGuidePopover />
             </div>
-          </motion.div>
-        </div>
-      </section>
+          </div>
 
-      <div className="bg-[var(--background-primary)] border-b border-[var(--border-primary)] px-4 py-3">
-        <div className="container max-w-6xl mx-auto flex flex-wrap items-center gap-2">
-          <span className="text-xs text-[var(--text-tertiary)] font-medium shrink-0 flex items-center gap-1">
-            <Sparkles className="w-3.5 h-3.5" />
-            Tìm kiếm gần đây:
-          </span>
-          {QUICK_SUGGESTIONS.map(s => (
+          <div>
+            <Label className="text-[var(--text-secondary)] text-xs mb-2 block uppercase tracking-wide font-semibold">
+              Sắp xếp
+            </Label>
+            <Select defaultValue="newest">
+              <SelectTrigger className="h-9 text-sm border-[var(--border-secondary)]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SORT_OPTIONS.map(o => (
+                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onReset} size="sm">
+            Đặt lại
+          </Button>
+          <Button
+            onClick={() => { onApply(); onClose() }}
+            size="sm"
+            className="bg-primary text-white"
+          >
+            Áp dụng
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+interface SearchBarProps {
+  keyword: string
+  isLoading: boolean
+  scope: SearchScope
+  exactPhrase: boolean
+  onKeywordChange: (v: string) => void
+  onSearch: () => void
+  onScopeChange: (v: SearchScope) => void
+  onExactPhraseChange: (v: boolean) => void
+  onAdvancedOpen: () => void
+}
+
+function SearchBar({
+  keyword,
+  isLoading,
+  scope,
+  exactPhrase,
+  onKeywordChange,
+  onSearch,
+  onScopeChange,
+  onExactPhraseChange,
+  onAdvancedOpen,
+}: SearchBarProps) {
+  return (
+    <div className="bg-[var(--background-primary)] border border-[var(--border-primary)] rounded-xl p-4 mb-4">
+      <div className="flex gap-2 mb-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)]" />
+          <input
+            id="law-search-input"
+            value={keyword}
+            onChange={e => onKeywordChange(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && onSearch()}
+            placeholder="Nhập từ khoá tìm kiếm"
+            className="w-full pl-9 pr-8 py-2.5 text-sm border border-[var(--border-secondary)] rounded-lg bg-[var(--background-secondary)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-primary transition-colors"
+          />
+          {keyword && (
             <button
-              key={s}
-              onClick={() => onSuggestion(s)}
-              className="text-xs px-3 py-1.5 rounded-full border border-[var(--border-secondary)] text-[var(--text-secondary)] hover:border-primary hover:text-primary hover:bg-[var(--background-primary-light)] transition-colors"
+              onClick={() => onKeywordChange('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
             >
-              {s}
+              <X className="w-4 h-4" />
             </button>
+          )}
+        </div>
+        <Button
+          onClick={onSearch}
+          className="bg-primary text-white hover:bg-primary/90 px-5"
+          iconStart={
+            isLoading
+              ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
+              : <Search className="w-4 h-4" />
+          }
+        >
+          Tìm kiếm
+        </Button>
+        <Button
+          variant="outline"
+          onClick={onAdvancedOpen}
+          iconStart={<SlidersHorizontal className="w-4 h-4" />}
+        >
+          Tìm kiếm nâng cao
+        </Button>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+        <span className="text-xs text-[var(--text-tertiary)] whitespace-nowrap">Tìm kiếm trong:</span>
+        <RadioGroup
+          value={scope}
+          onValueChange={v => onScopeChange(v as SearchScope)}
+          className="flex gap-4 flex-wrap"
+        >
+          {[
+            { value: 'title', label: 'Tiêu đề' },
+            { value: 'content', label: 'Nội dung' },
+            { value: 'documentNumber', label: 'Số hiệu' },
+          ].map(opt => (
+            <div key={opt.value} className="flex items-center gap-1.5">
+              <RadioGroupItem id={`scope-${opt.value}`} value={opt.value} />
+              <Label htmlFor={`scope-${opt.value}`} className="text-sm cursor-pointer text-[var(--text-secondary)]">
+                {opt.label}
+              </Label>
+            </div>
           ))}
+        </RadioGroup>
+
+        <label className="flex items-center gap-1.5 cursor-pointer">
+          <Checkbox
+            checked={exactPhrase}
+            onCheckedChange={v => onExactPhraseChange(!!v)}
+            id="exact-phrase"
+            className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+          />
+          <Label htmlFor="exact-phrase" className="text-sm cursor-pointer text-[var(--text-secondary)]">
+            Chính xác cụm từ trên
+          </Label>
+        </label>
+
+        <div className="ml-auto">
+          <SearchGuidePopover />
         </div>
       </div>
-    </>
-  )
-}
-
-// ─── StatusBadge ─────────────────────────────────────────────────────────────
-
-function StatusBadge({ status }: { status: 'ACTIVE' | 'INACTIVE' }) {
-  return status === 'ACTIVE' ? (
-    <Badge className="bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800">
-      Đang có hiệu lực
-    </Badge>
-  ) : (
-    <Badge variant="outline" className="text-[var(--text-tertiary)] border-[var(--border-secondary)]">
-      Hết hiệu lực
-    </Badge>
-  )
-}
-
-// ─── QuickActions ─────────────────────────────────────────────────────────────
-
-function QuickActions({ law }: { law: Law }) {
-  return (
-    <div className="flex items-center gap-2 pt-3 border-t border-[var(--border-primary)]">
-      <Button size="sm" variant="default" iconStart={<Eye className="w-3.5 h-3.5" />}>
-        Xem chi tiết
-      </Button>
-      {law.sourceUrl && (
-        <Button
-          size="sm"
-          variant="outline"
-          iconStart={<Download className="w-3.5 h-3.5" />}
-          onClick={() => window.open(law.sourceUrl, '_blank')}
-        >
-          Tải về
-        </Button>
-      )}
-      <Button size="sm" variant="outline" iconStart={<Bookmark className="w-3.5 h-3.5" />}>
-        Lưu
-      </Button>
-      <Button size="sm" variant="outline" iconStart={<Share2 className="w-3.5 h-3.5" />}>
-        Chia sẻ
-      </Button>
     </div>
   )
 }
 
-// ─── LawCard ─────────────────────────────────────────────────────────────────
+interface ResultToolbarProps {
+  total: number
+  keyword: string
+  sortBy: string
+  onSortChange: (v: string) => void
+}
 
-function LawCard({ law, index }: { law: Law; index: number }) {
+function ResultToolbar({ total, keyword, sortBy, onSortChange }: ResultToolbarProps) {
   return (
-    <motion.article
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, delay: index * 0.04 }}
-      className="group bg-[var(--background-primary)] border border-[var(--border-primary)] rounded-2xl p-5 hover:shadow-md hover:border-[var(--border-secondary)] transition-all duration-200"
-    >
-      <div className="flex flex-wrap items-start gap-2 mb-3">
-        <span className="font-mono text-xs font-bold text-primary bg-[var(--background-primary-light)] px-2.5 py-1 rounded-full">
-          {law.documentNumber}
-        </span>
-        <StatusBadge status={law.status} />
-        <span className="text-xs text-[var(--text-tertiary)] flex items-center gap-1">
-          <Calendar className="w-3 h-3" />
-          {formatDate(law.issuedDate)}
-        </span>
-      </div>
-
-      <h3 className="text-base font-semibold text-[var(--text-primary)] leading-snug mb-2 group-hover:text-primary transition-colors line-clamp-2">
-        {law.title}
-      </h3>
-      <p className="text-sm text-[var(--text-secondary)] line-clamp-2 mb-4 leading-relaxed">
-        {law.content}
+    <div className="flex items-center justify-between mb-4">
+      <p className="text-sm text-[var(--text-secondary)]">
+        {keyword ? (
+          <>
+            Tìm thấy{' '}
+            <span className="font-semibold text-[var(--text-primary)]">{total.toLocaleString('vi-VN')}</span>
+            {' '}kết quả cho{' '}
+            <span className="font-semibold text-[var(--text-primary)]">"{keyword}"</span>
+          </>
+        ) : (
+          <>
+            Hiển thị{' '}
+            <span className="font-semibold text-[var(--text-primary)]">{total.toLocaleString('vi-VN')}</span>
+            {' '}văn bản
+          </>
+        )}
       </p>
 
-      <div className="flex flex-wrap items-center gap-4 text-xs text-[var(--text-tertiary)] mb-4">
-        <span className="flex items-center gap-1">
-          <Building2 className="w-3 h-3" />
-          {law.authorName}
-        </span>
-        <span className="flex items-center gap-1">
-          <Tag className="w-3 h-3" />
-          Pháp luật
-        </span>
-        <span className="flex items-center gap-1">
-          <Calendar className="w-3 h-3" />
-          Hiệu lực: {formatDate(law.effectiveDate)}
-        </span>
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-[var(--text-tertiary)] whitespace-nowrap">Sắp xếp theo:</span>
+        <Select value={sortBy} onValueChange={onSortChange}>
+          <SelectTrigger className="h-8 text-xs w-48 border-[var(--border-secondary)] rounded-lg" id="result-sort">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {SORT_OPTIONS.map(o => (
+              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
-
-      <QuickActions law={law} />
-    </motion.article>
+    </div>
   )
 }
 
-// ─── LawList ─────────────────────────────────────────────────────────────────
-
-interface LawListProps {
-  laws: Law[]
-  isLoading: boolean
-  isError: boolean
-  query: string
+interface LawCardProps {
+  law: {
+    id: string
+    title: string
+    content: string
+    documentNumber: string
+    issuedDate: string
+    effectiveDate: string
+    status: 'ACTIVE' | 'INACTIVE'
+    authorName: string
+    sourceUrl?: string
+  }
+  keyword: string
 }
 
-function LawList({ laws, isLoading, isError, query }: LawListProps) {
+function StatusBadge({ status }: { status: 'ACTIVE' | 'INACTIVE' }) {
+  return status === 'ACTIVE' ? (
+    <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-green-100 text-green-700 border border-green-200 px-2 py-0.5 rounded-full dark:bg-green-900/30 dark:text-green-400">
+      Còn hiệu lực
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200 px-2 py-0.5 rounded-full dark:bg-orange-900/30 dark:text-orange-400">
+      Chưa có hiệu lực
+    </span>
+  )
+}
+
+function LawCard({ law, keyword }: LawCardProps) {
+  const navigate = useNavigate()
+  const isNew = useMemo(() => {
+    const created = new Date(law.issuedDate)
+    const diff = (Date.now() - created.getTime()) / (1000 * 60 * 60 * 24)
+    return diff < 30
+  }, [law.issuedDate])
+
+  return (
+    <article className="bg-[var(--background-primary)] border border-[var(--border-primary)] rounded-xl p-4 hover:shadow-sm hover:border-[var(--border-secondary)] transition-all duration-150">
+      <div className="flex flex-wrap items-center gap-2 mb-2">
+        {isNew && (
+          <Badge className="bg-primary text-white text-[10px] px-1.5 py-0 h-5 rounded-sm font-bold">
+            Mới
+          </Badge>
+        )}
+        <StatusBadge status={law.status} />
+        <span className="text-xs text-[var(--text-tertiary)]">
+          Số hiệu: <span className="font-medium text-primary">{law.documentNumber}</span>
+        </span>
+      </div>
+
+      <h3
+        onClick={() => navigate(`/law-library/${law.id}`)}
+        className="text-sm font-semibold text-[var(--text-primary)] leading-snug mb-2 line-clamp-2 hover:text-primary cursor-pointer transition-colors"
+      >
+        {keyword ? highlight(law.title, keyword) : law.title}
+      </h3>
+
+      {law.content && keyword && (
+        <p className="text-xs text-[var(--text-secondary)] line-clamp-2 mb-3 leading-relaxed">
+          {highlight(law.content.slice(0, 280), keyword)}
+          {law.content.length > 280 && '…'}
+        </p>
+      )}
+
+      <div className="flex flex-wrap gap-1.5 mb-3">
+        {['Pháp luật'].map(tag => (
+          <span
+            key={tag}
+            className="text-[10px] px-2 py-0.5 rounded-full border border-[var(--border-secondary)] text-[var(--text-tertiary)]"
+          >
+            {tag}
+          </span>
+        ))}
+      </div>
+
+      <div className="flex items-start justify-between gap-4">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-0.5 text-xs text-[var(--text-tertiary)]">
+          <span>
+            Tình trạng: <StatusBadge status={law.status} />
+          </span>
+          <span>
+            Ngày ban hành:{' '}
+            <span className="text-[var(--text-secondary)]">{formatDate(law.issuedDate)}</span>
+          </span>
+          <span className="col-span-2">
+            Ngày hiệu lực:{' '}
+            <span className="text-[var(--text-secondary)]">{formatDate(law.effectiveDate)}</span>
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1 shrink-0">
+          {law.sourceUrl && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              iconStart={<Download className="w-3 h-3" />}
+              onClick={() => window.open(law.sourceUrl, '_blank')}
+            >
+              PDF
+            </Button>
+          )}
+          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" iconStart={<GitBranch className="w-3 h-3" />}>
+            Lược đồ
+          </Button>
+          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" iconStart={<Download className="w-3 h-3" />}>
+            Tải về
+          </Button>
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="Lưu">
+            <Bookmark className="w-3.5 h-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            title="Xem"
+            onClick={() => navigate(`/law-library/${law.id}`)}
+          >
+            <Eye className="w-3.5 h-3.5" />
+          </Button>
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" title="Chia sẻ">
+            <Share2 className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      </div>
+    </article>
+  )
+}
+
+interface LawListProps {
+  laws: Array<{
+    id: string
+    title: string
+    content: string
+    documentNumber: string
+    issuedDate: string
+    effectiveDate: string
+    status: 'ACTIVE' | 'INACTIVE'
+    authorName: string
+    sourceUrl?: string
+  }>
+  isLoading: boolean
+  isError: boolean
+  keyword: string
+}
+
+function SkeletonCard() {
+  return (
+    <div className="bg-[var(--background-primary)] border border-[var(--border-primary)] rounded-xl p-4 space-y-3 animate-pulse">
+      <div className="flex gap-2">
+        <div className="h-5 w-10 rounded-full bg-[var(--background-secondary)]" />
+        <div className="h-5 w-20 rounded-full bg-[var(--background-secondary)]" />
+        <div className="h-5 w-32 rounded-full bg-[var(--background-secondary)]" />
+      </div>
+      <div className="h-4 w-4/5 rounded bg-[var(--background-secondary)]" />
+      <div className="h-4 w-3/5 rounded bg-[var(--background-secondary)]" />
+      <div className="flex gap-4 mt-2">
+        <div className="h-3 w-24 rounded bg-[var(--background-secondary)]" />
+        <div className="h-3 w-24 rounded bg-[var(--background-secondary)]" />
+      </div>
+    </div>
+  )
+}
+
+function LawList({ laws, isLoading, isError, keyword }: LawListProps) {
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="space-y-3">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <SkeletonCard key={i} />
+        ))}
       </div>
     )
   }
 
   if (isError) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 gap-3 text-[var(--text-tertiary)]">
-        <AlertCircle className="w-10 h-10 text-[var(--error-primary)] opacity-60" />
+      <div className="flex flex-col items-center gap-3 py-12 text-center">
+        <AlertCircle className="w-10 h-10 text-red-400" />
         <p className="font-medium text-[var(--text-primary)]">Không thể tải dữ liệu</p>
-        <p className="text-sm">Vui lòng thử lại sau hoặc kiểm tra kết nối mạng.</p>
+        <p className="text-sm text-[var(--text-secondary)]">Vui lòng thử lại sau.</p>
       </div>
     )
   }
 
   if (laws.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 gap-3 text-[var(--text-tertiary)]">
-        <BookOpen className="w-12 h-12 opacity-30" />
+      <div className="flex flex-col items-center gap-3 py-12 text-center">
+        <BookOpen className="w-10 h-10 opacity-30 text-[var(--text-tertiary)]" />
         <p className="font-medium text-[var(--text-primary)]">Không tìm thấy văn bản phù hợp</p>
-        {query && <p className="text-sm">Không có kết quả cho từ khoá "{query}"</p>}
-        <p className="text-sm">Hãy thử từ khoá khác hoặc điều chỉnh bộ lọc.</p>
+        {keyword && (
+          <p className="text-sm text-[var(--text-secondary)]">
+            Không có kết quả cho "{keyword}". Thử từ khoá khác hoặc điều chỉnh bộ lọc.
+          </p>
+        )}
       </div>
     )
   }
 
   return (
-    <div className="space-y-4">
-      {laws.map((law, i) => (
-        <LawCard key={law.id} law={law} index={i} />
+    <div className="space-y-3">
+      {laws.map(law => (
+        <LawCard key={law.id} law={law} keyword={keyword} />
       ))}
     </div>
   )
 }
 
-// ─── SearchFiltersBar ─────────────────────────────────────────────────────────
+function PaginationSection({
+  page,
+  totalPages,
+  onPageChange,
+}: {
+  page: number
+  totalPages: number
+  onPageChange: (p: number) => void
+}) {
+  if (totalPages <= 1) return null
 
-interface SearchFiltersProps {
-  filters: SearchFilters
-  total: number
-  onFilterChange: (patch: Partial<SearchFilters>) => void
-}
+  const pages = useMemo(() => {
+    const all = Array.from({ length: totalPages }, (_, i) => i + 1)
+    if (totalPages <= 7) return all
+    if (page <= 4) return [...all.slice(0, 5), -1, totalPages]
+    if (page >= totalPages - 3) return [1, -1, ...all.slice(totalPages - 5)]
+    return [1, -1, page - 1, page, page + 1, -2, totalPages]
+  }, [page, totalPages])
 
-function SearchFiltersBar({ filters, total, onFilterChange }: SearchFiltersProps) {
   return (
-    <>
-      <div className="flex flex-wrap items-center gap-3 mb-4 bg-[var(--background-primary)] border border-[var(--border-primary)] rounded-2xl px-4 py-3">
-        <Filter className="w-4 h-4 text-[var(--text-tertiary)] shrink-0" />
-        <div className="flex items-center gap-1">
-          {(
-            [
-              { value: 'ALL', label: 'Tất cả' },
-              { value: 'ACTIVE', label: 'Đang có hiệu lực' },
-              { value: 'INACTIVE', label: 'Hết hiệu lực' },
-            ] as const
-          ).map(opt => (
-            <button
-              key={opt.value}
-              onClick={() => onFilterChange({ status: opt.value })}
-              className={cn(
-                'text-xs px-3 py-1.5 rounded-full border transition-colors whitespace-nowrap',
-                filters.status === opt.value
-                  ? 'bg-primary text-white border-primary'
-                  : 'border-[var(--border-secondary)] text-[var(--text-secondary)] hover:border-primary hover:text-primary'
-              )}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
+    <div className="mt-6 flex items-center justify-center">
+      <Pagination>
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious
+              href="#"
+              onClick={e => { e.preventDefault(); onPageChange(Math.max(1, page - 1)) }}
+              className={page <= 1 ? 'pointer-events-none opacity-40' : ''}
+            />
+          </PaginationItem>
 
-        <div className="ml-auto flex items-center gap-2">
-          <Select value={filters.field} onValueChange={v => onFilterChange({ field: v })}>
-            <SelectTrigger className="h-8 text-xs w-44 rounded-full border-[var(--border-secondary)]" id="field-select">
-              <SelectValue placeholder="Lĩnh vực" />
-            </SelectTrigger>
-            <SelectContent>
-              {LEGAL_FIELDS.map(f => (
-                <SelectItem key={f.value} value={f.value}>
-                  {f.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {pages.map((p, i) =>
+            p < 0 ? (
+              <PaginationItem key={`el${i}`}>
+                <PaginationEllipsis />
+              </PaginationItem>
+            ) : (
+              <PaginationItem key={p}>
+                <PaginationLink
+                  href="#"
+                  isActive={p === page}
+                  onClick={e => { e.preventDefault(); onPageChange(p) }}
+                >
+                  {p}
+                </PaginationLink>
+              </PaginationItem>
+            )
+          )}
 
-          <Select value={filters.sortBy} onValueChange={v => onFilterChange({ sortBy: v as SortBy })}>
-            <SelectTrigger className="h-8 text-xs w-36 rounded-full border-[var(--border-secondary)]" id="sort-select">
-              <SelectValue placeholder="Sắp xếp" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="newest">Mới nhất</SelectItem>
-              <SelectItem value="popular">Phổ biến nhất</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <p className="text-sm text-[var(--text-tertiary)] mb-4">
-        Tìm thấy <span className="font-semibold text-[var(--text-primary)]">{total}</span> văn bản
-      </p>
-    </>
-  )
-}
-
-// ─── FeaturedSection ──────────────────────────────────────────────────────────
-
-interface DocItemProps {
-  badge: string
-  title: string
-  issuedDate: string
-  effectiveDate: string
-  status: 'ACTIVE' | 'INACTIVE'
-}
-
-function DocItem({ badge, title, issuedDate, effectiveDate, status }: DocItemProps) {
-  return (
-    <div className="border-b border-[var(--border-primary)] last:border-0 py-3 first:pt-0">
-      <div className="flex items-start gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-1">
-            <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-[10px] dark:bg-blue-900/30 dark:text-blue-400">
-              Mới
-            </Badge>
-            <StatusBadge status={status} />
-          </div>
-          <p className="text-sm text-[var(--text-primary)] font-medium line-clamp-2 leading-snug mb-1">
-            <span className="font-mono text-primary font-bold mr-1">{badge}</span>
-            {title}
-          </p>
-          <div className="flex flex-wrap gap-3 text-xs text-[var(--text-tertiary)]">
-            <span className="flex items-center gap-1">
-              <Calendar className="w-3 h-3" />
-              Ban hành: {formatDate(issuedDate)}
-            </span>
-            <span className="flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" />
-              Hiệu lực: {formatDate(effectiveDate)}
-            </span>
-          </div>
-        </div>
-        <div className="flex flex-col gap-1 shrink-0 mt-1">
-          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" iconStart={<FileText className="w-3 h-3" />}>
-            PDF
-          </Button>
-          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" iconStart={<Download className="w-3 h-3" />}>
-            Tải về
-          </Button>
-        </div>
-      </div>
+          <PaginationItem>
+            <PaginationNext
+              href="#"
+              onClick={e => { e.preventDefault(); onPageChange(Math.min(totalPages, page + 1)) }}
+              className={page >= totalPages ? 'pointer-events-none opacity-40' : ''}
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
     </div>
   )
 }
-
-function FeaturedSection() {
-  const [activeTab, setActiveTab] = useState<'upcoming' | 'expiring'>('upcoming')
-
-  const upcomingDocs: DocItemProps[] = [
-    {
-      badge: '11/2026/TT-BVHTTDL',
-      title: 'Quy định định mức kinh tế - kỹ thuật hỗ trợ hoạt động sáng tác của văn nghệ sĩ tại các trại sáng tác phục vụ nhiệm vụ chính trị',
-      issuedDate: '2026-05-20',
-      effectiveDate: '2026-07-06',
-      status: 'INACTIVE',
-    },
-    {
-      badge: '182/2026/NĐ-CP',
-      title: 'Nghị định quy định chế độ phụ cấp ưu đãi theo nghề đối với nhà giáo, cán bộ quản lý cơ sở giáo dục và nhân sự hỗ trợ giáo dục công tác trong các cơ sở giáo dục công lập',
-      issuedDate: '2026-05-22',
-      effectiveDate: '2026-07-07',
-      status: 'INACTIVE',
-    },
-    {
-      badge: '71/2026/TT-BCA',
-      title: 'Hướng dẫn thực hiện tạm hoãn xuất cảnh, chưa cho nhập cảnh',
-      issuedDate: '2026-05-25',
-      effectiveDate: '2026-07-10',
-      status: 'INACTIVE',
-    },
-  ]
-
-  const expiringDocs: DocItemProps[] = [
-    {
-      badge: '200/2014/TT-BTC',
-      title: 'Hướng dẫn Chế độ kế toán doanh nghiệp',
-      issuedDate: '2014-12-22',
-      effectiveDate: '2015-01-01',
-      status: 'INACTIVE',
-    },
-    {
-      badge: '08/2023/TT-NHNN',
-      title: 'Quy định về hoạt động cho vay của tổ chức tín dụng',
-      issuedDate: '2023-06-30',
-      effectiveDate: '2023-07-01',
-      status: 'ACTIVE',
-    },
-  ]
-
-  const docs = activeTab === 'upcoming' ? upcomingDocs : expiringDocs
-
-  return (
-    <section className="mb-8">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="md:col-span-2 bg-[var(--background-primary)] border border-[var(--border-primary)] rounded-2xl overflow-hidden">
-          <div className="flex border-b border-[var(--border-primary)]">
-            <button
-              onClick={() => setActiveTab('upcoming')}
-              className={cn(
-                'flex-1 py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2',
-                activeTab === 'upcoming'
-                  ? 'bg-primary text-white'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-              )}
-            >
-              <Clock className="w-4 h-4" />
-              Sắp có hiệu lực trong 30 ngày
-            </button>
-            <button
-              onClick={() => setActiveTab('expiring')}
-              className={cn(
-                'flex-1 py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2',
-                activeTab === 'expiring'
-                  ? 'bg-primary text-white'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-              )}
-            >
-              <AlertCircle className="w-4 h-4" />
-              Sắp hết hiệu lực trong 30 ngày
-            </button>
-          </div>
-          <div className="p-5">
-            {docs.map(d => (
-              <DocItem key={d.badge} {...d} />
-            ))}
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-2 w-full"
-              iconEnd={<ChevronRight className="w-3.5 h-3.5" />}
-            >
-              Xem tất cả
-            </Button>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          <div className="flex-1 rounded-2xl p-5 bg-primary flex flex-col gap-2 justify-between">
-            <Scale className="w-6 h-6 text-white/80" />
-            <div>
-              <p className="text-sm font-bold text-white">Thư viện Án lệ</p>
-              <p className="text-xs text-white/70 mt-1 leading-snug">
-                Truy cập hơn 1,000 bản án tiêu biểu đã được Hội đồng Thẩm phán thông qua.
-              </p>
-            </div>
-            <button className="text-xs text-white underline underline-offset-2 self-start hover:text-white/80 transition-colors">
-              Khám phá ngay
-            </button>
-          </div>
-          <div className="flex-1 rounded-2xl p-5 bg-[var(--background-secondary)] border border-[var(--border-primary)] flex flex-col gap-2 justify-between">
-            <FileText className="w-6 h-6 text-primary" />
-            <div>
-              <p className="text-sm font-bold text-[var(--text-primary)]">Mẫu văn bản</p>
-              <p className="text-xs text-[var(--text-secondary)] mt-1 leading-snug">
-                Tải xuống các mẫu đơn, hợp đồng chuẩn pháp lý.
-              </p>
-            </div>
-            <button className="text-xs text-primary underline underline-offset-2 self-start hover:text-primary/80 transition-colors">
-              Xem tất cả mẫu
-            </button>
-          </div>
-        </div>
-      </div>
-    </section>
-  )
-}
-
-// ─── SectionHeader ────────────────────────────────────────────────────────────
-
-function SectionHeader({ icon, title }: { icon: React.ReactNode; title: string }) {
-  return (
-    <div className="flex items-center gap-2 mb-4">
-      {icon}
-      <h3 className="font-semibold text-sm text-[var(--text-primary)]">{title}</h3>
-    </div>
-  )
-}
-
-// ─── PopularDocsSidebar ───────────────────────────────────────────────────────
-
-function PopularDocsSidebar() {
-  return (
-    <aside className="space-y-3">
-      <SectionHeader icon={<TrendingUp className="w-4 h-4 text-primary" />} title="Văn bản được xem nhiều" />
-      {POPULAR_DOCS.map((doc, i) => (
-        <button
-          key={doc.id}
-          className="w-full text-left group p-3 rounded-xl border border-[var(--border-primary)] hover:border-primary/30 hover:bg-[var(--background-tertiary)] transition-all duration-150"
-        >
-          <div className="flex items-start gap-3">
-            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[var(--background-secondary)] text-[var(--text-tertiary)] text-[10px] font-bold flex items-center justify-center mt-0.5">
-              {i + 1}
-            </span>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-[var(--text-primary)] group-hover:text-primary transition-colors line-clamp-2 leading-snug mb-1">
-                {doc.title}
-              </p>
-              <div className="flex items-center gap-3 text-xs text-[var(--text-tertiary)]">
-                <span className="flex items-center gap-1">
-                  <Eye className="w-3 h-3" />
-                  {doc.views.toLocaleString('vi-VN')}
-                </span>
-                <span>{formatDate(doc.date)}</span>
-              </div>
-            </div>
-          </div>
-        </button>
-      ))}
-    </aside>
-  )
-}
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function LawLibraryPage() {
-  const [query, setQuery] = useState('')
-  const [committedQuery, setCommittedQuery] = useState('')
-  const [filters, setFilters] = useState<SearchFilters>({
-    searchIn: 'title',
-    status: 'ALL',
-    field: 'ALL',
-    sortBy: 'newest',
-  })
+  const [keyword, setKeyword] = useState('')
+  const [committedKeyword, setCommittedKeyword] = useState('')
+  const [scope, setScope] = useState<SearchScope>('title')
+  const [exactPhrase, setExactPhrase] = useState(false)
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL')
+  const [sortBy, setSortBy] = useState('newest')
   const [currentPage, setCurrentPage] = useState(1)
+  const [advancedOpen, setAdvancedOpen] = useState(false)
+  const [sidebar, setSidebar] = useState<SidebarState>({
+    docGroups: [],
+    agencies: [],
+    docTypes: [],
+    fields: [],
+    issueFrom: '',
+    issueTo: '',
+  })
 
-  // Debounce to avoid redundant API calls while user types
-  const debouncedQuery = useDebounce(committedQuery, 400)
+  const debouncedKeyword = useDebounce(committedKeyword, 300)
 
   const apiParams = useMemo(() => ({
     page: currentPage,
     size: PAGE_SIZE,
-    search: debouncedQuery || undefined,
-    status: filters.status !== 'ALL' ? filters.status : undefined,
-  }), [debouncedQuery, filters.status, currentPage])
+    search: debouncedKeyword || undefined,
+    status: statusFilter !== 'ALL' ? statusFilter : undefined,
+    issuedDate: sidebar.issueFrom || undefined,
+  }), [debouncedKeyword, statusFilter, currentPage, sidebar.issueFrom])
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['laws', apiParams],
-    queryFn: () => lawApi.listLaws(apiParams),
+    queryKey: ['laws', apiParams, sidebar, statusFilter],
+    queryFn: () => {
+      let result = [...MOCK_LAWS]
+      if (debouncedKeyword) {
+        const kw = debouncedKeyword.toLowerCase()
+        result = result.filter(l =>
+          l.title.toLowerCase().includes(kw) ||
+          l.content.toLowerCase().includes(kw) ||
+          l.documentNumber.toLowerCase().includes(kw)
+        )
+      }
+      if (statusFilter !== 'ALL') {
+        result = result.filter(l => l.status === statusFilter)
+      }
+      if (sidebar.issueFrom) {
+        result = result.filter(l => l.issuedDate >= sidebar.issueFrom)
+      }
+      if (sidebar.issueTo) {
+        result = result.filter(l => l.issuedDate <= sidebar.issueTo)
+      }
+      if (sidebar.agencies.length > 0) {
+        result = result.filter(l => sidebar.agencies.includes(l.authorName))
+      }
+      if (sidebar.docTypes.length > 0) {
+        result = result.filter(l => sidebar.docTypes.some(t => l.title.includes(t) || l.documentNumber.includes(t)))
+      }
+
+      const total = result.length
+      const page = currentPage
+      const size = PAGE_SIZE
+      const totalPages = Math.ceil(total / size)
+      const sliced = result.slice((page - 1) * size, page * size)
+
+      return {
+        items: sliced,
+        pagination: { page, size, total, totalPages }
+      }
+    },
     placeholderData: prev => prev,
   })
 
@@ -780,109 +973,79 @@ export default function LawLibraryPage() {
   const pagination = data?.pagination
 
   const handleSearch = useCallback(() => {
-    setCommittedQuery(query)
+    setCommittedKeyword(keyword)
     setCurrentPage(1)
-  }, [query])
+  }, [keyword])
 
-  const handleSuggestion = useCallback((s: string) => {
-    setQuery(s)
-    setCommittedQuery(s)
+  const handleSidebarChange = useCallback((patch: Partial<SidebarState>) => {
+    setSidebar(prev => ({ ...prev, ...patch }))
     setCurrentPage(1)
   }, [])
 
-  const handleFilterChange = useCallback((patch: Partial<SearchFilters>) => {
-    setFilters(prev => ({ ...prev, ...patch }))
+  const handleSidebarReset = useCallback(() => {
+    setSidebar({ docGroups: [], agencies: [], docTypes: [], fields: [], issueFrom: '', issueTo: '' })
     setCurrentPage(1)
   }, [])
 
   return (
     <div className="min-h-screen bg-[var(--background-tertiary)]">
-      <SearchSection
-        query={query}
-        filters={filters}
-        onQueryChange={setQuery}
-        onSearch={handleSearch}
-        onFilterChange={handleFilterChange}
-        onSuggestion={handleSuggestion}
-      />
+      <PageBreadcrumb />
 
-      <main className="container max-w-6xl mx-auto px-4 py-8">
-        <FeaturedSection />
-
-        <div className="flex flex-col lg:flex-row gap-8">
-          <div className="flex-1 min-w-0">
-            <SearchFiltersBar
-              filters={filters}
-              total={pagination?.total ?? laws.length}
-              onFilterChange={handleFilterChange}
-            />
-
-            <LawList
-              laws={laws}
-              isLoading={isLoading}
-              isError={isError}
-              query={debouncedQuery}
-            />
-
-            {!isLoading && !isError && (pagination?.totalPages ?? 0) > 1 && (
-              <div className="mt-8">
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious
-                        href="#"
-                        onClick={e => { e.preventDefault(); setCurrentPage(p => Math.max(1, p - 1)) }}
-                        className={currentPage <= 1 ? 'pointer-events-none opacity-50' : ''}
-                      />
-                    </PaginationItem>
-                    {Array.from({ length: pagination?.totalPages ?? 1 }, (_, i) => i + 1)
-                      .slice(0, 7)
-                      .map(pg => (
-                        <PaginationItem key={pg}>
-                          <PaginationLink
-                            href="#"
-                            isActive={pg === currentPage}
-                            onClick={e => { e.preventDefault(); setCurrentPage(pg) }}
-                          >
-                            {pg}
-                          </PaginationLink>
-                        </PaginationItem>
-                      ))}
-                    {(pagination?.totalPages ?? 0) > 7 && (
-                      <PaginationItem><PaginationEllipsis /></PaginationItem>
-                    )}
-                    <PaginationItem>
-                      <PaginationNext
-                        href="#"
-                        onClick={e => { e.preventDefault(); setCurrentPage(p => Math.min(pagination?.totalPages ?? 1, p + 1)) }}
-                        className={currentPage >= (pagination?.totalPages ?? 1) ? 'pointer-events-none opacity-50' : ''}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
-            )}
-          </div>
-
-          <aside className="w-full lg:w-72 shrink-0">
-            <div className="sticky top-4 bg-[var(--background-primary)] border border-[var(--border-primary)] rounded-2xl p-5">
-              <PopularDocsSidebar />
-              <div className="mt-6 pt-5 border-t border-[var(--border-primary)]">
-                <div className="rounded-xl bg-gradient-to-br from-primary/10 to-[var(--background-primary-light)] border border-primary/20 p-4">
-                  <Sparkles className="w-5 h-5 text-primary mb-2" />
-                  <p className="text-sm font-semibold text-[var(--text-primary)] mb-1">Trợ lý AI Pháp lý</p>
-                  <p className="text-xs text-[var(--text-secondary)] mb-3 leading-relaxed">
-                    Tóm tắt nội dung văn bản pháp luật bằng trí tuệ nhân tạo.
-                  </p>
-                  <Button variant="default" size="sm" className="w-full">
-                    Dùng thử ngay
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </aside>
+      <div className="container max-w-[1280px] mx-auto px-4 py-5 flex gap-5 items-start">
+        <div className="hidden lg:block">
+          <SidebarFilters
+            sidebar={sidebar}
+            onChange={handleSidebarChange}
+            onReset={handleSidebarReset}
+          />
         </div>
-      </main>
+
+        <div className="flex-1 min-w-0">
+          <SearchBar
+            keyword={keyword}
+            isLoading={isLoading}
+            scope={scope}
+            exactPhrase={exactPhrase}
+            onKeywordChange={setKeyword}
+            onSearch={handleSearch}
+            onScopeChange={v => { setScope(v); setCurrentPage(1) }}
+            onExactPhraseChange={v => { setExactPhrase(v); setCurrentPage(1) }}
+            onAdvancedOpen={() => setAdvancedOpen(true)}
+          />
+
+          <ResultToolbar
+            total={pagination?.total ?? 0}
+            keyword={debouncedKeyword}
+            sortBy={sortBy}
+            onSortChange={v => { setSortBy(v); setCurrentPage(1) }}
+          />
+
+          <LawList
+            laws={laws}
+            isLoading={isLoading}
+            isError={isError}
+            keyword={debouncedKeyword}
+          />
+
+          <PaginationSection
+            page={currentPage}
+            totalPages={pagination?.totalPages ?? 1}
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      </div>
+
+      <AdvancedSearchDialog
+        open={advancedOpen}
+        onClose={() => setAdvancedOpen(false)}
+        status={statusFilter}
+        onStatusChange={v => { setStatusFilter(v); setCurrentPage(1) }}
+        onApply={() => setCurrentPage(1)}
+        onReset={() => {
+          setStatusFilter('ALL')
+          setCurrentPage(1)
+        }}
+      />
     </div>
   )
 }
