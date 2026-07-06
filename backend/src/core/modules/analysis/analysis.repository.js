@@ -6,6 +6,21 @@ class Repository extends BaseRepository {
         super('analysis');
     }
 
+    async list({ userId, page, size }) {
+        const skip = (page - 1) * size;
+        const where = { user_id: userId, deleted_at: null };
+        const [items, total] = await Promise.all([
+            prisma.analysis.findMany({
+                where,
+                skip,
+                take: size,
+                orderBy: { created_at: 'desc' },
+            }),
+            prisma.analysis.count({ where }),
+        ]);
+        return { items, total };
+    }
+
     async findAnalysisWithMessages(userId, analysisId) {
         return prisma.analysis.findFirst({
             where: {
