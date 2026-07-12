@@ -1,4 +1,4 @@
-import { NotFoundException, InternalServerException } from 'packages/httpException';
+import { InternalServerException, NotFoundException } from 'packages/httpException';
 import { AnalysisRepository } from '../analysis.repository';
 
 class Service {
@@ -34,6 +34,18 @@ class Service {
         }
     }
 
+    async deleteAnalysisHistory(userId, analysisId) {
+        try {
+            const existing = await this.repository.findOne({
+                id: analysisId,
+                user_id: userId
+            });
+
+            if (!existing) {
+                throw new NotFoundException(`Analysis history with ID "${analysisId}" not found`);
+            }
+
+            return await this.repository.softDelete(analysisId);
     async getAnalysisHistoryDetail(userId, analysisId) {
         try {
             const analysis = await this.repository.findAnalysisWithMessages(userId, analysisId);
@@ -65,3 +77,5 @@ class Service {
 }
 
 export const AnalysisService = new Service();
+
+

@@ -1,5 +1,6 @@
 import { Module } from 'packages/handler/Module';
 import { RecordId } from 'core/common/swagger';
+import { RecordIdInterceptor } from 'core/modules/interceptor/recordId/record-id.interceptor';
 import { AnalysisController } from './analysis.controller';
 
 export const AnalysisResolver = Module.builder()
@@ -17,9 +18,11 @@ export const AnalysisResolver = Module.builder()
         },
         {
             route: '/history/:id',
-            method: 'get',
+            method: 'delete',
             params: [RecordId],
-            controller: AnalysisController.getAnalysisHistoryDetail,
+            interceptors: [RecordIdInterceptor],
+            controller: AnalysisController.deleteAnalysisHistory,
             preAuthorization: true
         }
     ]);
+
