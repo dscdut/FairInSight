@@ -9,7 +9,7 @@ class Service {
     async listAnalysisHistory({ userId, page, size }) {
         try {
             const { items, total } = await this.repository.list({ userId, page, size });
-            
+
             return {
                 data: {
                     items: items.map(item => ({
@@ -46,6 +46,12 @@ class Service {
             }
 
             return await this.repository.softDelete(analysisId);
+        } catch (error) {
+            if (error instanceof NotFoundException) throw error;
+            throw new InternalServerException(error.message);
+        }
+    }
+
     async getAnalysisHistoryDetail(userId, analysisId) {
         try {
             const analysis = await this.repository.findAnalysisWithMessages(userId, analysisId);
@@ -77,5 +83,4 @@ class Service {
 }
 
 export const AnalysisService = new Service();
-
 
