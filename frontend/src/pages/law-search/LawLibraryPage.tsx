@@ -505,45 +505,48 @@ function SearchBar({
 }: SearchBarProps) {
   return (
     <div className="bg-[var(--background-primary)] border border-[var(--border-primary)] rounded-xl p-4 mb-4">
-      <div className="flex gap-2 mb-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)]" />
-          <input
-            id="law-search-input"
-            value={keyword}
-            onChange={e => onKeywordChange(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && onSearch()}
-            placeholder="Nhập từ khoá tìm kiếm"
-            className="w-full pl-9 pr-8 py-2.5 text-sm border border-[var(--border-secondary)] rounded-lg bg-[var(--background-secondary)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-primary transition-colors"
-          />
-          {keyword && (
-            <button
-              onClick={() => onKeywordChange('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
+        <div className="flex flex-col gap-2 mb-3 sm:flex-row">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)]" />
+            <input
+              id="law-search-input"
+              value={keyword}
+              onChange={e => onKeywordChange(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && onSearch()}
+              placeholder="Nhập từ khoá tìm kiếm"
+              className="w-full pl-9 pr-8 py-2.5 text-sm border border-[var(--border-secondary)] rounded-lg bg-[var(--background-secondary)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-primary transition-colors"
+            />
+            {keyword && (
+              <button
+                onClick={() => onKeywordChange('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button
+              onClick={onSearch}
+              className="flex-1 sm:flex-none bg-primary text-white hover:bg-primary/90 px-5"
+              iconStart={
+                isLoading
+                  ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
+                  : <Search className="w-4 h-4" />
+              }
             >
-              <X className="w-4 h-4" />
-            </button>
-          )}
+              Tìm kiếm
+            </Button>
+            <Button
+              variant="outline"
+              className="flex-1 sm:flex-none"
+              onClick={onAdvancedOpen}
+              iconStart={<SlidersHorizontal className="w-4 h-4" />}
+            >
+              Tìm kiếm nâng cao
+            </Button>
+          </div>
         </div>
-        <Button
-          onClick={onSearch}
-          className="bg-primary text-white hover:bg-primary/90 px-5"
-          iconStart={
-            isLoading
-              ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
-              : <Search className="w-4 h-4" />
-          }
-        >
-          Tìm kiếm
-        </Button>
-        <Button
-          variant="outline"
-          onClick={onAdvancedOpen}
-          iconStart={<SlidersHorizontal className="w-4 h-4" />}
-        >
-          Tìm kiếm nâng cao
-        </Button>
-      </div>
 
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
         <span className="text-xs text-[var(--text-tertiary)] whitespace-nowrap">Tìm kiếm trong:</span>
@@ -595,7 +598,7 @@ interface ResultToolbarProps {
 
 function ResultToolbar({ total, keyword, sortBy, onSortChange }: ResultToolbarProps) {
   return (
-    <div className="flex items-center justify-between mb-4">
+    <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
       <p className="text-sm text-[var(--text-secondary)]">
         {keyword ? (
           <>
@@ -616,7 +619,7 @@ function ResultToolbar({ total, keyword, sortBy, onSortChange }: ResultToolbarPr
       <div className="flex items-center gap-2">
         <span className="text-sm text-[var(--text-tertiary)] whitespace-nowrap">Sắp xếp theo:</span>
         <Select value={sortBy} onValueChange={onSortChange}>
-          <SelectTrigger className="h-8 text-xs w-48 border-[var(--border-secondary)] rounded-lg" id="result-sort">
+          <SelectTrigger className="h-8 text-xs w-40 sm:w-48 border-[var(--border-secondary)] rounded-lg" id="result-sort">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -704,8 +707,8 @@ function LawCard({ law, keyword }: LawCardProps) {
         ))}
       </div>
 
-      <div className="flex items-start justify-between gap-4">
-        <div className="grid grid-cols-2 gap-x-6 gap-y-0.5 text-xs text-[var(--text-tertiary)]">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="grid grid-cols-1 gap-y-1.5 text-xs text-[var(--text-tertiary)] xs:grid-cols-2 sm:grid-cols-2 sm:gap-x-6 sm:gap-y-0.5">
           <span>
             Tình trạng: <StatusBadge status={law.status} />
           </span>
@@ -713,13 +716,13 @@ function LawCard({ law, keyword }: LawCardProps) {
             Ngày ban hành:{' '}
             <span className="text-[var(--text-secondary)]">{formatDate(law.issuedDate)}</span>
           </span>
-          <span className="col-span-2">
+          <span className="xs:col-span-2 sm:col-span-2">
             Ngày hiệu lực:{' '}
             <span className="text-[var(--text-secondary)]">{formatDate(law.effectiveDate)}</span>
           </span>
         </div>
 
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex flex-wrap items-center gap-1.5 sm:flex-nowrap">
           {law.sourceUrl && (
             <Button
               variant="ghost"
