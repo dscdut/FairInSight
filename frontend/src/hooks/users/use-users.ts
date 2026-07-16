@@ -72,12 +72,13 @@ export const useDeleteUser = () => {
 }
 
 export const useBanUser = () => {
-  // const queryClient = useQueryClient()
+  const queryClient = useQueryClient()
   return useMutation({
     mutationKey: [MUTATION_KEYS.banUser],
     mutationFn: ({ id, reason }: { id: string; reason: string }) => usersApi.banUser(id, reason),
     onSuccess: () => {
       toastifyCommon.success('Khóa tài khoản thành công')
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.users] })
     },
     onError: (error) => {
       handleError(error, 'Khóa tài khoản thất bại')
@@ -86,11 +87,13 @@ export const useBanUser = () => {
 }
 
 export const useUnbanUser = () => {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationKey: [MUTATION_KEYS.unbanUser],
     mutationFn: ({ id, reason }: { id: string; reason: string }) => usersApi.unbanUser(id, reason),
     onSuccess: () => {
       toastifyCommon.success('Kích hoạt tài khoản thành công')
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.users] })
     },
     onError: (error) => {
       handleError(error, 'Kích hoạt tài khoản thất bại')

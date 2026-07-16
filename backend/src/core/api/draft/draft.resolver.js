@@ -27,7 +27,13 @@ export const DraftResolver = Module.builder()
             body: 'UpdateDraftDto',
             controller: DraftController.updateDraft,
             preAuthorization: true
+        },
+        {
+            route: '/:id',
+            method: 'delete',
+            params: [RecordId],
+            interceptors: [RecordIdInterceptor],
+            controller: DraftController.deleteDraft,
+            preAuthorization: true
         }
     ]);
-
-
