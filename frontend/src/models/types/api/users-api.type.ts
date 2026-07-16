@@ -25,4 +25,16 @@ export type UsersApi = {
     }
   ) => Promise<unknown>
   getUsersStat: () => Promise<{ data: { totalUsers: number } }>
+  updateProfile: (data: {
+    fullName?: string
+    email?: string
+    phone?: string
+    location?: string
+    avatarUrl?: string
+    bio?: string
+    experienceYears?: number
+    pricePerHour?: number
+    barAssociation?: string
+    licenseNumber?: string
+  }) => Promise<unknown>
 }

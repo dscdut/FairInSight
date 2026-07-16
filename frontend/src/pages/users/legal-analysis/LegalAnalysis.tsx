@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 
-import { Award, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 
 import { FadeUp } from '@/components/animated/animated-component'
 import { Button } from '@/components/ui/button'
@@ -125,11 +125,7 @@ export default function LegalAnalysis() {
       {/* Title section */}
       <section>
         <FadeUp>
-          <span className='inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1 text-xs font-semibold text-white backdrop-blur-sm shadow-sm mb-3.5'>
-            <Award className='w-3.5 h-3.5' />
-            Thư viện Pháp lý
-          </span>
-          <h1 className='text-h2 text-text-primary mb-2'>
+          <h1 className='text-h2 font-semibold text-text-main mb-2'>
             Văn bản pháp luật
           </h1>
           <p className='text-p text-text-description font-semibold leading-relaxed'>

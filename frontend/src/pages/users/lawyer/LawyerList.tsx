@@ -2,7 +2,6 @@ import { useState, useCallback } from 'react'
 
 import { Search, User } from 'lucide-react'
 
-import { getLawyerListMock } from '@/_mocks/lawyer.mock'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -59,20 +58,24 @@ export default function LawyerList() {
     setIsContactModalOpen(true)
   }, [])
 
-  const { data: listResponse } = useLawyerList(currentPage, pageSize, {
+  const { data: listResponse, isLoading } = useLawyerList(currentPage, pageSize, {
     category: selectedCategory,
     city: selectedCity,
     searchQuery: debouncedSearchQuery,
     sortBy
   })
 
-  // Fallback to mock data for initial load before React Query finishes
-  const displayData = listResponse || getLawyerListMock(currentPage, pageSize, {
-    category: selectedCategory,
-    city: selectedCity,
-    searchQuery: debouncedSearchQuery,
-    sortBy
-  })
+  const displayData = listResponse || {
+    data: {
+      items: [],
+      pagination: {
+        page: currentPage,
+        size: pageSize,
+        total: 0,
+        totalPages: 0
+      }
+    }
+  }
 
   const filteredLawyers = displayData.data.items
   const pagination = displayData.data.pagination
@@ -82,7 +85,7 @@ export default function LawyerList() {
       {/* Header Section */}
       <div className='flex-col md:flex-row md:items-end gap-4 pb-4 space-y-4'>
         <div className='w-full pb-4 border-b border-border-primary'>
-          <h1 className='text-h2 text-main mb-2 tracking-tight'>Danh bạ Luật sư</h1>
+          <h1 className='text-h2 font-semibold text-main mb-2 tracking-tight'>Danh bạ Luật sư</h1>
           <p className='text-text-description text-p'>Tìm kiếm chuyên gia pháp lý phù hợp với nhu cầu của bạn</p>
         </div>
 
@@ -161,70 +164,72 @@ export default function LawyerList() {
       </p>
 
       {/* Grid listing */}
-      {filteredLawyers.length === 0 ? (
+      {isLoading ? (
+        <div className='w-full py-16 text-center'>
+          <div className='animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-3'></div>
+          <p className='text-sm text-text-description'>Đang tải danh sách luật sư...</p>
+        </div>
+      ) : filteredLawyers.length === 0 ? (
         <div className='w-full py-16 text-center'>
           <User className='w-12 h-12 mx-auto text-text-tertiary mb-3' />
           <h1 className='text-h3 text-text-tertiary'>Không tìm thấy luật sư</h1>
           <p className='text-small text-text-tertiary mt-1'>Vui lòng thay đổi từ khóa tìm kiếm hoặc bộ lọc.</p>
         </div>
       ) : (
-        <div className='space-y-8'>
-          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'>
-            {filteredLawyers.map((lawyer) => {
-              return (
-                <LawyerCard
-                  key={lawyer.id}
-                  lawyer={lawyer}
-                  onContact={handleOpenContact}
-                />
-              )
-            })}
-          </div>
+        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'>
+          {filteredLawyers.map((lawyer) => {
+            return (
+              <LawyerCard
+                key={lawyer.id}
+                lawyer={lawyer}
+                onContact={handleOpenContact}
+              />
+            )
+          })}
+        </div>
+      )}
 
-          {/* Pagination component */}
-          {pagination.totalPages && pagination.totalPages > 1 && (
-            <div className='flex items-center justify-center gap-2 pt-6 border-t border-border-primary'>
+      {/* Pagination component */}
+      {pagination.totalPages && pagination.totalPages > 1 && (
+        <div className='flex items-center justify-center gap-2 pt-6 border-t border-border-primary'>
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className='h-9 px-4 rounded-full text-xs hover:bg-background-secondary transition-colors cursor-pointer'
+          >
+            Trước
+          </Button>
+
+          {Array.from({ length: pagination.totalPages }, (_, index) => {
+            const pageNum = index + 1
+            const isActive = pageNum === currentPage
+            return (
               <Button
-                variant='ghost'
-                size='lg'
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className='h-9 text-xs rounded-full hover:bg-background-tertiary transition-colors cursor-pointer'
+                key={pageNum}
+                variant={isActive ? 'default' : 'outline'}
+                onClick={() => setCurrentPage(pageNum)}
+                className={`h-9 w-9 p-0 text-sm rounded-full cursor-pointer flex items-center justify-center font-medium ${
+                  isActive
+                    ? 'bg-primary text-white shadow-md shadow-primary/10 hover:opacity-90'
+                    : 'text-text-secondary hover:bg-background-secondary hover:text-text-primary'
+                }`}
               >
-                Trước
+                {pageNum}
               </Button>
- 
-              {Array.from({ length: pagination.totalPages }, (_, index) => {
-                const pageNum = index + 1
-                const isActive = pageNum === currentPage
-                return (
-                  <Button
-                    key={pageNum}
-                    variant={isActive ? 'default' : 'outline'}
-                    size='sm'
-                    onClick={() => setCurrentPage(pageNum)}
-                    className={`h-9 w-9 text-lg rounded-full cursor-pointer ${
-                      isActive
-                        ? 'bg-background-secondary text-main font-bold'
-                        : 'text-text-secondary hover:bg-background-tertiary hover:text-text-primary'
-                    }`}
-                  >
-                    {pageNum}
-                  </Button>
-                )
-              })}
- 
-              <Button
-                variant='ghost'
-                size='lg'
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pagination.totalPages || 1))}
-                disabled={currentPage === pagination.totalPages}
-                className='h-9 text-xs rounded-full hover:bg-background-tertiary transition-colors cursor-pointer'
-              >
-                Sau
-              </Button>
-            </div>
-          )}
+            )
+          })}
+
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pagination.totalPages || 1))}
+            disabled={currentPage === pagination.totalPages}
+            className='h-9 px-4 rounded-full text-xs hover:bg-background-secondary transition-colors cursor-pointer'
+          >
+            Sau
+          </Button>
         </div>
       )}
 

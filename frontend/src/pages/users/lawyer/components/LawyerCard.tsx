@@ -38,7 +38,7 @@ export const LawyerCard = memo(function LawyerCard({
         {/* Avatar */}
         <div className='w-40 h-40 rounded-full border-2 border-background-primary shadow-200 overflow-hidden mb-2 group-hover:scale-105 transition-transform shrink-0 mx-auto'>
           <img
-            src={getOptimizedImageUrl(lawyer.avatar, 160)}
+            src={getOptimizedImageUrl(lawyer.avatar || lawyer.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=lawyer', 160)}
             alt={lawyer.fullName}
             className='w-full h-full object-cover'
             width={160}
@@ -60,7 +60,7 @@ export const LawyerCard = memo(function LawyerCard({
           </h3>
           <div className='flex items-center justify-center gap-1 text-text-description text-xs'>
             <MapPin className='w-4 h-4 text-text-tertiary' />
-            {lawyer.city}
+            {lawyer.location}
           </div>
         </div>
 

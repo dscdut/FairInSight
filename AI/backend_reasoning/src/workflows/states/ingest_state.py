@@ -24,6 +24,7 @@ class IngestState(TypedDict, total=False):
     # định danh DB
     source_file_id: Optional[str]
     document_id: Optional[str]
+    checksum: Optional[str]            # sha256 nội dung/file — để cleanup mồ côi khi lỗi
 
     # sản phẩm trung gian từng công đoạn
     extract_method: Optional[str]      # digital | ocr | hybrid | skip_scan

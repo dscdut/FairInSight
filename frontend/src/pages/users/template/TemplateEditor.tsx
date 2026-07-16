@@ -215,11 +215,9 @@ export default function TemplateEditor({ template, onBack, documentId, initialVa
   // Handle Save Draft
   const handleSaveDraft = async () => {
     try {
-      const doc = await documentApi.saveDocument({
+      const doc = await documentApi.saveDraft({
         templateId: template.id,
-        content: formValues,
-        isDraft: true,
-        documentId: activeDocumentId
+        content: formValues
       }).catch((err) => {
         console.warn('Save draft API failed, mocking response locally:', err)
         return { id: activeDocumentId || 'mock-draft-id', file_url: null } as unknown as UserDocument

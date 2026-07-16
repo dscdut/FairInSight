@@ -31,21 +31,11 @@ export const getAccessTokenFromLS = () => localStorage.getItem(ACCESS_TOKEN_LOCA
 export const getRefreshTokenFromLS = () => localStorage.getItem(REFRESH_TOKEN_LOCAL_STORAGE_KEY) || ''
 
 export const getUserFromLocalStorage = (): UserResponseType | null => {
-  const user = localStorage.getItem(USER_LOCAL_STORAGE_KEY)
-  if (!user || user === 'undefined' || user === 'null') {
-    return null
-  }
-  try {
-    return JSON.parse(user)
-  } catch (error) {
-    localStorage.removeItem(USER_LOCAL_STORAGE_KEY)
-    return null
-  }
+  return null
 }
 
 export const removeAccessTokenFromLS = () => localStorage.removeItem(ACCESS_TOKEN_LOCAL_STORAGE_KEY)
 
-export const setUserToLS = (user: UserResponseType) =>
-  localStorage.setItem(USER_LOCAL_STORAGE_KEY, JSON.stringify(user))
+export const setUserToLS = (_user: UserResponseType) => {}
 
 export const removeRefreshTokenFromLS = () => localStorage.removeItem(REFRESH_TOKEN_LOCAL_STORAGE_KEY)
