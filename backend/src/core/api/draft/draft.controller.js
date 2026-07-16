@@ -13,6 +13,14 @@ class Controller {
         const data = await this.service.createDraft(userId, dto);
         return ValidHttpResponse.toOkResponse(data);
     };
+
+    deleteDraft = async req => {
+        const userId = req.user.payload.id;
+        const draftId = req.params.id;
+        const data = await this.service.deleteDraft(userId, draftId);
+        return ValidHttpResponse.toOkResponse(data);
+    };
 }
 
 export const DraftController = new Controller();
+
