@@ -1,5 +1,7 @@
 import { Module } from 'packages/handler/Module';
 import { TemplateController } from './template.controller';
+import { RecordId } from 'core/common/swagger';
+import { RecordIdInterceptor } from 'core/modules/interceptor/recordId/record-id.interceptor';
 
 export const TemplateResolver = Module.builder()
     .addPrefix({
@@ -19,5 +21,14 @@ export const TemplateResolver = Module.builder()
             method: 'get',
             controller: TemplateController.getTemplateById,
             preAuthorization: true
+        },
+        {
+            route: '/:id/schema',
+            params: [RecordId],
+            interceptors: [RecordIdInterceptor],
+            method: 'get',
+            controller: TemplateController.getTemplateSchema,
+            preAuthorization: true
         }
     ]);
+
