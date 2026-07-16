@@ -13,6 +13,12 @@ export const DraftResolver = Module.builder()
     .register([
         {
             route: '/',
+            method: 'get',
+            controller: DraftController.listDrafts,
+            preAuthorization: true
+        },
+        {
+            route: '/',
             method: 'post',
             interceptors: [CreateDraftInterceptor],
             body: 'CreateDraftDto',

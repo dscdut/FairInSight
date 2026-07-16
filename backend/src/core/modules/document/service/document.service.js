@@ -103,6 +103,29 @@ class Service {
         }
     }
 
+    async listDrafts(userId) {
+        try {
+            return await prisma.documents.findMany({
+                where: {
+                    user_id: userId,
+                    is_draft: true,
+                    deleted_at: null
+                },
+                include: {
+                    templates: {
+                        select: {
+                            name: true,
+                            description: true
+                        }
+                    }
+                },
+                orderBy: { updated_at: 'desc' }
+            });
+        } catch (error) {
+            throw new InternalServerException(error.message);
+        }
+    }
+
     async getDocumentById(userId, documentId) {
         try {
             const document = await prisma.documents.findFirst({
