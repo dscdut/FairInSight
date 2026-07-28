@@ -19,6 +19,8 @@ export const ROUTE = {
     BLOG: '/blog',
     CHAT_AI: '/chat-ai',
     TEMPLATE: '/template',
+    DRAFT: '/draft',
+    DraftEdit: '/drafts/:id/edit',
     LEGAL: '/legal',
     LAWYER: '/lawyers',
     LAWYER_DETAIL: '/lawyers/:id',

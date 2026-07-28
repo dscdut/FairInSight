@@ -43,7 +43,7 @@ export const adminSidebarLinks: TSidebarLinks[] = [
     title: 'Quản lý người dùng',
     titleKey: 'users',
     icon: <Users className='w-5 h-5' />,
-    path: ROUTE.ADMIN.USERS,
+    path: ROUTE.ADMIN.USERS
   },
   {
     title: 'Phân tích',
@@ -109,7 +109,7 @@ export const adminSidebarLinks: TSidebarLinks[] = [
   {
     title: 'Báo cáo',
     icon: <TrendingUp className='w-5 h-5' />,
-    path: 'reports',
+    path: 'reports'
   }
 ]
 
@@ -137,6 +137,12 @@ export const userSideBarLinks: TSidebarLinks[] = [
     titleKey: 'template',
     icon: <FileText className='w-5 h-5' />,
     path: ROUTE.USER.TEMPLATE
+  },
+  {
+    title: 'Bản nháp',
+    titleKey: 'draft',
+    icon: <FileText className='w-5 h-5' />,
+    path: ROUTE.USER.DRAFT
   },
   {
     title: 'Văn bản pháp luật',

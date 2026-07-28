@@ -28,7 +28,7 @@ const App = () => {
       const accessToken = getAccessTokenFromLS()
       if (accessToken) {
         try {
-          const userData = await authApi.getUserInfo() as Account
+          const userData = (await authApi.getUserInfo()) as Account
           const currentUser = useAuthStore.getState().user
           updateUser({
             userId: userData.id || '',
@@ -37,7 +37,7 @@ const App = () => {
             phone: userData.phone || '',
             location: userData.location || '',
             avatarUrl: userData.avatarUrl || '',
-            roleName: userData.roleName as UserRole || currentUser?.roleName || 'USER',
+            roleName: (userData.roleName as UserRole) || currentUser?.roleName || 'USER',
             status: userData.status || currentUser?.status || 'ACTIVE'
           })
           scheduleTokenRefresh()

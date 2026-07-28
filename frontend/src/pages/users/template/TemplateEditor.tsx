@@ -2,15 +2,19 @@ import { useState, useEffect } from 'react'
 
 import { ArrowLeft, Save, FileDown, Eye } from 'lucide-react'
 import nunjucks from 'nunjucks'
+import { useNavigate } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
+import { ROUTE } from '@/core/constants/path'
 import { documentApi, type UserDocument } from '@/core/services/document.service'
+import { useAuthStore } from '@/core/store/features/auth/authStore'
 import { type Template } from '@/models/types/form-library'
 
 import ExportLoadingOverlay from './components/ExportLoadingOverlay'
 import SuccessModal from './components/SuccessModal'
 import TemplateForm from './components/TemplateForm'
 import TemplatePreview from './components/TemplatePreview'
+import { string } from 'zod'
 
 // Configure nunjucks for clientside without HTML escaping
 const defaultEnv = nunjucks.configure({ autoescape: false })
@@ -55,6 +59,8 @@ interface TemplateEditorProps {
 export default function TemplateEditor({ template, onBack, documentId, initialValues }: TemplateEditorProps) {
   const [activeDocumentId, setActiveDocumentId] = useState<string | undefined>(documentId)
   const [activeFileUrl, setActiveFileUrl] = useState<string | null>(null)
+  const navigate = useNavigate()
+  const access_token = useAuthStore((s) => s.access_token)
 
   // Store form values in a dictionary
   const [formValues, setFormValues] = useState<Record<string, string>>(() => {
@@ -115,22 +121,22 @@ export default function TemplateEditor({ template, onBack, documentId, initialVa
         personal_id: ownerId,
         address: values.currentAddress || '',
         phone: values.phone || '',
-        permanent_address: values.permanentAddress || '',
+        permanent_address: values.permanentAddress || ''
       },
       signer_full_name: ownerName,
       business: {
-        business_name: values.businessName || '',
+        business_name: values.businessName || ''
       },
       office: {
         number_house: '',
         street: values.officeAddress || '',
         ward: '',
         province: 'Đà Nẵng',
-        phone: values.phone || '',
+        phone: values.phone || ''
       },
       office_address_full: values.officeAddress || '',
       investment: {
-        capital: values.capital || '',
+        capital: values.capital || ''
       },
       // Fallback flat placeholders
       fullName: ownerName,
@@ -144,7 +150,7 @@ export default function TemplateEditor({ template, onBack, documentId, initialVa
       price: values.price || '',
       rentPeriod: values.rentPeriod || '',
       format_date: (val: string, format = 'slash') => formatDateJs(val, format),
-      format_money: (val: string | number | unknown) => formatMoneyJs(val),
+      format_money: (val: string | number | unknown) => formatMoneyJs(val)
     }
 
     try {
@@ -157,11 +163,11 @@ export default function TemplateEditor({ template, onBack, documentId, initialVa
               return {
                 src: componentsHtml,
                 path: name,
-                noCache: true,
+                noCache: true
               }
             }
             throw new Error(`Template not found: ${name}`)
-          },
+          }
         }
 
         const env = new nunjucks.Environment(loader, { autoescape: false })
@@ -215,20 +221,31 @@ export default function TemplateEditor({ template, onBack, documentId, initialVa
   // Handle Save Draft
   const handleSaveDraft = async () => {
     try {
-      const doc = await documentApi.saveDraft({
-        templateId: template.id,
-        content: formValues
-      }).catch((err) => {
-        console.warn('Save draft API failed, mocking response locally:', err)
-        return { id: activeDocumentId || 'mock-draft-id', file_url: null } as unknown as UserDocument
+      const response = await fetch('https://fairinsights-api.gdsc.dev/api/v1/drafts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${access_token}`
+        },
+        body: JSON.stringify({
+          templateId: template.id,
+          content: formValues
+        })
       })
-      if (doc && doc.id) {
-        setActiveDocumentId(doc.id)
+      console.log()
+      if (!response.ok) {
+        throw new Error(await response.text())
       }
-      alert('Lưu bản nháp thành công!')
+
+      const data = await response.json()
+
+      console.log('Draft:', data)
+
+      alert('Lưu thành công')
+
+      navigate(ROUTE.USER.DRAFT)
     } catch (err) {
-      console.error('Failed to save draft:', err)
-      alert('Lưu bản nháp thất bại!')
+      console.error(err)
     }
   }
 
@@ -238,22 +255,11 @@ export default function TemplateEditor({ template, onBack, documentId, initialVa
     if (printWindow) {
       printWindow.document.write(compiledHtml)
       printWindow.document.close()
-      
+
       printWindow.onload = () => {
         printWindow.print()
         printWindow.close()
       }
-      
-      setTimeout(() => {
-        try {
-          if (printWindow && !printWindow.closed) {
-            printWindow.print()
-            printWindow.close()
-          }
-        } catch (e) {
-          console.error(e)
-        }
-      }, 500)
     } else {
       const iframe = document.querySelector('iframe')
       if (iframe && iframe.contentWindow) {
@@ -268,16 +274,18 @@ export default function TemplateEditor({ template, onBack, documentId, initialVa
   const handleExport = async () => {
     setIsExporting(true)
     try {
-      const doc = await documentApi.saveDocument({
-        templateId: template.id,
-        content: formValues,
-        isDraft: false,
-        documentId: activeDocumentId,
-        html: compileHtml(htmlContent, formValues)
-      }).catch((err) => {
-        console.warn('Save document API failed, continuing with client-side export flow:', err)
-        return { id: activeDocumentId || 'mock-doc-id', file_url: null } as unknown as UserDocument
-      })
+      const doc = await documentApi
+        .saveDocument({
+          templateId: template.id,
+          content: formValues,
+          isDraft: false,
+          documentId: activeDocumentId,
+          html: compileHtml(htmlContent, formValues)
+        })
+        .catch((err) => {
+          console.warn('Save document API failed, continuing with client-side export flow:', err)
+          return { id: activeDocumentId || 'mock-doc-id', file_url: null } as unknown as UserDocument
+        })
       if (doc && doc.id) {
         setActiveDocumentId(doc.id)
       }
@@ -359,18 +367,14 @@ export default function TemplateEditor({ template, onBack, documentId, initialVa
       {/* Main editor area */}
       <div className='w-full grid grid-cols-1 lg:grid-cols-12 gap-2 items-start'>
         {/* Left Form column */}
-        <TemplateForm 
-          template={template} 
-          formValues={formValues} 
-          onInputChange={handleInputChange} 
-        />
+        <TemplateForm template={template} formValues={formValues} onInputChange={handleInputChange} />
 
         {/* Right PDF Preview column */}
-        <TemplatePreview 
-          template={template} 
-          htmlContent={htmlContent} 
-          formValues={formValues} 
-          compiledHtml={compileHtml(htmlContent, formValues)} 
+        <TemplatePreview
+          template={template}
+          htmlContent={htmlContent}
+          formValues={formValues}
+          compiledHtml={compileHtml(htmlContent, formValues)}
         />
       </div>
 
@@ -378,11 +382,11 @@ export default function TemplateEditor({ template, onBack, documentId, initialVa
       <ExportLoadingOverlay isExporting={isExporting} />
 
       {/* Success Modal */}
-      <SuccessModal 
-        showSuccess={showSuccess} 
-        activeFileUrl={activeFileUrl} 
-        templateTitle={template.title} 
-        onClose={() => setShowSuccess(false)} 
+      <SuccessModal
+        showSuccess={showSuccess}
+        activeFileUrl={activeFileUrl}
+        templateTitle={template.title}
+        onClose={() => setShowSuccess(false)}
         onDownloadFallback={handleDownloadFallback}
       />
     </div>

@@ -33,6 +33,8 @@ const LegalAnalysis = lazy(() => import('@/pages/users/legal-analysis/LegalAnaly
 const Report = lazy(() => import('@/pages/users/report/Report'))
 const Setting = lazy(() => import('@/pages/users/setting/Setting'))
 const Template = lazy(() => import('@/pages/users/template/Template'))
+const Draft = lazy(() => import('@/pages/users/draft/Draft'))
+const DraftEdit = lazy(() => import('@/pages/users/draft/DraftEdit'))
 const User = lazy(() => import('@/pages/users/user/User'))
 const LawyerList = lazy(() => import('@/pages/users/lawyer/LawyerList'))
 const LawyerProfile = lazy(() => import('@/pages/users/lawyer/LawyerProfile'))
@@ -47,7 +49,6 @@ const LawyerMessages = lazy(() => import('@/pages/lawyers/messages/LawyerMessage
 const LawyerProfileEdit = lazy(() => import('@/pages/lawyers/profile/LawyerProfileEdit'))
 const LawyerSettings = lazy(() => import('@/pages/lawyers/setting/LawyerSettings'))
 
-
 export default function useRoutesElements() {
   const location = useLocation()
   const { isAuthenticated } = useAuth()
@@ -61,14 +62,8 @@ export default function useRoutesElements() {
         {!isAuthenticated ? (
           <Route element={<LayoutClient />}>
             <Route path={ROUTE.HOME} element={<HomePage />} />
-            <Route
-              path={ROUTE.LAW_LIBRARY}
-              element={<LawLibraryPage />}
-            />
-            <Route
-              path={ROUTE.LAW_DETAIL}
-              element={<LawDetail />}
-            />
+            <Route path={ROUTE.LAW_LIBRARY} element={<LawLibraryPage />} />
+            <Route path={ROUTE.LAW_DETAIL} element={<LawDetail />} />
           </Route>
         ) : (
           <Route element={<ProtectedRoute redirectPath={ROUTE.AUTH.LOGIN} />}>
@@ -78,10 +73,7 @@ export default function useRoutesElements() {
                 element={<Navigate to={`${ROUTE.ADMIN.ROOT}/${ROUTE.ADMIN.DASHBOARD}`} replace />}
               />
             ) : isEqual(user?.roleName, ROLE_LAWYER) ? (
-              <Route
-                path={ROUTE.HOME}
-                element={<Navigate to={ROUTE.LAWYER.ROOT} replace />}
-              />
+              <Route path={ROUTE.HOME} element={<Navigate to={ROUTE.LAWYER.ROOT} replace />} />
             ) : (
               <Route path={ROUTE.USER.ROOT} element={<LayoutMain />}>
                 <Route index element={<UserDashboard />} />
@@ -89,6 +81,8 @@ export default function useRoutesElements() {
                 <Route path={ROUTE.USER.CHAT_AI} element={<AIChat />} />
                 <Route path={ROUTE.USER.MESSAGES} element={<Messages />} />
                 <Route path={ROUTE.USER.TEMPLATE} element={<Template />} />
+                <Route path={ROUTE.USER.DRAFT} element={<Draft />} />
+                <Route path={ROUTE.USER.DraftEdit} element={<DraftEdit />} />
                 <Route path={ROUTE.USER.LEGAL} element={<LegalAnalysis />} />
                 <Route path={ROUTE.USER.LAWYER} element={<LawyerList />} />
                 <Route path={ROUTE.USER.LAWYER_DETAIL} element={<LawyerProfile />} />

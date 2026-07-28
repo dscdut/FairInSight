@@ -46,10 +46,7 @@ export default function Template() {
   if (selectedTemplate) {
     return (
       <div className='w-full p-2 lg:p-4'>
-        <TemplateEditor 
-          template={selectedTemplate} 
-          onBack={() => setSelectedTemplate(null)} 
-        />
+        <TemplateEditor template={selectedTemplate} onBack={() => setSelectedTemplate(null)} />
       </div>
     )
   }
@@ -59,9 +56,7 @@ export default function Template() {
       {/* Header */}
       <motion.div variants={headerVariants} initial='hidden' animate='visible' className='space-y-4'>
         <div>
-          <h1 className='text-h2 font-semibold text-text-main tracking-tight'>
-            Thư viện biểu mẫu
-          </h1>
+          <h1 className='text-h2 font-semibold text-text-main tracking-tight'>Thư viện biểu mẫu</h1>
           <p className='text-small text-text-description mt-2'>
             Khám phá hàng trăm biểu mẫu pháp lý được tạo bởi các chuyên gia
           </p>
