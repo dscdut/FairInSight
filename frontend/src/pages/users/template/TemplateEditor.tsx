@@ -14,7 +14,6 @@ import ExportLoadingOverlay from './components/ExportLoadingOverlay'
 import SuccessModal from './components/SuccessModal'
 import TemplateForm from './components/TemplateForm'
 import TemplatePreview from './components/TemplatePreview'
-import { string } from 'zod'
 
 // Configure nunjucks for clientside without HTML escaping
 const defaultEnv = nunjucks.configure({ autoescape: false })
@@ -232,7 +231,7 @@ export default function TemplateEditor({ template, onBack, documentId, initialVa
           content: formValues
         })
       })
-      console.log()
+
       if (!response.ok) {
         throw new Error(await response.text())
       }
