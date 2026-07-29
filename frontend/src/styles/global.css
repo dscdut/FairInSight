@@ -173,3 +173,100 @@ body {
   opacity: 0.5;
   z-index: 0;
 }
+
+.legal-doc-content .legal-document {
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--text-primary);
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.legal-doc-content .document-header-official {
+  display: flex;
+  justify-content: space-between;
+  text-align: center;
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.legal-doc-content .document-header-official > div {
+  flex: 1;
+  padding: 0 12px;
+}
+
+.legal-doc-content .document-number {
+  text-align: center;
+  margin: 24px 0;
+  font-size: 14px;
+}
+
+.legal-doc-content .document-title-official {
+  text-align: center;
+  margin: 24px 0 32px;
+}
+
+.legal-doc-content .document-title-official h2,
+.legal-doc-content .document-title-official h3 {
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.legal-doc-content .chapter {
+  margin-top: 32px;
+}
+
+.legal-doc-content .chapter > h3,
+.legal-doc-content .chapter > h4 {
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  text-align: center;
+  margin-bottom: 8px;
+  scroll-margin-top: 100px;
+}
+
+.legal-doc-content .chapter > h3 { font-size: 15px; }
+.legal-doc-content .chapter > h4 { font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; }
+
+.legal-doc-content .article {
+  margin: 20px 0;
+  scroll-margin-top: 100px;
+}
+
+.legal-doc-content .article h4 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+  scroll-margin-top: 100px;
+}
+
+.legal-doc-content .clause {
+  padding-left: 20px;
+  margin: 8px 0;
+  scroll-margin-top: 100px;
+}
+
+.legal-doc-content .clause p,
+.legal-doc-content p {
+  margin: 8px 0;
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--text-secondary);
+}
+
+.legal-doc-content strong { font-weight: 600; color: var(--text-primary); }
+.legal-doc-content em { font-style: italic; }
+
+@media (max-width: 768px) {
+  .legal-doc-content .document-header-official {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
