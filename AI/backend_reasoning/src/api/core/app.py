@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -22,7 +23,25 @@ async def lifespan(app: FastAPI):
     await close_db()
 
 
+def _force_utf8_stdio() -> None:
+    """Ép stdout/stderr sang UTF-8 để print() tiếng Việt không chết luồng.
+
+    Windows mặc định stdout là cp1252 (đặc biệt khi chạy qua cmd.exe/WMI/docker),
+    nên print() có ký tự như 'Đ'/'ứng' raise UnicodeEncodeError giữa node LangGraph
+    → node crash → 500. errors='replace' để không bao giờ raise nữa. Trước đây từng
+    phải né lẻ tẻ trong llm.py (_log); đây là chỗ sửa gốc cho toàn service.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            try:
+                reconfigure(encoding="utf-8", errors="replace")
+            except (ValueError, OSError):
+                pass
+
+
 def create_app() -> FastAPI:
+    _force_utf8_stdio()
     app = FastAPI(
         title=settings.APP_NAME,
         version=settings.VERSION,

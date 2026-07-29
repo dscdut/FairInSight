@@ -82,10 +82,14 @@ deep → `high` → thêm khuyến cáo gặp luật sư.
 
 ```text
 [1] prepare → [2] extract → [3] normalize → [4] llm_fix → [5] metadata
-   → [6] structure_markup → [7] unit_tree → [8] chunk → [9] embed
-   → [10] relation → [11] relation_judge → [12] persist → END
+   → [6] unit_tree → [7] chunk → [8] embed → [9] relation → [10] relation_judge
+   → [11] tagging → [12] publish → END
         (prepare trùng/lỗi → END;  normalize text rỗng → fail → END)
 ```
+
+> **12 node mạch chính.** Chỉ **[6] unit_tree** có vòng lặp (cắt–kiểm–sửa); chỉ **[12] publish**
+> ghi DB. Mọi node trước chỉ bồi thêm vào `state` (1 dict trong RAM). Node **CHÍNH** (logic
+> nặng): [1] prepare, [2] extract, [6] unit_tree, [9] relation, [10] relation_judge, [12] publish.
 
 **[1] prepare** — tính checksum (chống nạp trùng), tạo bản ghi `source_files`.
 *Tự gỡ mồ côi:* nếu checksum trùng nhưng văn bản cũ chưa hoàn tất (status `parsing`/`failed`,
@@ -93,23 +97,25 @@ deep → `high` → thêm khuyến cáo gặp luật sư.
 
 **[2] extract** — lấy text. Nguồn link VBPL có sẵn text → bỏ qua OCR. PDF scan → OCR (EasyOCR, có swap VRAM nếu GPU nhỏ).
 
-**[3] normalize** — chuẩn hóa text (NFC, gộp khoảng trắng, giữ xuống dòng). Rỗng → fail.
+**[3] normalize** — chuẩn hóa text (NFC, gộp khoảng trắng, giữ xuống dòng, cắt phụ lục sau chữ ký). Rỗng → fail.
 
 **[4] llm_fix** — sửa lỗi OCR bằng LLM (chữ "Đỉều"→"Điều"...). **Bỏ qua** với nguồn VBPL/digital (text đã sạch) hoặc khi chạy offline.
 
-**[5] metadata** — rút loại văn bản, tier A/B/C, số hiệu, ngày hiệu lực, cơ quan ban hành, phạm vi. Áp `meta_overrides` (admin xác nhận) nếu có.
+**[5] metadata** — rút loại văn bản, tier A/B/C, số hiệu, ngày hiệu lực, cơ quan ban hành, phạm vi + cờ `is_amendment_doc`. Áp `meta_overrides` (admin xác nhận) nếu có.
 
-**[6] structure_markup** — đánh dấu ranh giới `@@ART/@@CL/@@PT` trước mỗi Điều/Khoản/Điểm THẬT. Văn bản **sửa đổi** dùng RULE (chống Điều-nhúng giả); văn bản thường dùng LLM.
+**[6] unit_tree** *(NODE CHÍNH — vòng lặp có cổng chặn, gói tới `step4.run_step4`)* — dựng cây Phần→Chương→Mục→Điều→Khoản→Điểm bằng **smart_cut** (state-machine "expected-next", tự lọc Điều-nhúng/dẫn chiếu giả, không cần markup trước). Sau khi cắt, **kiểm DFS** cấu trúc (Điều liên tục 1→N, không trùng, phân cấp đúng): nếu `error` thì **đổi chiến lược cắt** theo ladder (smart→rule→llm→regex, ≤3 vòng, chỉ nhận bản tốt hơn). Cạn cách vẫn `error` → giữ bản tốt nhất + bật cờ **`needs_review`** (cổng chặn: [12] sẽ không cho vào KB active).
 
-**[7] unit_tree** — dựng cây Phần→Chương→Mục→Điều→Khoản→Điểm. Ưu tiên cắt theo marker (deterministic); không có marker thì cắt bằng regex. Cảnh báo nếu dãy Điều đứt quãng.
+**[7] chunk** — cắt mảnh để embedding, gắn breadcrumb (VD: Chương III | Điều 12).
 
-**[8] chunk** — cắt mảnh để embedding, gắn breadcrumb (VD: Chương III | Điều 12).
+**[8] embed** — gọi bge-m3 tạo vector (1024 chiều).
 
-**[9] embed** — gọi bge-m3 tạo vector.
+**[9] relation** — sinh quan hệ ỨNG VIÊN bằng regex (dẫn chiếu / nội bộ / ra ngoài theo tên luật).
 
-**[10] relation & [11] relation_judge** — tìm quan hệ pháp lý.
+**[10] relation_judge** — LLM đọc lời văn, grounding trên tập **Căn cứ**, trả JSON quan hệ (amendment + reference) chính xác; gộp với ứng viên regex.
 
-**[12] persist** — lưu vào DB.
+**[11] tagging** — qwen3 đề xuất domain/topic (chỉ Tier A; lỗi thì bỏ tag, vẫn nạp).
+
+**[12] publish** *(NODE CHÍNH — bước DUY NHẤT ghi DB)* — lưu document + units + chunks + quan hệ, resolve, commit 1 transaction. Nếu `needs_review=True` → set `ingest_status='needs_review'` + đẩy `review_items`, KHÔNG `completed` (chặn rác trôi vào KB).
 
 ---
 

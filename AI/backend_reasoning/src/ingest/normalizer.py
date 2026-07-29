@@ -40,10 +40,61 @@ def join_wrapped_articles(text: str) -> str:
     return _JOIN_ARTICLE.sub(lambda m: f"Điều {m.group(1)}. {m.group(2)}", text or "")
 
 
+# --- Cắt đuôi PHỤ LỤC / biểu mẫu sau chữ ký (chống unit-tree đẻ khoản-giả) -----
+# VB luật kết thúc phần quy phạm ở CHỮ KÝ ("TM. CHÍNH PHỦ / KT. THỦ TƯỚNG / TM. QUỐC
+# HỘI / CHỦ TỊCH ... + Nơi nhận"). Sau chữ ký là PHỤ LỤC BIỂU MẪU (mẫu giấy chứng nhận,
+# "Kích thước: Khổ giấy A4", "Mặt trước: Nền màu...") — text đánh số "1. 2." khiến regex
+# cắt Khoản BẮT NHẦM thành hàng trăm "khoản 1" giả dưới Điều cuối (vd 58/2026 Điều 7 =
+# 212 khoản-1 giả → 206 chunk rác → ô nhiễm pool RAG). Cắt tại chữ ký để GIỮ THUẦN LUẬT.
+# Trước mắt chỉ lo phần quy phạm; phụ lục biểu mẫu chưa cần (todo user).
+# CHỮ KÝ = marker chính. Khối chữ ký cuối VBQPPL: "TM. CHÍNH PHỦ / KT. THỦ TƯỚNG / KT.
+# BỘ TRƯỞNG / THỨ TRƯỞNG..." — dạng TM./KT. + chức danh HOA đứng riêng dòng, RẤT đặc trưng
+# (không lẫn với 'Bộ trưởng ... quy định' giữa câu vì đó không phải đầu dòng HOA trần).
+# Sau khối ký là phụ lục/biểu mẫu (nguồn khoản-giả). Không dùng ngưỡng % (thông tư phần
+# quy phạm có thể ngắn <40% mà chữ ký vẫn thật) — chỉ cần chữ ký đứng SAU ≥1 Điều thật.
+_SIGNATURE = re.compile(
+    r"(?im)^\s*(TM\.\s*CHÍNH\s+PHỦ|KT\.\s*THỦ\s+TƯỚNG|TM\.\s*QUỐC\s+HỘI|"
+    r"KT\.\s*BỘ\s+TRƯỞNG|TM\.\s*ỦY\s+BAN\s+NHÂN\s+DÂN|TM\.\s*ỦY\s+BAN|"
+    r"THỦ\s+TƯỚNG\s*$|THỨ\s+TRƯỞNG\s*$|CHỦ\s+TỊCH\s+QUỐC\s+HỘI)"
+)
+# "Nơi nhận:" — marker PHỤ (có VB có có VB không), củng cố khi đứng gần chữ ký.
+_RECIPIENTS = re.compile(r"(?im)^\s*Nơi\s+nhận\s*:")
+_ARTICLE_LINE = re.compile(r"(?im)^\s*Điều\s+\d")
+
+
+def truncate_appendix(text: str) -> tuple[str, int]:
+    """Cắt bỏ phần sau khối CHỮ KÝ cuối luật (phụ lục/biểu mẫu). Trả (text_cắt, n_bỏ).
+
+    Marker CHÍNH = chữ ký (TM./KT. + chức danh HOA). Cắt tại chữ ký ĐẦU TIÊN đứng sau ≥1
+    "Điều" thật (khối ký luôn nằm cuối phần quy phạm). KHÔNG dùng ngưỡng % (chữ ký thật có
+    thể ở 39% với thông tư phụ-lục-dài). "Nơi nhận:" chỉ là phương án dự phòng khi VB
+    không có dòng chữ ký nhận diện được. Không thỏa → giữ nguyên (fail-safe, không cắt VB
+    thường không phụ lục).
+    """
+    if not text:
+        return text, 0
+    n = len(text)
+    for m in _SIGNATURE.finditer(text):
+        pos = m.start()
+        if _ARTICLE_LINE.search(text[:pos]):
+            return text[:pos].rstrip(), n - pos
+    # dự phòng: không thấy chữ ký → thử "Nơi nhận:" (cũng phải sau ≥1 Điều)
+    for m in _RECIPIENTS.finditer(text):
+        pos = m.start()
+        if _ARTICLE_LINE.search(text[:pos]):
+            return text[:pos].rstrip(), n - pos
+    return text, 0
+
+
 def normalize(text: str) -> str:
-    """Chuẩn hóa Unicode + khoảng trắng + bỏ dòng nhiễu, giữ nguyên cấu trúc."""
+    """Chuẩn hóa Unicode + khoảng trắng + bỏ dòng nhiễu, giữ nguyên cấu trúc.
+
+    Cắt đuôi phụ lục/biểu mẫu sau chữ ký (fail-safe) TRƯỚC khi làm sạch dòng → cả
+    llm_fix/markup/unit_tree/chunk/relation về sau đều nhận text thuần luật.
+    """
     text = unicodedata.normalize("NFC", text or "")
     text = join_wrapped_articles(text)
+    text, _cut = truncate_appendix(text)
     out_lines: list[str] = []
     for raw in text.splitlines():
         line = _MULTISPACE.sub(" ", raw).strip()

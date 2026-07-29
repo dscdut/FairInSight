@@ -162,11 +162,16 @@ async def compose_final(
     evidence: list[dict],
     branch_guide: str = "",
 ) -> str:
+    # Cắt 1200 ký tự (không 500): nội dung QUY PHẠM hay để mốc số liệu (thời hạn, mức phạt)
+    # ở khoản SAU — vd Điều 30 Luật Cư trú (sau sửa) để "trước 23 giờ / trước 08 giờ" ở ký
+    # tự ~765, bị [:500] cắt mất → composer kết luận SAI "không quy định giờ". 1200 phủ hết
+    # 1 Điều/khoản điển hình mà vẫn gọn (10 ev × 1200 ≈ 12k, an toàn ctx). Điều dị thường
+    # dài hơn đã được chunk/khoản-hóa nên đơn vị đưa vào đây hiếm khi >1200.
     ctx = "\n\n".join(
         f"[{i+1}]{' ✅HIỆN HÀNH' if e.get('is_replacement') else ''} "
         f"{e.get('document_title')} ({e.get('official_code')}) | {e.get('path_text')}"
         + (f"\n⚠️ {'; '.join(e['relation_notes'])}" if e.get("relation_notes") else "")
-        + f"\n{(e.get('content') or '')[:500]}"
+        + f"\n{(e.get('content') or '')[:1200]}"
         for i, e in enumerate(evidence[:10])
     )
     miss = [m.get("field") for m in missing] if missing else []

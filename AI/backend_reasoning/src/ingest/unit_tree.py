@@ -389,3 +389,133 @@ def _build_from_markers(text: str, doc_title: str) -> list[UnitDraft]:
             target.content = (target.content + "\n" + line).strip()
 
     return units
+
+
+# ── KIỂM CẤU TRÚC (DFS) — pháp luật tuyệt đối: cây phải liên tục + phân cấp đúng ──
+# "Điều 1 xong phải đến Điều 1 Khoản 1 hoặc Điều 2" (nhận xét user). Kiểm SAU build_tree,
+# trả lỗi cụ thể để log + quyết định self-repair. CHỈ báo, KHÔNG tự sửa ở đây.
+
+_ART_N = re.compile(r"^(\d+)([a-zA-Zđ]?)$")   # "12" / "12a" → (num, suffix)
+_CL_N = re.compile(r"^(\d+)([a-zA-Zđ]?)$")
+# thứ tự nhãn điểm tiếng Việt: a b c d đ e g h i k l m n o p q r s t u ư v x y
+_POINT_ORDER = "a b c d đ e g h i k l m n o p q r s t u ư v x y".split()
+_POINT_IDX = {c: i for i, c in enumerate(_POINT_ORDER)}
+
+
+def _num_of(s: Optional[str]) -> Optional[int]:
+    m = _ART_N.match((s or "").strip())
+    return int(m.group(1)) if m else None
+
+
+def check_structure(units: list[UnitDraft]) -> dict:
+    """DFS kiểm cấu trúc cây. Trả {ok, severity, issues[], stats}.
+
+    severity: 'ok' | 'warn' (bất thường nhẹ, có thể hợp lệ) | 'error' (nghi hỏng cắt cây).
+    issues: list câu mô tả lỗi cụ thể (kèm định vị Điều/Khoản).
+
+    Kiểm 5 điều (nhận xét "pháp luật tuyệt đối"):
+      1. parent đúng CẤP: clause.parent=article, point.parent=clause (sai = error).
+      2. Điều liên tục 1→N (đứt / không bắt đầu từ 1 = error, nghi rớt/cắt hỏng).
+      3. Điều KHÔNG trùng số (trùng = error, nghi Điều-nhúng lọt).
+      4. Khoản trong mỗi Điều liên tục 1→M (đứt = warn).
+      5. Điểm trong mỗi Khoản theo thứ tự a,b,c,đ... (đảo = warn).
+    Văn bản BLOCK (không Điều) → ok (không áp cấu trúc Điều).
+    """
+    by_id = {u.temp_id: u for u in units}
+    arts = [u for u in units if u.unit_type == UnitType.ARTICLE.value]
+    if not arts:
+        return {"ok": True, "severity": "ok", "issues": [], "spans": [], "stats": {"n_articles": 0}}
+
+    issues: list[str] = []
+    errors = 0
+
+    # 1) parent đúng cấp
+    bad_parent = 0
+    for u in units:
+        p = by_id.get(u.parent_temp_id) if u.parent_temp_id else None
+        if u.unit_type == UnitType.CLAUSE.value:
+            if p is None:
+                issues.append(f"Khoản {u.clause_no} KHÔNG có Điều cha (mồ côi)"); bad_parent += 1
+            elif p.unit_type != UnitType.ARTICLE.value:
+                issues.append(f"Khoản {u.clause_no} có cha SAI cấp ({p.unit_type}, đáng lẽ article)"); bad_parent += 1
+        elif u.unit_type == UnitType.POINT.value:
+            if p is None or p.unit_type != UnitType.CLAUSE.value:
+                issues.append(f"Điểm {u.point_label} có cha SAI cấp (đáng lẽ clause)"); bad_parent += 1
+    if bad_parent:
+        errors += bad_parent
+
+    # 2+3) Điều liên tục + không trùng (chỉ xét Điều số thuần, bỏ hậu tố 6a hợp lệ khi chèn)
+    nums, suffixed, dup = [], [], []
+    seen = set()
+    for a in arts:
+        an = (a.article_no or "").strip()
+        m = _ART_N.match(an)
+        if not m:
+            continue
+        n, suf = int(m.group(1)), m.group(2)
+        if suf:
+            suffixed.append(an)
+            continue
+        if n in seen:
+            dup.append(n)
+        seen.add(n)
+        nums.append(n)
+    # spans = toạ độ lỗi CÓ CẤU TRÚC cho repair khu trú (D4): mỗi span nói rõ loại lỗi +
+    # Điều/Khoản liên quan để repair khoanh đúng đoạn, không phải đọc lại cả văn bản.
+    spans: list[dict] = []
+    if bad_parent:
+        spans.append({"kind": "bad_parent", "n": bad_parent})
+    if nums:
+        lo, hi = min(nums), max(nums)
+        if lo != 1:
+            issues.append(f"Điều KHÔNG bắt đầu từ 1 (nhỏ nhất = {lo}) → nghi rớt Điều 1..{lo-1}")
+            errors += 1
+            spans.append({"kind": "article_start", "expected": 1, "got": lo,
+                          "missing": list(range(1, lo))})
+        missing = [n for n in range(lo, hi + 1) if n not in seen]
+        if missing:
+            issues.append(f"Điều ĐỨT QUÃNG — thiếu {missing[:15]}{'...' if len(missing)>15 else ''}")
+            errors += 1
+            spans.append({"kind": "article_gap", "missing": missing})
+        if dup:
+            issues.append(f"Điều TRÙNG số: {sorted(set(dup))} → nghi Điều-nhúng lọt thành Điều thật")
+            errors += 1
+            spans.append({"kind": "article_dup", "dup": sorted(set(dup))})
+
+    # 4) Khoản liên tục trong mỗi Điều
+    for a in arts:
+        cls = [u for u in units if u.parent_temp_id == a.temp_id
+               and u.unit_type == UnitType.CLAUSE.value]
+        cnums = [_num_of(c.clause_no) for c in cls]
+        cnums = [n for n in cnums if n is not None]
+        if len(cnums) >= 2:
+            cs = set(cnums)
+            cmiss = [n for n in range(1, max(cnums) + 1) if n not in cs]
+            if cmiss:
+                issues.append(f"Điều {a.article_no}: Khoản đứt quãng — thiếu {cmiss[:10]}")
+                spans.append({"kind": "clause_gap", "article": a.article_no, "missing": cmiss})
+
+    # 5) Điểm theo thứ tự trong mỗi Khoản
+    for u in units:
+        if u.unit_type != UnitType.CLAUSE.value:
+            continue
+        pts = [c for c in units if c.parent_temp_id == u.temp_id
+               and c.unit_type == UnitType.POINT.value]
+        idxs = [_POINT_IDX.get((p.point_label or "").strip()) for p in pts]
+        idxs = [i for i in idxs if i is not None]
+        if len(idxs) >= 2 and idxs != sorted(idxs):
+            issues.append(f"Khoản {u.clause_no} (Điều cha): Điểm KHÔNG theo thứ tự a,b,c...")
+            spans.append({"kind": "point_order", "article": u.article_no, "clause": u.clause_no})
+
+    # severity: có lỗi parent/Điều = error (nghi cắt cây hỏng); chỉ warn khoản/điểm = warn.
+    severity = "error" if errors else ("warn" if issues else "ok")
+    return {
+        "ok": errors == 0,
+        "severity": severity,
+        "issues": issues,
+        "spans": spans,
+        "stats": {
+            "n_articles": len(arts), "art_range": f"{min(nums)}..{max(nums)}" if nums else "-",
+            "n_suffixed": len(suffixed), "n_dup": len(set(dup)), "bad_parent": bad_parent,
+        },
+    }

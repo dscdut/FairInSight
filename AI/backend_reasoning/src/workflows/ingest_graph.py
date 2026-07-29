@@ -1,14 +1,19 @@
 """IngestGraph — LangGraph điều phối nạp 1 file vào KB (offline).
 
-Luồng (INGEST_DATA_DESIGN §4, gating theo tier):
-  prepare ─(duplicate/no-file)→ END
-     │
-  extract → normalize ─(text rỗng)→ fail → END
-     │
-  metadata → structure_markup → unit_tree → chunk → embed → relation → publish → END
+Sơ đồ 12 node mạch chính (chi tiết ở README.md mục B; gating theo tier):
+
+  START → [1]prepare ──stop(trùng/lỗi file)──────────────────────► END
+             │ go
+         [2]extract → [3]normalize ──fail(text<50)──► [FAIL] ─────► END
+                          │ ok
+         [4]llm_fix → [5]metadata → [6]unit_tree(vòng lặp smart_cut+DFS+repair)
+         → [7]chunk → [8]embed → [9]relation → [10]relation_judge → [11]tagging
+         → [12]publish ────────────────────────────────────────────► END
                           (tier C: chunk/embed rỗng nhưng vẫn publish metadata)
 
 Graph CHỈ điều phối; logic ở nodes/ingest_nodes.py → src/ingest/* + publisher.
+Node [6]unit_tree gói tới step4.run_step4 (cắt cây + kiểm DFS + sửa vòng lặp + cổng
+needs_review); [12]publish là bước DUY NHẤT ghi DB.
 """
 
 from __future__ import annotations
@@ -136,7 +141,6 @@ def build_ingest_graph():
     g.add_node("normalize", N.normalize_node)
     g.add_node("llm_fix", N.llm_fix_node)
     g.add_node("metadata", N.metadata_node)
-    g.add_node("structure_markup", N.structure_markup_node)
     g.add_node("unit_tree", N.unit_tree_node)
     g.add_node("chunk", N.chunk_node)
     g.add_node("embed", N.embed_node)
@@ -151,9 +155,9 @@ def build_ingest_graph():
     g.add_edge("extract", "normalize")
     g.add_conditional_edges("normalize", _after_normalize, {"ok": "llm_fix", "fail": "fail"})
     g.add_edge("llm_fix", "metadata")
-    # 4b structure_markup giữa metadata (cần is_amendment_doc) và unit_tree (ăn marker).
-    g.add_edge("metadata", "structure_markup")
-    g.add_edge("structure_markup", "unit_tree")
+    # [6]unit_tree gọi step4.run_step4: tự cắt cây bằng smart_cut (không cần marker seed),
+    # kiểm DFS + sửa vòng lặp. Không còn node markup riêng giữa metadata và unit_tree.
+    g.add_edge("metadata", "unit_tree")
     # chunk_node tự gating tier (C → rỗng), embed_node tự bỏ qua nếu rỗng →
     # giữ mạch thẳng, đơn giản hơn rẽ nhánh t.C mà vẫn đúng INGEST §4.
     g.add_edge("unit_tree", "chunk")

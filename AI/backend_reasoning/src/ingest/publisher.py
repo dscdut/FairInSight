@@ -7,6 +7,7 @@ rồi resolve quan hệ theo official_code đã có. Tách khỏi graph để te
 from __future__ import annotations
 
 import hashlib
+import re
 from pathlib import Path
 from typing import Optional
 
@@ -45,7 +46,9 @@ def _law_core(title: Optional[str]) -> str:
     import re as _re
     t = _norm(title)
     t = _re.split(r"[,(]", t)[0]                  # bỏ phần sau dấu phẩy/ngoặc
-    t = _re.sub(r"\s+(số\s+)?\d.*$", "", t)        # bỏ năm / số hiệu đuôi
+    # bỏ đuôi năm/số hiệu: "Hiến pháp năm 2013" → "hiến pháp"; "Luật Đầu tư 2020" → "luật
+    # đầu tư"; "... số 31/2024" → "...". Nuốt cả tiền tố "năm/ngày" đứng ngay trước số.
+    t = _re.sub(r"\s+(năm|ngày|số)?\s*\d.*$", "", t)
     return t.strip()
 
 
@@ -92,10 +95,16 @@ def publish(
     internal_ref_drafts: Optional[list] = None,
     cross_ref_drafts: Optional[list] = None,
     tag_suggestion=None,
+    needs_review: bool = False,
+    review_spans: Optional[list] = None,
 ) -> dict:
     """Ghi document + units + chunks + relations, resolve, set completed.
 
     Trả counts. KHÔNG commit (để node publish commit, dễ kiểm soát transaction).
+
+    needs_review (CỔNG CHẶN 4c/4d): cây còn 'error' sau khi cạn cách sửa → set
+    ingest_status='needs_review' thay vì 'completed' + đẩy 1 ReviewItem (kèm toạ độ lỗi
+    review_spans) để KHÔNG cho rác trôi thầm vào KB. Data vẫn ghi để người xem/sửa cây.
     """
     doc = Document(
         source_file_id=source_file.id,
@@ -196,7 +205,12 @@ def publish(
 
     n_tags = attach_tags(session, doc, tag_suggestion) if tag_suggestion else 0
     n_resolved = resolve_relations(session, doc)
-    source_file.ingest_status = "completed"
+    # CỔNG CHẶN: error sau khi cạn cách → 'needs_review' (không 'completed') + ReviewItem.
+    if needs_review:
+        source_file.ingest_status = "needs_review"
+        _queue_review_structure(session, doc, review_spans or [])
+    else:
+        source_file.ingest_status = "completed"
 
     return {
         "document_id": doc.id,
@@ -256,11 +270,18 @@ def _write_cross_refs(
     """
     if not cross_drafts:
         return 0
+    # Lọc rác: regex cross-ref cũ đôi khi nuốt quá tên luật ("Luật Cư trú hết hiệu lực",
+    # "Luật Cư trú là một", "... về") → tên chứa động từ/trạng từ dẫn câu = KHÔNG phải tên
+    # luật thật → bỏ (tránh reference treo rác không bao giờ resolve).
+    _junk_tail = re.compile(
+        r"\b(hết hiệu lực|là một|thông qua|được|về|khi|nếu|thì|đã|sẽ|có|này|đó|kết)\b", re.I)
     n = 0
     for r in cross_drafts:
         from_id = temp_to_id.get(r.from_temp_id)
         if not from_id:
             continue
+        if _junk_tail.search(r.target_law_name or ""):
+            continue  # tên luật bẩn (regex nuốt câu) → bỏ
         session.add(Reference(
             from_unit_id=from_id, to_unit_id=None,
             to_ref_text=f"name:{r.target_law_name}",
@@ -477,7 +498,9 @@ def resolve_relations(session: Session, doc: Document) -> int:
         tgt_doc = session.get(Document, tdoc)
         src_lvl = src_doc.doc_level if src_doc else None
         tgt_lvl = tgt_doc.doc_level if tgt_doc else None
-        if not relation_judge.gate_hierarchy(src_lvl, tgt_lvl):
+        tgt_type = tgt_doc.doc_type if tgt_doc else None
+        src_issuer = src_doc.issuer if src_doc else None
+        if not relation_judge.gate_hierarchy(src_lvl, tgt_lvl, tgt_type, src_issuer):
             owner = src_doc or doc
             _queue_review_hierarchy(session, owner, am.old_ref_text, am.amendment_type)
             return
@@ -563,6 +586,25 @@ def resolve_relations(session: Session, doc: Document) -> int:
                 _set_ref(ref, doc.id)
     session.flush()
     return resolved
+
+
+def _queue_review_structure(session: Session, doc: Document, spans: list) -> None:
+    """Đẩy review_items khi CÂY còn 'error' sau khi cạn cách sửa (cổng chặn 4c/4d).
+
+    payload.spans = toạ độ lỗi DFS (article_gap/dup/start...) để UI law-inspect tô đỏ đúng
+    chỗ, người duyệt không phải dò cả văn bản. item_type='unit_tree' (khớp enum review).
+    """
+    from src.schema.models import ReviewItem
+
+    kinds = ", ".join(sorted({s.get("kind", "?") for s in spans})) or "cấu trúc"
+    session.add(ReviewItem(
+        source_file_id=doc.source_file_id,
+        item_type="unit_tree",
+        payload={"spans": spans, "doc_id": doc.id, "official_code": doc.official_code},
+        suggestion=f"Cây Điều/Khoản còn lỗi sau khi tự sửa cạn cách ({kinds}). Đã nạp nhưng "
+                   f"GẮN CỜ needs_review — cần người xem cây (law-inspect) sửa/duyệt trước khi tin.",
+        confidence=0.4, method="rule",
+    ))
 
 
 def _queue_review_miss(session: Session, doc: Document, ref_code: str, article: Optional[str]) -> None:

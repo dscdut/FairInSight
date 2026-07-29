@@ -11,13 +11,16 @@ import re
 
 _OCR_L = re.compile(r"(?<=[0-9])l|l(?=[0-9])")
 _OCR_O = re.compile(r"(?<=[0-9])O|O(?=[0-9])")
+# VBPL đôi khi trả docNum kèm nhãn "Số: 154/2024/NĐ-CP" hoặc "số 99/2025/QH15" → bóc
+# nhãn đầu để official_code = "154/2024/NĐ-CP" thuần, nếu không SQL match sẽ trượt.
+_CODE_LABEL = re.compile(r"^\s*S[ốô]\s*:?\s*", re.I)
 
 
 def normalize_code(code: str | None) -> str | None:
-    """Chuẩn hóa số hiệu, sửa lỗi OCR cạnh chữ số (l→1, O→0). None giữ None."""
+    """Chuẩn hóa số hiệu: bỏ nhãn 'Số:' đầu, sửa lỗi OCR cạnh chữ số (l→1, O→0). None giữ None."""
     if not code:
         return code
-    code = code.strip()
+    code = _CODE_LABEL.sub("", code.strip())
     code = _OCR_L.sub("1", code)
     code = _OCR_O.sub("0", code)
     return code

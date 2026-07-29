@@ -1,6 +1,6 @@
-"""IngestState — state machine của ingest graph (INGEST_DATA_DESIGN §8).
+"""IngestState — state machine của ingest graph (sơ đồ 12 node xem README mục B).
 
-Mỗi node đọc/ghi state này. Các object trung gian (meta/units/chunks/relations)
+Mỗi node [1]..[12] đọc/ghi state này. Các object trung gian (meta/units/chunks/relations)
 là dict/list thuần để LangGraph serialize được và để debug/log từng công đoạn.
 """
 
@@ -15,7 +15,6 @@ class IngestState(TypedDict, total=False):
     raw_text: Optional[str]             # nguồn JSON: text sẵn (bỏ qua extract PDF/OCR)
     source_url: Optional[str]
     domain_hint: Optional[str]          # domain seed từ URL crawl (JSON)
-    title_override: Optional[str]       # title admin xác nhận → dùng làm tiêu đề + breadcrumb
     meta_overrides: Optional[dict]      # {title,official_code,issuer,doc_type} admin → tier đúng
     do_embed: bool
     allow_ocr: bool
@@ -30,7 +29,9 @@ class IngestState(TypedDict, total=False):
     extract_method: Optional[str]      # digital | ocr | hybrid | skip_scan
     raw_text: Optional[str]
     normalized_text: Optional[str]
-    marked_text: Optional[str]         # 4b: text đã chèn @@ART/@@CL/@@PT (cho unit_tree)
+    marked_text: Optional[str]         # [6] text @@ART/@@CL/@@PT của bản cây step4 giữ (None nếu cắt smart/regex)
+    needs_review: bool                 # [6] cổng chặn: cây còn 'error' sau khi cạn cách sửa
+    dfs_spans: list[dict]              # [6] toạ độ lỗi DFS (cho repair khu trú / review UI)
     meta: Optional[dict]               # DocMeta dạng dict
     unit_drafts: list[dict]            # UnitDraft dạng dict (temp_id, parent_temp_id...)
     chunk_drafts: list[dict]

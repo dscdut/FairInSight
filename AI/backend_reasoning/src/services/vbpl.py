@@ -32,6 +32,11 @@ _MULTIBLANK = re.compile(r"\n{3,}")
 # Chỉ đụng cụm "Điều <số> <số>..." — an toàn, không chạm nội dung khác.
 _ART_NUM_SPLIT = re.compile(r"(Điều)\s+(\d(?:\s+\d){1,3})\b", re.I)
 
+# HTML VBPL hay XÉ VỤN tiêu đề "Điều N." thành nhiều dòng do mỗi <span> rời nhận 1 '\n'
+# từ get_text (vd: "Điều\n3\n.\n \nHiệu lực\nthi hành"). unit_tree cắt Điều theo dòng
+# "^Điều N." nên KHÔNG nhận ra → mất Điều (vd Điều 3/4 thi-hành cuối luật sửa đổi). Gộp
+# "Điều" + số + "." rải rác về 1 cụm "Điều N. " để anchor bắt được.
+
 
 def parse_vbpl_url(url: str) -> Optional[str]:
     """Lấy ItemID từ link VBPL nếu link đúng cấu trúc; None nếu không hợp lệ.
@@ -67,24 +72,6 @@ def fetch(item_id: str) -> dict:
     if not isinstance(data, dict) or not data.get("documentContent"):
         raise ValueError("VBPL không trả nội dung văn bản (data.documentContent rỗng)")
     return data
-
-
-def pdf_download_url(item_id: str, data: Optional[dict] = None) -> Optional[str]:
-    """URL tải PDF gốc trên VBPL (không tải về). None nếu văn bản không có PDF.
-
-    Dùng làm fallback show PDF khi không lưu được lên Cloudinary (file quá lớn): FE
-    mở link này ở tab mới (browser tự tải/mở — VBPL serve octet-stream nên KHÔNG nhúng
-    iframe được, chỉ mở tab). data truyền sẵn để khỏi fetch lại; None thì tự fetch.
-    """
-    from urllib.parse import quote
-
-    if data is None:
-        data = fetch(item_id)
-    filename = (data.get("documentContentFileName") or "").strip()
-    if not filename:
-        return None
-    base = settings.VBPL_API_BASE.rstrip("/")
-    return f"{base}/minio/buckets/vbpl/{item_id}/{quote(filename)}/download"
 
 
 def fetch_pdf(item_id: str) -> tuple[bytes, str]:
@@ -163,8 +150,12 @@ def to_fields(data: dict) -> dict:
     """
     doc_type = (data.get("docType") or {}).get("name") or ""
     issuer = data.get("agencyName") or (data.get("organization") or {}).get("name") or ""
+    # VBPL đôi khi nhét "Số Số: 154/2024..." vào giữa title ("Nghị định Số Số: Quy định...")
+    # → bỏ cụm "Số Số:/Số:" bẩn để title sạch (official_code lo số hiệu riêng).
+    title = re.sub(r"\s*Số\s*(Số\s*)?:\s*", " ", data.get("title") or "").strip()
+    title = re.sub(r"\s{2,}", " ", title)
     return {
-        "title": data.get("title") or "",
+        "title": title,
         "official_code": (data.get("docNum") or "").strip(),
         "issue_date": _date(data.get("issueDate")),
         "effective_date": _date(data.get("effFrom")),

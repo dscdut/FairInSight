@@ -75,13 +75,21 @@ def judge_amendments(drafts: list, src_title: str) -> tuple[list, int]:
     return kept, rejected
 
 
-def gate_hierarchy(src_level: int, tgt_level: int) -> bool:
+def gate_hierarchy(src_level: int, tgt_level: int, tgt_type: str | None = None,
+                   src_issuer: str | None = None) -> bool:
     """Rule gate THỨ BẬC: nguồn có được phép tác động hiệu lực lên đích không?
 
     doc_level: số NHỎ = cấp CAO (1=Hiến pháp ... 10=tham khảo). VB cấp dưới (số lớn)
     KHÔNG thể sửa/thay/bãi VB cấp trên (số nhỏ). Cho phép cùng cấp hoặc nguồn cao hơn.
     Trả True = hợp lệ (được ghi), False = phi lý (chặn, đẩy review).
+
+    NGOẠI LỆ HIẾN PHÁP: chỉ QUỐC HỘI mới sửa được Hiến pháp (quyền lập hiến). VB sửa Hiến
+    pháp (Nghị quyết/Luật của QH) có doc_level > Hiến pháp nhưng VẪN hợp hiến. Nên đích là
+    Hiến pháp → cho phép nếu NGUỒN do Quốc hội ban hành (issuer chứa 'Quốc hội'), bất kể
+    doc_level (nghị quyết QH bị gán level 5 như nghị quyết địa phương). Không phải QH → chặn.
     """
     if src_level is None or tgt_level is None:
         return True  # thiếu thông tin → không chặn (fail-open)
+    if tgt_type == "constitution":
+        return bool(src_issuer and "quốc hội" in src_issuer.lower())
     return src_level <= tgt_level

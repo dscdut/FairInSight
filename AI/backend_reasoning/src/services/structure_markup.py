@@ -201,7 +201,11 @@ def _regex_markup(batch: str) -> str:
 # Tiêu đề Điều VỎ-SỬA: bắt đầu bằng verb sửa ("Điều 1. Sửa đổi, bổ sung...").
 _SHELL_AMEND = re.compile(r"^(Sửa đổi|Bổ sung|Bãi bỏ|Thay thế|Sửa)\b", re.I)
 # Tiêu đề Điều VỎ-THI-HÀNH ("Điều 2. Điều khoản thi hành"/hiệu lực/chuyển tiếp).
-_SHELL_EXEC = re.compile(r"(thi hành|hiệu lực|chuyển tiếp|điều khoản|tổ chức thực hiện)", re.I)
+# Thêm "quy định chi tiết" — Điều thi-hành cuối hay là "Chính phủ ... quy định chi tiết
+# các điều, khoản được giao" (không chứa "điều khoản" liền), dễ lọt nếu thiếu.
+_SHELL_EXEC = re.compile(
+    r"(thi hành|hiệu lực|chuyển tiếp|điều khoản|tổ chức thực hiện|quy định chi tiết)", re.I
+)
 # Dòng LỆNH cấp 1 trong điều vỏ-sửa. 2 dạng:
 #  A) "N. (verb) ... như sau:"  — verb sửa đứng ngay sau số.
 #  B) "N. Trong <Luật...>, cụm từ ... được thay bằng ..." — lệnh thay-cụm-từ toàn văn
@@ -209,6 +213,18 @@ _SHELL_EXEC = re.compile(r"(thi hành|hiệu lực|chuyển tiếp|điều kho�
 _CMD_L1 = re.compile(
     r"^\d+[a-zđ]?\.\s+(?:(?:Sửa đổi|Bổ sung|Bãi bỏ|Thay thế|Sửa|Thay)\b"
     r"|Trong\b.{0,80}?\bcụm từ\b)",
+    re.I,
+)
+# ANCHOR-WALK (D5): số lệnh đầu dòng "N." — tách số + hậu tố để đếm liên tục.
+_CMD_NUM = re.compile(r"^(\d+)([a-zđ]?)\.\s+")
+# TÍN HIỆU LỆNH SỬA — verb có thể ở THỂ CHỦ ĐỘNG (đầu câu: "Sửa đổi...") HOẶC BỊ ĐỘNG
+# (giữa câu: "Khoản 3 Điều 2 ĐƯỢC SỬA ĐỔI...", "Điều 9 được sửa đổi"). Cả "như sau:" cuối
+# dòng là tín hiệu mạnh (khoản luật đích hiếm khi kết "như sau:"). _CMD_L1 cũ chỉ bắt verb
+# đầu dòng → MẤT lệnh bị động (32/2013 mất 10/12 lệnh Điều 1). Đây là verb-ở-bất-kỳ-đâu.
+_CMD_VERB = re.compile(
+    r"(Sửa đổi|Bổ sung|Bãi bỏ|Thay thế|"
+    r"được\s+sửa|được\s+bổ\s+sung|được\s+thay|bị\s+bãi|được\s+bãi|"
+    r"như\s+sau\s*:)",
     re.I,
 )
 # Vỏ Điều của VB sửa đổi đi LIÊN TỤC từ 1 (Điều 1, 2, 3...) — đây là dấu hiệu phân biệt
@@ -241,6 +257,7 @@ def _amend_markup_rule(text: str) -> tuple[str, dict]:
     out: list[str] = []
     mode: Optional[str] = None  # 'amend' | 'exec' | None
     exp_art = 1                  # số Điều VỎ kế tiếp mong đợi (đếm liên tục từ 1)
+    exp_cmd = 1                  # số LỆNH kế tiếp mong đợi trong Điều vỏ-sửa (anchor-walk)
     n_art = n_cl = n_pt = 0
     for i, raw in enumerate(lines):
         s = raw.strip()
@@ -252,20 +269,36 @@ def _amend_markup_rule(text: str) -> tuple[str, dict]:
             num, suf, title = int(ma.group(1)), ma.group(2), ma.group(3).strip()
             probe = title or _next_nonempty(lines, i)   # vỏ trần → đọc dòng kế
             is_amend = bool(_SHELL_AMEND.match(probe))
-            is_exec = bool(_SHELL_EXEC.search(probe))
+            is_exec = bool(_SHELL_EXEC.search(probe) or probe.lower().startswith("luật này"))
             # VỎ THẬT: đúng số liên tục + không hậu tố + tiêu đề sửa/thi hành.
             if not suf and num == exp_art and (is_amend or is_exec):
                 out.append(TAG_ART + s)
                 n_art += 1
                 exp_art += 1
+                exp_cmd = 1           # vào Điều vỏ mới → lệnh đếm lại từ 1
                 mode = "amend" if is_amend else "exec"
                 continue
             out.append(raw)   # Điều NHÚNG (nhảy số / hậu tố) → content
             continue
         if mode == "amend":
-            if _CMD_L1.match(s):
+            # ANCHOR-WALK (D5): lệnh sửa đi 1,2,3... liền mạch. Dòng "N." là LỆNH THẬT khi
+            # N == số-lệnh-kế-mong-đợi VÀ có tín hiệu verb sửa (chủ động ĐẦU câu hoặc BỊ
+            # ĐỘNG giữa câu: "Khoản 3 Điều 2 được sửa đổi"). Số nhảy/restart = khoản NHÚNG
+            # của luật đích → content. Số kỳ vọng chính là bộ lọc thật/giả (khỏi cắt sai
+            # rồi mới sửa). _CMD_L1 (verb đầu dòng) giữ làm đường TẮT: khớp thì chắc chắn lệnh.
+            cm = _CMD_NUM.match(s)
+            cnum = int(cm.group(1)) if cm and not cm.group(2) else None
+            is_cmd = _CMD_L1.match(s) or (
+                cnum == exp_cmd and bool(_CMD_VERB.search(s))
+            )
+            if is_cmd:
                 out.append(TAG_CL + s)
                 n_cl += 1
+                # đồng bộ bộ đếm: nếu số dòng khớp/nhảy tới, tiến exp_cmd tới số đó +1
+                if cnum is not None and cnum >= exp_cmd:
+                    exp_cmd = cnum + 1
+                else:
+                    exp_cmd += 1
             else:
                 out.append(raw)  # nội dung nhúng / điểm-lệnh con → content của lệnh
             continue
@@ -287,19 +320,34 @@ def _amend_markup_rule(text: str) -> tuple[str, dict]:
 
 def markup_structure(
     text: str, *, title: str = "", is_amendment: bool = False,
-    min_ratio: float = 0.90,
+    min_ratio: float = 0.90, method: str = "auto",
 ) -> tuple[str, dict]:
     """Đánh dấu ranh giới cấu trúc cho cả văn bản. Trả (marked_text, stats).
+
+    method (cho vòng lặp bước 4 đổi chiến lược):
+    - 'auto' (mặc định): VB sửa đổi → RULE; VB thường → LLM batch.
+    - 'rule': ép RULE amend (kể cả nghi VB thường) — hiếm dùng.
+    - 'llm' : ép LLM batch cho MỌI loại (dùng khi rule/regex ra cây error → thử LLM).
+    - 'regex': đánh dấu bằng regex thuần cả văn bản (nhanh, không phân biệt nhúng).
 
     - VB SỬA ĐỔI → RULE (deterministic, chắc hơn LLM ở cấu trúc lệnh nhúng).
     - VB THƯỜNG → LLM batch: chèn tiền tố → kiểm độ dài (chống nuốt nội dung) → đạt thì
       giữ, không đạt thì fallback regex.
     """
-    if is_amendment:
+    if method == "regex":
+        pieces = _split_anchors(text)
+        marked = "\n".join(_regex_markup(b) for b in _pack(pieces, _BATCH_CHARS))
+        return marked, {"n_batches": 0, "n_llm": 0, "n_fallback": 0, "mode": "regex_all",
+                        "n_tags": len(_TAG_LINE.findall(marked))}
+    use_rule = (method == "rule") or (method == "auto" and is_amendment)
+    if use_rule:
         marked, stats = _amend_markup_rule(text)
         print(f"[markup] amendment RULE → {stats['n_art']} Điều vỏ, "
               f"{stats['n_cl']} khoản/lệnh, {stats['n_pt']} điểm", flush=True)
         return marked, stats
+    # method == 'llm' (ép) HOẶC 'auto' + VB thường → LLM batch (bên dưới). Với 'llm' ép
+    # trên VB sửa đổi, tắt _EMBED_RULE-hint tự động là KHÔNG cần: is_amendment giữ nguyên
+    # để prompt vẫn cảnh báo phần nhúng.
 
     pieces = _split_anchors(text)
     batches = _pack(pieces, _BATCH_CHARS)
@@ -337,3 +385,25 @@ def markup_structure(
         "n_tags": len(_TAG_LINE.findall(marked)),
     }
     return marked, stats
+
+
+# --- SỬA KHU TRÚ (D4): đánh dấu lại 1 VÙNG nhỏ (1 Điều) với feedback -----------
+_HINT_RULE = """LƯU Ý QUAN TRỌNG: {hint}
+Dòng mở đầu một Khoản là "N. <nội dung>" (số + chấm đầu dòng). Có Khoản mà câu tiếp theo
+KHÔNG đánh số (văn xuôi nối tiếp) — dòng đầu vẫn là Khoản, PHẢI đánh @@CL. ĐỪNG bỏ sót Khoản 1.
+"""
+
+
+def markup_region_llm(region_plain: str, *, title: str = "", hint: str = "") -> str:
+    """Đánh dấu @@ cho MỘT vùng nhỏ (1 Điều) — dùng cho sửa khu trú. Trả marked (đã strip
+    nhãn cũ nếu có). Prompt = prompt VB thường + dòng HINT chỉ rõ Khoản đang thiếu.
+
+    KHÔNG fallback regex ở đây (caller tự kiểm bất biến + quyết giữ/bỏ). Vùng nhỏ (1 Điều)
+    nên 1 call đủ, không cần batch.
+    """
+    plain = strip_markers(region_plain)  # đảm bảo sạch nhãn trước khi nhờ đánh lại
+    prompt = _HINT_RULE.format(hint=hint) + "\n" + _build_prompt(
+        plain, is_amendment=False, first=True
+    )
+    out = llm.complete_sync(prompt, system=_SYS, temperature=0.0).strip()
+    return out
