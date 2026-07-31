@@ -58,8 +58,9 @@ export default function AIChat() {
     return 'session-1'
   })
   const [inputText, setInputText] = useState<string>('')
+  const [draftInputs, setDraftInputs] = useState<Record<string, string>>({})
   const [attachments, setAttachments] = useState<Attachment[]>([])
-  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null)
 
   const location = useLocation()
   const navigate = useNavigate()
@@ -78,11 +79,24 @@ export default function AIChat() {
 
   // Get active session
   const activeSession = sessions.find((s) => s.id === activeSessionId) || sessions[0] || DEFAULT_SESSION
+  const isCurrentSessionLoading = loadingSessionId === activeSession.id
+
+  // Switch session with input draft preservation
+  const handleSelectSession = (newId: string) => {
+    if (newId === activeSessionId) {
+      setIsHistoryOpen(false)
+      return
+    }
+    setDraftInputs((prev) => ({ ...prev, [activeSessionId]: inputText }))
+    setInputText(draftInputs[newId] || '')
+    setActiveSessionId(newId)
+    setIsHistoryOpen(false)
+  }
 
   // Auto-scroll to bottom of chat
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [activeSessionId, activeSession.messages.length, isLoading])
+  }, [activeSessionId, activeSession.messages.length, loadingSessionId])
 
   // Save sessions to localStorage on changes
   useEffect(() => {
@@ -125,13 +139,10 @@ export default function AIChat() {
 
   // Start a new clean session (client state only)
   const handleNewChat = () => {
-    // Chống spam: đã có sẵn 1 phiên RỖNG (chưa chat gì) → dùng lại nó, không tạo thêm.
     const emptySession = sessions.find((s) => s.messages.length === 0)
     if (emptySession) {
-      setActiveSessionId(emptySession.id)
-      setInputText('')
+      handleSelectSession(emptySession.id)
       setAttachments([])
-      setIsHistoryOpen(false)
       return
     }
     const newId = `session-${Date.now()}`
@@ -142,10 +153,8 @@ export default function AIChat() {
       messages: []
     }
     setSessions((prev) => [newSession, ...prev])
-    setActiveSessionId(newId)
-    setInputText('')
+    handleSelectSession(newId)
     setAttachments([])
-    setIsHistoryOpen(false)
   }
 
   // Khi điều hướng vào với cờ newChat (vd: bấm "Phân tích pháp lý" ở dashboard),
@@ -166,7 +175,7 @@ export default function AIChat() {
     setSessions(remaining)
     if (activeSessionId === id) {
       if (remaining.length > 0) {
-        setActiveSessionId(remaining[0].id)
+        handleSelectSession(remaining[0].id)
       } else {
         // Create an empty session
         const now = dayjs()
@@ -179,12 +188,10 @@ export default function AIChat() {
             messages: []
           }
         ])
-        setActiveSessionId(fallbackId)
+        handleSelectSession(fallbackId)
       }
     }
   }
-
-  // Sessions are saved automatically to localStorage, so manual save is obsolete
 
   const handleSelectStarterCategory = (category: string) => {
     if (category === 'Tôi không chắc lĩnh vực') {
@@ -202,6 +209,8 @@ export default function AIChat() {
   // Gọi AI BE thật. deepConfirmed=true khi user bấm "Phân tích sâu" (gửi lại câu
   // tình huống với cờ để vào luồng reasoning).
   const callAi = async (messageContent: string, userAttachments: Attachment[], deepConfirmed: boolean) => {
+    const targetSessionId = activeSessionId
+    const targetSession = sessions.find((s) => s.id === targetSessionId)
     const timestamp = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
 
     const newUserMsg: Message = {
@@ -215,19 +224,19 @@ export default function AIChat() {
     // Thêm tin user + auto đặt tên phiên theo câu đầu
     setSessions((prev) =>
       prev.map((s) => {
-        if (s.id !== activeSessionId) return s
+        if (s.id !== targetSessionId) return s
         const newTitle = s.title === 'Yêu cầu phân tích mới' && messageContent.trim()
           ? (messageContent.trim().length > 30 ? messageContent.trim().slice(0, 30) + '...' : messageContent.trim())
           : s.title
         return { ...s, title: newTitle, messages: [...s.messages, newUserMsg] }
       })
     )
-    setIsLoading(true)
+    setLoadingSessionId(targetSessionId)
 
     try {
       const res = await sendChatAi({
         message: messageContent,
-        session_id: activeSession.aiSessionId ?? null,
+        session_id: targetSession?.aiSessionId ?? null,
         deep_confirmed: deepConfirmed,
       })
 
@@ -246,7 +255,7 @@ export default function AIChat() {
 
       setSessions((prev) =>
         prev.map((s) =>
-          s.id === activeSessionId
+          s.id === targetSessionId
             ? { ...s, aiSessionId: res.session_id, messages: [...s.messages, aiMessage] }
             : s
         )
@@ -260,11 +269,11 @@ export default function AIChat() {
       }
       setSessions((prev) =>
         prev.map((s) =>
-          s.id === activeSessionId ? { ...s, messages: [...s.messages, errMessage] } : s
+          s.id === targetSessionId ? { ...s, messages: [...s.messages, errMessage] } : s
         )
       )
     } finally {
-      setIsLoading(false)
+      setLoadingSessionId((curr) => (curr === targetSessionId ? null : curr))
     }
   }
 
@@ -272,19 +281,20 @@ export default function AIChat() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!inputText.trim() && attachments.length === 0) return
-    if (isLoading) return
+    if (isCurrentSessionLoading) return
     if (inputText.length > CHAT_MAX_CHARS) return // guard cuối: chặn cứng nếu lách được UI
 
     const messageContent = inputText
     const userAttachments = [...attachments]
     setInputText('')
     setAttachments([])
+    setDraftInputs((prev) => ({ ...prev, [activeSessionId]: '' }))
     await callAi(messageContent, userAttachments, false)
   }
 
   // User bấm "Phân tích sâu" sau khi AI mời → gửi lại câu hỏi gốc với deep_confirmed
   const handleConfirmDeep = async (originalQuestion: string) => {
-    if (isLoading) return
+    if (isCurrentSessionLoading) return
     await callAi(originalQuestion, [], true)
   }
 
@@ -299,8 +309,9 @@ export default function AIChat() {
 
   // Gợi ý luật sư: gọi Node BE lấy luật sư THẬT theo lĩnh vực → render card vào 1 tin AI mới.
   const handleSuggestLawyers = async (domain?: string | null) => {
-    if (isLoading) return
-    setIsLoading(true)
+    const targetSessionId = activeSessionId
+    if (loadingSessionId === targetSessionId) return
+    setLoadingSessionId(targetSessionId)
     try {
       const lawyers = await fetchLawyers(domain)
       const aiMessage: Message = {
@@ -314,7 +325,7 @@ export default function AIChat() {
       }
       setSessions((prev) =>
         prev.map((s) =>
-          s.id === activeSessionId ? { ...s, messages: [...s.messages, aiMessage] } : s
+          s.id === targetSessionId ? { ...s, messages: [...s.messages, aiMessage] } : s
         )
       )
     } catch (err) {
@@ -326,11 +337,11 @@ export default function AIChat() {
       }
       setSessions((prev) =>
         prev.map((s) =>
-          s.id === activeSessionId ? { ...s, messages: [...s.messages, errMessage] } : s
+          s.id === targetSessionId ? { ...s, messages: [...s.messages, errMessage] } : s
         )
       )
     } finally {
-      setIsLoading(false)
+      setLoadingSessionId((curr) => (curr === targetSessionId ? null : curr))
     }
   }
 
@@ -340,7 +351,7 @@ export default function AIChat() {
 
       {/* Main Split Layout: 8-2 or 7-3 */}
       <div className='flex flex-1 h-full min-h-0 overflow-hidden rounded-xl shadow-sm relative'>
-        
+
         {/* LEFT COLUMN: Main Chat Component (75% / 80%) */}
         <div className='flex flex-col flex-1 h-full min-w-0 min-h-0 bg-transparent relative z-10'>
 
@@ -350,13 +361,13 @@ export default function AIChat() {
               <span className='w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse' />
               <h2 className='text-sm font-bold text-main'>{activeSession.title}</h2>
             </div>
-            
+
             <button
               onClick={() => setIsConfigOpen(!isConfigOpen)}
               className={cn(
                 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border shadow-sm cursor-pointer',
-                isConfigOpen 
-                  ? 'bg-primary text-white border-primary' 
+                isConfigOpen
+                  ? 'bg-primary text-white border-primary'
                   : 'bg-background-secondary text-main border-border-secondary hover:bg-background-secondary/80'
               )}
             >
@@ -439,7 +450,7 @@ export default function AIChat() {
           {/* Messages Scrollable Container */}
           <ChatMessages
             messages={activeSession.messages}
-            isLoading={isLoading}
+            isLoading={isCurrentSessionLoading}
             messagesEndRef={messagesEndRef}
             onSelectCategory={handleSelectStarterCategory}
             onConfirmDeep={handleConfirmDeep}
@@ -455,7 +466,7 @@ export default function AIChat() {
             onRemoveAttachment={handleRemoveAttachment}
             onAttach={handleAttach}
             onSubmit={handleSubmit}
-            isLoading={isLoading}
+            isLoading={isCurrentSessionLoading}
           />
         </div>
 
@@ -464,7 +475,7 @@ export default function AIChat() {
         <HistorySidebar
           sessions={sessions}
           activeSessionId={activeSessionId}
-          setActiveSessionId={setActiveSessionId}
+          setActiveSessionId={handleSelectSession}
           onNewChat={handleNewChat}
           onDeleteSession={handleDeleteSession}
           className='hidden lg:flex w-[260px] xl:w-[300px] border-l border-border-secondary'
@@ -482,7 +493,7 @@ export default function AIChat() {
             <HistorySidebar
               sessions={sessions}
               activeSessionId={activeSessionId}
-              setActiveSessionId={setActiveSessionId}
+              setActiveSessionId={handleSelectSession}
               onNewChat={handleNewChat}
               onDeleteSession={handleDeleteSession}
               onCloseMobile={() => setIsHistoryOpen(false)}

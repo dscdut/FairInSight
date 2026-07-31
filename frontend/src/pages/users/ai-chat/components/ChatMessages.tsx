@@ -24,6 +24,40 @@ interface ChatMessagesProps {
   onSuggestLawyers?: (domain?: string | null) => void
 }
 
+const REASONING_STEPS = [
+  'Đang tiếp nhận và trích xuất tình tiết vụ việc...',
+  'Đang phân tích vấn đề pháp lý cốt lõi...',
+  'Đang truy vấn cơ sở dữ liệu luật, nghị định, thông tư liên quan...',
+  'Đang đối chiếu tình tiết vụ việc với bảng điều kiện áp dụng...',
+  'Đang thẩm định hiệu lực và đánh giá căn cứ pháp lý...',
+  'Đang xây dựng giả thuyết và lập luận điều kiện...',
+  'Đang tổng hợp báo cáo tư vấn theo cấu trúc IRAC...'
+]
+
+function ReasoningTicker() {
+  const [stepIndex, setStepIndex] = React.useState(0)
+
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setStepIndex((prev) => (prev + 1) % REASONING_STEPS.length)
+    }, 3500)
+    return () => clearInterval(timer)
+  }, [])
+
+  return (
+    <div className='flex items-center gap-2.5 py-1 text-xs font-medium text-text-description animate-in fade-in duration-300'>
+      <div className='flex items-center gap-1 shrink-0'>
+        <span className='w-2 h-2 rounded-full bg-primary animate-bounce' style={{ animationDelay: '0ms' }} />
+        <span className='w-2 h-2 rounded-full bg-primary animate-bounce' style={{ animationDelay: '150ms' }} />
+        <span className='w-2 h-2 rounded-full bg-primary animate-bounce' style={{ animationDelay: '300ms' }} />
+      </div>
+      <span className='transition-all duration-300 text-main/90 font-semibold italic animate-pulse'>
+        {REASONING_STEPS[stepIndex]}
+      </span>
+    </div>
+  )
+}
+
 // Render markdown câu trả lời AI (đậm, heading, bảng, danh sách...)
 function AiMarkdown({ content }: { content: string }) {
   return (
@@ -188,11 +222,13 @@ export default function ChatMessages({
                       : 'bg-background-primary'
                   )}
                 >
-                  {/* Display text contents — AI: markdown; user: plain */}
+                  {/* Display text contents — AI: markdown or reasoning animation; user: plain */}
                   {isUser ? (
                     <div className='whitespace-pre-line text-small font-sans'>
                       {message.content}
                     </div>
+                  ) : message.isLoading ? (
+                    <ReasoningTicker />
                   ) : (
                     <AiMarkdown content={message.content} />
                   )}
@@ -213,9 +249,10 @@ export default function ChatMessages({
                     </Button>
                   )}
 
-                  {/* Sau khi reasoning ra kết luận → 2 nút: tải bản phân tích / gợi ý luật sư.
-                      Dựa vào mode (lưu trong localStorage) để tin cũ load lại vẫn hiện nút. */}
-                  {!isUser && (message.showPostActions || message.mode === 'deep_reasoning') && (
+                  {/* 2 nút hành động: tải bản phân tích / gợi ý luật sư.
+                      Hiển thị cho tất cả câu trả lời AI thông thường (Lookup/Reasoning).
+                      Ẩn khi AI đang mời phân tích sâu hoặc đang hỏi ngược (clarification). */}
+                  {!isUser && !message.deepPending && message.mode !== 'clarification' && message.mode !== 'clarify' && (
                     <div className='mt-3 flex flex-wrap gap-2'>
                       {onDownloadAnalysis && (
                         <Button
@@ -356,14 +393,7 @@ export default function ChatMessages({
             </AvatarFallback>
           </Avatar>
           <div className='bg-background-primary p-4 rounded-2xl text-small text-main'>
-            <div className='flex items-center gap-2'>
-              <span className='w-2 h-2 rounded-full bg-primary animate-bounce' style={{ animationDelay: '0ms' }} />
-              <span className='w-2 h-2 rounded-full bg-primary animate-bounce' style={{ animationDelay: '150ms' }} />
-              <span className='w-2 h-2 rounded-full bg-primary animate-bounce' style={{ animationDelay: '300ms' }} />
-              <span className='text-small font-medium text-text-description ml-1.5'>
-                Trợ lý AI đang nghiên cứu các điều khoản luật…
-              </span>
-            </div>
+            <ReasoningTicker />
           </div>
         </div>
       )}

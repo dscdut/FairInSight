@@ -31,6 +31,8 @@ export interface Message {
   deepPending?: boolean
   // true khi đây là kết luận deep reasoning → hiện 2 nút (tải phân tích / gợi ý luật sư)
   showPostActions?: boolean
+  // true khi AI đang trong quá trình suy luận/chờ phản hồi
+  isLoading?: boolean
 }
 
 export interface ChatSession {
