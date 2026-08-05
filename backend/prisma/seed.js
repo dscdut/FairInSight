@@ -9,6 +9,23 @@ const path = require('path');
 const fs = require('fs');
 const cloudinary = require('cloudinary').v2;
 
+if (process.env.NODE_ENV === 'production') {
+    throw new Error('Demo seed is disabled in production');
+}
+if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL is required');
+}
+const databaseHost = new URL(process.env.DATABASE_URL).hostname;
+const allowedSeedHosts = new Set(
+    (process.env.SEED_ALLOWED_DB_HOSTS || 'localhost,127.0.0.1,db,postgres')
+        .split(',')
+        .map(value => value.trim())
+        .filter(Boolean),
+);
+if (!allowedSeedHosts.has(databaseHost)) {
+    throw new Error('Demo seed target is not in SEED_ALLOWED_DB_HOSTS');
+}
+
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
@@ -45,7 +62,38 @@ async function main() {
     // SPECIALTIES
     // =========================
     console.log('Creating specialties...');
-    const specialties = ['Hình sự', 'Dân sự', 'Doanh nghiệp', 'Đất đai', 'Hôn nhân', 'Lao động'];
+    const specialties = [
+        'Doanh nghiệp',
+        'Đầu tư - Đấu thầu',
+        'Thương mại',
+        'Tài chính - Ngân hàng',
+        'Thuế - Phí - Lệ phí',
+        'Chứng khoán',
+        'Bảo hiểm',
+        'Đất đai - Nhà ở',
+        'Xây dựng - Đô thị',
+        'Tài nguyên - Môi trường',
+        'Nông nghiệp',
+        'Giao thông vận tải',
+        'Năng lượng',
+        'Dân sự',
+        'Hôn nhân - Gia đình',
+        'Lao động',
+        'Chính sách xã hội',
+        'Y tế - Dược',
+        'Giáo dục - Đào tạo',
+        'Văn hóa - Thể thao - Du lịch',
+        'Hành chính - Bộ máy NN',
+        'Cán bộ - Công chức - Viên chức',
+        'Hình sự',
+        'Tố tụng - Thi hành án',
+        'An ninh - Quốc phòng',
+        'Khoa học - Công nghệ - CNTT',
+        'Công nghiệp - Sản xuất',
+        'Dân tộc - Tôn giáo',
+        'Ngoại giao - Điều ước quốc tế',
+        'Thanh tra - Khiếu nại - PCTN'
+    ];
     for (const specName of specialties) {
         await prisma.specialties.upsert({
             where: { name: specName },
@@ -58,7 +106,8 @@ async function main() {
     // USERS
     // =========================
     console.log('Creating users...');
-    const passwordHash = await bcrypt.hash('ADMIN@123456', 10);
+    const demoPassword = process.env.SEED_DEMO_PASSWORD || 'ADMIN@123456';
+    const passwordHash = await bcrypt.hash(demoPassword, 10);
 
     const users = [
         {
@@ -84,6 +133,30 @@ async function main() {
             role_id: roleMap['USER'],
             phone: '0912832123',
             location: 'Hanoi, Vietnam',
+            is_email_confirmed: true,
+        },
+        {
+            email: 'user1@gmail.com',
+            full_name: 'Free Plan User',
+            role_id: roleMap['USER'],
+            phone: '0900000011',
+            location: 'Da Nang, Vietnam',
+            is_email_confirmed: true,
+        },
+        {
+            email: 'user2@gmail.com',
+            full_name: 'Plus Plan User',
+            role_id: roleMap['USER'],
+            phone: '0900000012',
+            location: 'Da Nang, Vietnam',
+            is_email_confirmed: true,
+        },
+        {
+            email: 'user3@gmail.com',
+            full_name: 'Pro Plan User',
+            role_id: roleMap['USER'],
+            phone: '0900000013',
+            location: 'Da Nang, Vietnam',
             is_email_confirmed: true,
         },
         // 10 new professional lawyers
@@ -191,11 +264,11 @@ async function main() {
                 data: {
                     full_name: userData.full_name,
                     role_id: userData.role_id,
-                    password_hash: passwordHash,
                     phone: userData.phone,
                     location: userData.location,
                     avatar_url: userData.avatar_url || null,
                     is_email_confirmed: userData.is_email_confirmed,
+                    password_hash: passwordHash,
                 },
             });
         } else {
@@ -221,116 +294,197 @@ async function main() {
         specMap[s.name] = s.id;
     });
 
+    const legacyDemoLawyer = createdUsers['lawyer@gmail.com'];
+    if (legacyDemoLawyer) {
+        await prisma.lawyer_details.updateMany({
+            where: { user_id: legacyDemoLawyer.id },
+            data: { is_verified: false, status: 'OFFLINE' }
+        });
+        await prisma.lawyer_specialties.deleteMany({
+            where: { lawyer_id: legacyDemoLawyer.id }
+        });
+    }
+
     const lawyerDetailsData = [
         {
-            email: 'lawyer@gmail.com',
-            bio: 'Luật sư chuyên về dân sự và doanh nghiệp với hơn 5 năm kinh nghiệm.',
-            experience_years: 5,
-            rating_avg: 4.5,
-            price_per_hour: 500000,
-            bar_association: 'Đoàn Luật sư TP.HCM',
-            license_number: 'LAW123456',
-            specs: ['Dân sự', 'Doanh nghiệp']
-        },
-        {
             email: 'tri.nguyen@law.com',
-            bio: 'Luật sư cao cấp chuyên bào chữa các vụ án hình sự phức tạp và giải quyết tranh chấp hợp đồng dân sự.',
+            bio: 'Luật sư tranh tụng hình sự, dân sự và thi hành án với kinh nghiệm xử lý hồ sơ có rủi ro cao, ưu tiên chiến lược chứng cứ và bảo vệ quyền lợi thân chủ tại tòa.',
             experience_years: 12,
+            successful_cases: 168,
             rating_avg: 4.9,
             price_per_hour: 1500000,
             bar_association: 'Đoàn Luật sư Hà Nội',
-            license_number: 'LAW888777',
-            specs: ['Hình sự', 'Dân sự']
+            license_number: 'LS-HN-2014-0888',
+            specs: ['Hình sự', 'Tố tụng - Thi hành án', 'Dân sự', 'Thanh tra - Khiếu nại - PCTN', 'An ninh - Quốc phòng'],
+            experiences: [
+                {
+                    title: 'Luật sư điều hành - Nhóm tranh tụng',
+                    description: 'Đại diện và bào chữa trong các vụ án hình sự, dân sự và khiếu nại hành chính phức tạp.',
+                    start_date: '2017-01-01'
+                }
+            ]
         },
         {
             email: 'mai.le@law.com',
-            bio: 'Tư vấn ly hôn, quyền nuôi con và phân chia tài sản gia đình chuyên nghiệp, tận tâm.',
+            bio: 'Tư vấn ly hôn, quyền nuôi con, tài sản chung và các giao dịch dân sự liên quan đến nhà đất trong gia đình. Phong cách làm việc rõ ràng, kín đáo, ưu tiên hòa giải khi có thể.',
             experience_years: 8,
+            successful_cases: 124,
             rating_avg: 4.8,
             price_per_hour: 1000000,
             bar_association: 'Đoàn Luật sư TP.HCM',
-            license_number: 'LAW666555',
-            specs: ['Hôn nhân', 'Dân sự']
+            license_number: 'LS-HCM-2018-0666',
+            specs: ['Hôn nhân - Gia đình', 'Dân sự', 'Đất đai - Nhà ở', 'Chính sách xã hội', 'Tố tụng - Thi hành án'],
+            experiences: [
+                {
+                    title: 'Luật sư gia đình và dân sự',
+                    description: 'Xử lý hồ sơ ly hôn, nuôi con, chia tài sản và tranh chấp dân sự sau hôn nhân.',
+                    start_date: '2018-03-01'
+                }
+            ]
         },
         {
             email: 'khanh.pham@law.com',
-            bio: 'Tư vấn pháp luật doanh nghiệp, mua bán sáp nhập (M&A) và giải quyết tranh chấp lao động.',
+            bio: 'Tư vấn pháp luật doanh nghiệp, thương mại, đầu tư và lao động cho công ty vừa và nhỏ, startup và nhà đầu tư nước ngoài tại miền Trung.',
             experience_years: 10,
+            successful_cases: 156,
             rating_avg: 4.7,
             price_per_hour: 1200000,
             bar_association: 'Đoàn Luật sư Đà Nẵng',
-            license_number: 'LAW444333',
-            specs: ['Doanh nghiệp', 'Lao động']
+            license_number: 'LS-DN-2016-0444',
+            specs: ['Doanh nghiệp', 'Thương mại', 'Đầu tư - Đấu thầu', 'Lao động', 'Thuế - Phí - Lệ phí'],
+            experiences: [
+                {
+                    title: 'Cố vấn pháp chế doanh nghiệp',
+                    description: 'Tư vấn thành lập, vận hành, hợp đồng thương mại, thuế và quan hệ lao động cho doanh nghiệp.',
+                    start_date: '2016-06-01'
+                }
+            ]
         },
         {
             email: 'son.hoang@law.com',
-            bio: 'Chuyên gia pháp lý hàng đầu về tranh chấp đất đai, cấp sổ đỏ và giải quyết khiếu nại đền bù đất đai.',
+            bio: 'Chuyên sâu tranh chấp đất đai, bồi thường thu hồi đất, giấy chứng nhận quyền sử dụng đất, xây dựng và thủ tục hành chính liên quan đến dự án bất động sản.',
             experience_years: 15,
+            successful_cases: 210,
             rating_avg: 4.9,
             price_per_hour: 2000000,
             bar_association: 'Đoàn Luật sư Hà Nội',
-            license_number: 'LAW111222',
-            specs: ['Đất đai', 'Dân sự']
+            license_number: 'LS-HN-2011-0111',
+            specs: ['Đất đai - Nhà ở', 'Xây dựng - Đô thị', 'Tài nguyên - Môi trường', 'Hành chính - Bộ máy NN', 'Thanh tra - Khiếu nại - PCTN'],
+            experiences: [
+                {
+                    title: 'Luật sư đất đai và hành chính',
+                    description: 'Đại diện khách hàng trong khiếu nại thu hồi đất, cấp sổ, quy hoạch và giấy phép xây dựng.',
+                    start_date: '2012-02-01'
+                }
+            ]
         },
         {
             email: 'oanh.vu@law.com',
-            bio: 'Hỗ trợ pháp lý về bảo hiểm xã hội, tranh chấp tiền lương và soạn thảo quy chế lao động nội bộ doanh nghiệp.',
+            bio: 'Hỗ trợ pháp lý lao động, bảo hiểm, tiền lương, kỷ luật lao động và chính sách nội bộ. Có kinh nghiệm làm việc với doanh nghiệp sản xuất và người lao động.',
             experience_years: 6,
+            successful_cases: 89,
             rating_avg: 4.6,
             price_per_hour: 800000,
             bar_association: 'Đoàn Luật sư Hải Phòng',
-            license_number: 'LAW333222',
-            specs: ['Lao động', 'Doanh nghiệp']
+            license_number: 'LS-HP-2020-0333',
+            specs: ['Lao động', 'Bảo hiểm', 'Chính sách xã hội', 'Doanh nghiệp', 'Cán bộ - Công chức - Viên chức'],
+            experiences: [
+                {
+                    title: 'Luật sư lao động và bảo hiểm',
+                    description: 'Tư vấn tranh chấp lương, bảo hiểm xã hội, chấm dứt hợp đồng và nội quy lao động.',
+                    start_date: '2020-04-01'
+                }
+            ]
         },
         {
             email: 'long.dang@law.com',
-            bio: 'Bào chữa các tội danh hình sự kinh tế, chức vụ, tham nhũng và các tội vi phạm trật tự quản lý xã hội.',
+            bio: 'Bào chữa và tư vấn trong các vụ án hình sự kinh tế, tài chính, thuế, chứng khoán và tội phạm chức vụ. Tập trung phân tích dòng tiền, hồ sơ kế toán và chứng cứ điện tử.',
             experience_years: 7,
+            successful_cases: 96,
             rating_avg: 4.5,
             price_per_hour: 900000,
             bar_association: 'Đoàn Luật sư TP.HCM',
-            license_number: 'LAW555444',
-            specs: ['Hình sự']
+            license_number: 'LS-HCM-2019-0555',
+            specs: ['Hình sự', 'Tài chính - Ngân hàng', 'Thuế - Phí - Lệ phí', 'Chứng khoán', 'Tố tụng - Thi hành án'],
+            experiences: [
+                {
+                    title: 'Luật sư hình sự kinh tế',
+                    description: 'Bào chữa và tư vấn rủi ro pháp lý trong các vụ án kinh tế, thuế và ngân hàng.',
+                    start_date: '2019-05-01'
+                }
+            ]
         },
         {
             email: 'tuan.bui@law.com',
-            bio: 'Thành lập doanh nghiệp đầu tư nước ngoài, xin giấy phép con và tư vấn bảo hộ sở hữu trí tuệ.',
+            bio: 'Tư vấn đầu tư, công nghệ, sở hữu trí tuệ, thương mại điện tử và sản xuất. Phù hợp hồ sơ startup, chuyển đổi số, hợp đồng phần mềm và giấy phép kinh doanh có điều kiện.',
             experience_years: 9,
+            successful_cases: 132,
             rating_avg: 4.7,
             price_per_hour: 1100000,
             bar_association: 'Đoàn Luật sư Cần Thơ',
-            license_number: 'LAW777888',
-            specs: ['Doanh nghiệp']
+            license_number: 'LS-CT-2017-0777',
+            specs: ['Doanh nghiệp', 'Đầu tư - Đấu thầu', 'Khoa học - Công nghệ - CNTT', 'Công nghiệp - Sản xuất', 'Thương mại'],
+            experiences: [
+                {
+                    title: 'Luật sư công nghệ và đầu tư',
+                    description: 'Tư vấn thành lập, gọi vốn, hợp đồng công nghệ và bảo vệ tài sản trí tuệ cho doanh nghiệp.',
+                    start_date: '2017-09-01'
+                }
+            ]
         },
         {
             email: 'hai.do@law.com',
-            bio: 'Chuyên gia tư vấn pháp lý giao dịch bất động sản dự án, chuyển nhượng đất đai và tranh chấp quyền sử dụng đất.',
+            bio: 'Tư vấn giao dịch bất động sản, dự án hạ tầng, năng lượng, môi trường và vận tải. Có kinh nghiệm rà soát pháp lý dự án và hợp đồng chuyển nhượng quyền sử dụng đất.',
             experience_years: 11,
+            successful_cases: 147,
             rating_avg: 4.8,
             price_per_hour: 1600000,
             bar_association: 'Đoàn Luật sư Đà Nẵng',
-            license_number: 'LAW999000',
-            specs: ['Đất đai']
+            license_number: 'LS-DN-2015-0999',
+            specs: ['Đất đai - Nhà ở', 'Xây dựng - Đô thị', 'Giao thông vận tải', 'Năng lượng', 'Tài nguyên - Môi trường'],
+            experiences: [
+                {
+                    title: 'Luật sư dự án bất động sản',
+                    description: 'Rà soát pháp lý dự án, hợp đồng mua bán, chuyển nhượng, xây dựng và môi trường.',
+                    start_date: '2015-08-01'
+                }
+            ]
         },
         {
             email: 'diep.phan@law.com',
-            bio: 'Hỗ trợ các vụ việc kết hôn có yếu tố nước ngoài, ly hôn thuận tình nhanh và ly hôn đơn phương vắng mặt.',
+            bio: 'Tư vấn hôn nhân có yếu tố nước ngoài, quốc tịch, lãnh sự, tài sản gia đình và hồ sơ liên quan đến tôn giáo, phong tục, dân tộc trong quan hệ gia đình.',
             experience_years: 5,
+            successful_cases: 73,
             rating_avg: 4.4,
             price_per_hour: 700000,
             bar_association: 'Đoàn Luật sư Khánh Hoà',
-            license_number: 'LAW121212',
-            specs: ['Hôn nhân']
+            license_number: 'LS-KH-2021-1212',
+            specs: ['Hôn nhân - Gia đình', 'Ngoại giao - Điều ước quốc tế', 'Dân tộc - Tôn giáo', 'Dân sự', 'Tố tụng - Thi hành án'],
+            experiences: [
+                {
+                    title: 'Luật sư hôn nhân có yếu tố nước ngoài',
+                    description: 'Xử lý đăng ký kết hôn, ly hôn, quốc tịch, lãnh sự và tài sản gia đình xuyên biên giới.',
+                    start_date: '2021-01-01'
+                }
+            ]
         },
         {
             email: 'dung.trinh@law.com',
-            bio: 'Luật sư tranh tụng kỳ cựu tại tòa án các cấp trong các vụ án dân sự phức tạp và đại diện ngoài tố tụng.',
+            bio: 'Luật sư tranh tụng dân sự, hành chính và công vụ. Mạnh về đại diện ngoài tố tụng, khiếu nại, tố cáo, trách nhiệm cán bộ và thi hành án.',
             experience_years: 14,
+            successful_cases: 188,
             rating_avg: 4.9,
             price_per_hour: 1800000,
             bar_association: 'Đoàn Luật sư Hà Nội',
-            license_number: 'LAW232323',
-            specs: ['Dân sự', 'Hình sự']
+            license_number: 'LS-HN-2012-2323',
+            specs: ['Dân sự', 'Tố tụng - Thi hành án', 'Hành chính - Bộ máy NN', 'Thanh tra - Khiếu nại - PCTN', 'Cán bộ - Công chức - Viên chức'],
+            experiences: [
+                {
+                    title: 'Luật sư tranh tụng dân sự - hành chính',
+                    description: 'Đại diện khách hàng trong tranh chấp dân sự, vụ án hành chính, thi hành án và khiếu nại.',
+                    start_date: '2012-10-01'
+                }
+            ]
         }
     ];
 
@@ -346,6 +500,7 @@ async function main() {
                 experience_years: data.experience_years,
                 is_verified: true,
                 rating_avg: data.rating_avg,
+                successful_cases: data.successful_cases,
                 price_per_hour: data.price_per_hour,
                 bar_association: data.bar_association,
                 license_number: data.license_number,
@@ -357,6 +512,7 @@ async function main() {
                 experience_years: data.experience_years,
                 is_verified: true,
                 rating_avg: data.rating_avg,
+                successful_cases: data.successful_cases,
                 price_per_hour: data.price_per_hour,
                 bar_association: data.bar_association,
                 license_number: data.license_number,
@@ -406,6 +562,99 @@ async function main() {
                 }
             ]
         });
+
+        await prisma.lawyer_experiences.deleteMany({
+            where: { lawyer_id: user.id }
+        });
+        await prisma.lawyer_experiences.createMany({
+            data: (data.experiences || []).map(item => ({
+                lawyer_id: user.id,
+                title: item.title,
+                description: item.description,
+                start_date: new Date(item.start_date),
+                end_date: item.end_date ? new Date(item.end_date) : null
+            }))
+        });
+    }
+
+    // =========================
+    // BILLING CATALOG & DEMO ACCOUNTS
+    // =========================
+    console.log('Seeding billing catalog and representative plan accounts...');
+    const planFixtures = [
+        { code: 'FREE', name: 'Free', sort: 10, price: 0, credits: 20, entitlements: { max_active_cases: 1, max_upload_pages_per_job: 5, history_retention_days: 30, priority_class: 'STANDARD', can_export_pdf: false, can_generate_dynamic_form: false, can_use_lawyer_handoff: false, monthly_included_credits: 20, max_auto_spend_per_turn: 2 } },
+        { code: 'PLUS', name: 'Plus', sort: 20, price: 99000, credits: 120, entitlements: { max_active_cases: 5, max_upload_pages_per_job: 15, history_retention_days: 90, priority_class: 'STANDARD', can_export_pdf: true, can_generate_dynamic_form: false, can_use_lawyer_handoff: true, monthly_included_credits: 120, max_auto_spend_per_turn: 5 } },
+        { code: 'PRO', name: 'Pro', sort: 30, price: 249000, credits: 400, entitlements: { max_active_cases: 20, max_upload_pages_per_job: 50, history_retention_days: 365, priority_class: 'PRIORITY', can_export_pdf: true, can_generate_dynamic_form: true, can_use_lawyer_handoff: true, monthly_included_credits: 400, max_auto_spend_per_turn: 10 } },
+        { code: 'MAX', name: 'Max', sort: 40, price: 599000, credits: 1200, entitlements: { max_active_cases: 100, max_upload_pages_per_job: 100, history_retention_days: 730, priority_class: 'HIGH', can_export_pdf: true, can_generate_dynamic_form: true, can_use_lawyer_handoff: true, monthly_included_credits: 1200, max_auto_spend_per_turn: 15 } },
+    ];
+    const planVersions = {};
+    const planStart = new Date('2026-08-01T00:00:00.000Z');
+    for (const fixture of planFixtures) {
+        const plan = await prisma.billing_plans.upsert({
+            where: { code: fixture.code },
+            update: { name: fixture.name, sort_order: fixture.sort, is_public: true, is_active: true },
+            create: { code: fixture.code, name: fixture.name, sort_order: fixture.sort, audience: 'INDIVIDUAL' },
+        });
+        let version = await prisma.billing_plan_versions.findUnique({ where: { plan_id_version: { plan_id: plan.id, version: 1 } } });
+        if (!version) {
+            version = await prisma.billing_plan_versions.create({
+                data: { plan_id: plan.id, version: 1, price_vnd: fixture.price, billing_interval: 'MONTH', included_credits: fixture.credits, starts_at: planStart },
+            });
+        }
+        planVersions[fixture.code] = version;
+        for (const [key, value] of Object.entries(fixture.entitlements)) {
+            await prisma.billing_plan_entitlements.upsert({
+                where: { plan_version_id_key: { plan_version_id: version.id, key } },
+                update: { value_json: value },
+                create: { plan_version_id: version.id, key, value_json: value },
+            });
+        }
+    }
+
+    const rateCard = await prisma.billing_rate_cards.upsert({
+        where: { code_version: { code: 'MVP', version: 1 } },
+        update: {},
+        create: { code: 'MVP', version: 1, status: 'ACTIVE', starts_at: planStart },
+    });
+    const rateItems = { LOOKUP: [1, 2], GUIDED_ANALYSIS: [3, 5], DEEP_ANALYSIS: [8, 15], DOCUMENT_ANALYSIS: [3, 15], DRAFTING: [3, 15], HANDOFF_PREP: [3, 8] };
+    for (const [taskClass, [min, max]] of Object.entries(rateItems)) {
+        await prisma.billing_rate_card_items.upsert({
+            where: { rate_card_id_task_class: { rate_card_id: rateCard.id, task_class: taskClass } },
+            update: {},
+            create: { rate_card_id: rateCard.id, task_class: taskClass, estimated_min: min, estimated_max: max, units_per_credit: 1000 },
+        });
+    }
+
+    const accountPlans = [
+        ['user1@gmail.com', 'FREE', '10000000-0000-4000-8000-000000000001'],
+        ['user2@gmail.com', 'PLUS', '10000000-0000-4000-8000-000000000002'],
+        ['user3@gmail.com', 'PRO', '10000000-0000-4000-8000-000000000003'],
+        ['user@gmail.com', 'MAX', '10000000-0000-4000-8000-000000000004'],
+        ['admin@gmail.com', 'MAX', '10000000-0000-4000-8000-000000000005'],
+    ];
+    for (const [email, planCode, subscriptionId] of accountPlans) {
+        const user = createdUsers[email];
+        const version = planVersions[planCode];
+        if (!user || !version) continue;
+        await prisma.subscriptions.upsert({
+            where: { id: subscriptionId },
+            update: { user_id: user.id, plan_name: planCode, plan_version_id: version.id, status: 'ACTIVE', is_active: true, current_period_start: planStart, current_period_end: new Date('2027-08-01T00:00:00.000Z') },
+            create: { id: subscriptionId, user_id: user.id, plan_name: planCode, plan_version_id: version.id, status: 'ACTIVE', is_active: true, start_date: planStart, end_date: new Date('2027-08-01T00:00:00.000Z'), current_period_start: planStart, current_period_end: new Date('2027-08-01T00:00:00.000Z'), quota: version.included_credits, provider: 'LOCAL_SEED' },
+        });
+        await prisma.$transaction(async tx => {
+            const wallet = await tx.billing_credit_wallets.upsert({
+                where: { owner_type_owner_id: { owner_type: 'USER', owner_id: user.id } },
+                update: {},
+                create: { owner_type: 'USER', owner_id: user.id },
+            });
+            const sourceRef = `seed:${email}:${planCode}:v1`;
+            const existingLot = await tx.billing_credit_lots.findUnique({ where: { wallet_id_source_ref: { wallet_id: wallet.id, source_ref: sourceRef } } });
+            if (!existingLot) {
+                const updatedWallet = await tx.billing_credit_wallets.update({ where: { id: wallet.id }, data: { available_credits: { increment: version.included_credits }, version: { increment: 1 } } });
+                await tx.billing_credit_lots.create({ data: { wallet_id: wallet.id, source: 'SUBSCRIPTION', granted_amount: version.included_credits, remaining_amount: version.included_credits, source_ref: sourceRef, expires_at: new Date('2027-08-01T00:00:00.000Z') } });
+                await tx.billing_credit_ledger.create({ data: { wallet_id: wallet.id, entry_type: 'GRANT', amount: version.included_credits, available_after: updatedWallet.available_credits, reserved_after: updatedWallet.reserved_credits, idempotency_key: sourceRef, source_ref: subscriptionId } });
+            }
+        });
     }
 
     // =========================
@@ -414,9 +663,9 @@ async function main() {
     console.log('Seeding templates...');
     const templateDir = path.join(__dirname, '../../templates');
 
-    console.log('Uploading components.html to Cloudinary...');
+    console.log('Preparing template fixtures...');
     const componentsPath = path.join(templateDir, 'components.html');
-    if (fs.existsSync(componentsPath)) {
+    if (process.env.SEED_UPLOAD_TEMPLATES === 'true' && fs.existsSync(componentsPath)) {
         try {
             await cloudinary.uploader.upload(componentsPath, {
                 public_id: 'components.html',
@@ -522,16 +771,18 @@ async function main() {
         }
 
         let secureUrl = `https://res.cloudinary.com/drx34env0/raw/upload/v1700000000/templates/${t.fileName}`;
-        console.log(`Uploading ${t.fileName} to Cloudinary...`);
-        try {
-            const uploadResponse = await cloudinary.uploader.upload(filePath, {
-                folder: 'templates',
-                resource_type: 'raw',
-                type: process.env.CLOUDINARY_TYPE || 'upload'
-            });
-            secureUrl = uploadResponse.secure_url;
-        } catch (e) {
-            console.warn(`Cloudinary upload for ${t.fileName} failed, using mock fallback URL:`, e.message);
+        if (process.env.SEED_UPLOAD_TEMPLATES === 'true') {
+            console.log(`Uploading ${t.fileName} to Cloudinary...`);
+            try {
+                const uploadResponse = await cloudinary.uploader.upload(filePath, {
+                    folder: 'templates',
+                    resource_type: 'raw',
+                    type: process.env.CLOUDINARY_TYPE || 'upload'
+                });
+                secureUrl = uploadResponse.secure_url;
+            } catch (e) {
+                console.warn(`Cloudinary upload for ${t.fileName} failed, using fallback URL:`, e.message);
+            }
         }
 
         console.log(`Saving template "${t.name}" into database...`);

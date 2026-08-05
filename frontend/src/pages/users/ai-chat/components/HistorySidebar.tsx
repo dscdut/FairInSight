@@ -1,17 +1,11 @@
-import { Plus, Trash2, HelpCircle, X } from 'lucide-react'
+import { HelpCircle, Plus, RefreshCcw, Trash2, X } from 'lucide-react'
 
 import { Button } from '@/components/ui'
 import { cn } from '@/core/lib/utils'
-
-interface ChatSession {
-  id: string
-  title: string
-  date: string
-  messages: unknown[]
-}
+import { type ChatSessionView } from '@/models/ai-chat/chat-view.type'
 
 interface HistorySidebarProps {
-  sessions: ChatSession[]
+  sessions: ChatSessionView[]
   activeSessionId: string
   setActiveSessionId: (id: string) => void
   onNewChat: () => void
@@ -19,6 +13,8 @@ interface HistorySidebarProps {
   onCloseMobile?: () => void
   showCloseButton?: boolean
   className?: string
+  loadState?: 'loading' | 'ready' | 'error'
+  onRetry?: () => void
 }
 
 export default function HistorySidebar({
@@ -29,7 +25,9 @@ export default function HistorySidebar({
   onDeleteSession,
   onCloseMobile,
   showCloseButton = false,
-  className
+  className,
+  loadState = 'ready',
+  onRetry
 }: HistorySidebarProps) {
   return (
     <div className={cn('flex flex-col h-full bg-background-primary min-h-0 relative z-10 px-4 py-4', className)}>
@@ -66,7 +64,23 @@ export default function HistorySidebar({
 
       {/* Saved Sessions list */}
       <div className='flex-1 overflow-y-auto py-2 space-y-0'>
-        {sessions.length === 0 ? (
+        {loadState === 'loading' ? (
+          <div className='space-y-2 p-1' aria-label='Đang tải lịch sử'>
+            {[0, 1, 2, 3].map((item) => (
+              <div key={item} className='h-10 animate-pulse rounded-xl bg-background-secondary' />
+            ))}
+          </div>
+        ) : loadState === 'error' ? (
+          <div className='flex h-full flex-col items-center justify-center gap-3 p-4 text-center text-text-description'>
+            <p className='text-xs'>Không tải được lịch sử trò chuyện.</p>
+            {onRetry && (
+              <Button variant='outline' size='sm' onClick={onRetry} className='gap-1.5 text-xs'>
+                <RefreshCcw className='h-3.5 w-3.5' aria-hidden='true' />
+                Thử lại
+              </Button>
+            )}
+          </div>
+        ) : sessions.length === 0 ? (
           <div className='h-full flex flex-col items-center justify-center text-center p-4 text-text-description space-y-2'>
             <HelpCircle className='w-8 h-8 opacity-45' aria-hidden='true' />
             <p className='text-xs'>Chưa có lịch sử phân tích.</p>

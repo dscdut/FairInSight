@@ -19,6 +19,7 @@ class ChatSession(Base, TimestampMixin):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
     # UUID người dùng (đăng nhập). Nullable: phiên ẩn danh/test vẫn chạy.
     user_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
+    title: Mapped[str] = mapped_column(String(200), default="Cuộc trò chuyện mới")
 
 
 class ChatMessage(Base, TimestampMixin):
@@ -33,8 +34,10 @@ class ChatMessage(Base, TimestampMixin):
     role: Mapped[str] = mapped_column(String(15), nullable=False)  # user|assistant|system
     content: Mapped[str] = mapped_column(Text, nullable=False)
     msg_type: Mapped[str] = mapped_column(String(20), default="answer")  # answer|clarification|escalation
+    status: Mapped[str] = mapped_column(String(20), default="completed")
     # [{official_code, article_no, clause_no, quoted_text}, ...]
     citations: Mapped[Optional[list]] = mapped_column(JSONB, default=list)
+    available_actions: Mapped[list] = mapped_column(JSONB, default=list)
     # snapshot LegalAIState để debug luồng reasoning
     state_snapshot: Mapped[Optional[dict]] = mapped_column(JSONB)
 

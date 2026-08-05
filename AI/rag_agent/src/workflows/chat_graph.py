@@ -145,11 +145,13 @@ async def run_lookup(
     *,
     user_id: str | None = None,
     deep_confirmed: bool = False,
+    external_persistence: bool = False,
 ) -> ChatState:
     state: ChatState = {
         "session_id": session_id,
         "user_id": user_id,
         "user_message": user_message,
         "deep_confirmed": deep_confirmed,
+        "external_persistence": external_persistence,
     }
     return await chat_graph.ainvoke(state)

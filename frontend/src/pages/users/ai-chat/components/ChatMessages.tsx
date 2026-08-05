@@ -1,11 +1,10 @@
 import * as React from 'react'
 
-import { Bot, Download, FileText, Sparkles, Users } from 'lucide-react'
+import { Bot, Brain, Check, ChevronDown, Download, FileText, ShieldCheck, Sparkles, Users } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { useNavigate } from 'react-router-dom'
 import remarkGfm from 'remark-gfm'
 
-import { type Citation, type Message } from '@/_mocks/chat-data-mock'
 import logo from '@/assets/images/logo.png'
 import { Avatar, AvatarFallback, AvatarImage, Button } from '@/components/ui'
 import { CHAT_STARTER_CATEGORIES } from '@/core/constants/law-major'
@@ -13,72 +12,164 @@ import { ROUTE } from '@/core/constants/path'
 import { getInitials } from '@/core/helpers/get-initials'
 import { cn } from '@/core/lib/utils'
 import { useAuthStore } from '@/core/store/features/auth/authStore'
+import { type ChatMessageView } from '@/models/ai-chat/chat-view.type'
+import {
+  type ChatCitation,
+  type ChatWorkflowStage
+} from '@/models/ai-chat/contracts'
 
 interface ChatMessagesProps {
-  messages: Message[]
+  messages: ChatMessageView[]
   isLoading: boolean
+  isDetailLoading?: boolean
   messagesEndRef: React.RefObject<HTMLDivElement | null>
   onSelectCategory?: (category: string) => void
-  onConfirmDeep?: (originalQuestion: string) => void
-  onDownloadAnalysis?: (content: string) => void
-  onSuggestLawyers?: (domain?: string | null) => void
+  onDownloadAnalysis?: (message: ChatMessageView) => void
+  onSuggestLawyers?: (message: ChatMessageView) => void
+  isSuggestingLawyers?: boolean
+  canExportPdf?: boolean | null
+  canSuggestLawyer?: boolean | null
 }
 
-const REASONING_STEPS = [
-  'Đang tiếp nhận và trích xuất tình tiết vụ việc...',
-  'Đang phân tích vấn đề pháp lý cốt lõi...',
-  'Đang truy vấn cơ sở dữ liệu luật, nghị định, thông tư liên quan...',
-  'Đang đối chiếu tình tiết vụ việc với bảng điều kiện áp dụng...',
-  'Đang thẩm định hiệu lực và đánh giá căn cứ pháp lý...',
-  'Đang xây dựng giả thuyết và lập luận điều kiện...',
-  'Đang tổng hợp báo cáo tư vấn theo cấu trúc IRAC...'
+const STAGE_LABELS: Partial<Record<ChatWorkflowStage, string>> = {
+  received: 'Đã nhận yêu cầu…',
+  understanding: 'Đang hiểu tình huống và ghi nhận dữ kiện…',
+  planning: 'Đang lập kế hoạch tra cứu…',
+  retrieving: 'Đang tìm căn cứ pháp lý liên quan…',
+  checking_applicability: 'Đang kiểm tra điều kiện áp dụng…',
+  researching: 'Đang lần theo dẫn chiếu và hiệu lực văn bản…',
+  applying_law: 'Đang đối chiếu căn cứ với vụ việc…',
+  verifying: 'Đang kiểm chứng nhận định và trích dẫn…',
+  writing_report: 'Đang hoàn thiện bản định vị pháp lý…'
+}
+
+const REASONING_CYCLES = [
+  'Đã nhận yêu cầu & đang khởi tạo quy trình tư vấn…',
+  'Đang hiểu tình huống, trích xuất dữ kiện & từ khóa pháp lý…',
+  'Đang lập kế hoạch tra cứu trong hệ thống pháp luật Việt Nam…',
+  'Đang tìm căn cứ pháp lý, điều luật & văn bản quy phạm liên quan…',
+  'Đang kiểm tra điều kiện áp dụng & đối chiếu với tình huống…',
+  'Đang lần theo dẫn chiếu, văn bản hướng dẫn & hiệu lực thi hành…',
+  'Đang áp dụng điều luật & xây dựng lập luận pháp lý chuyên sâu…',
+  'Đang kiểm chứng nhận định, kiểm tra trích dẫn & hoàn thiện bản báo cáo…'
 ]
 
-function ReasoningTicker() {
-  const [stepIndex, setStepIndex] = React.useState(0)
+function ProcessingIndicator({ stage }: { stage?: ChatWorkflowStage | null }) {
+  const [cycleIndex, setCycleIndex] = React.useState(0)
 
   React.useEffect(() => {
     const timer = setInterval(() => {
-      setStepIndex((prev) => (prev + 1) % REASONING_STEPS.length)
-    }, 3500)
+      setCycleIndex((prev) => (prev + 1) % REASONING_CYCLES.length)
+    }, 2800)
     return () => clearInterval(timer)
   }, [])
 
+  const currentText = (stage && STAGE_LABELS[stage]) || REASONING_CYCLES[cycleIndex]
+
   return (
-    <div className='flex items-center gap-2.5 py-1 text-xs font-medium text-text-description animate-in fade-in duration-300'>
-      <div className='flex items-center gap-1 shrink-0'>
-        <span className='w-2 h-2 rounded-full bg-primary animate-bounce' style={{ animationDelay: '0ms' }} />
-        <span className='w-2 h-2 rounded-full bg-primary animate-bounce' style={{ animationDelay: '150ms' }} />
-        <span className='w-2 h-2 rounded-full bg-primary animate-bounce' style={{ animationDelay: '300ms' }} />
+    <div
+      role='status'
+      aria-live='polite'
+      className='flex flex-col gap-2.5 py-1.5 text-xs text-text-description'
+    >
+      <div className='flex items-center gap-2.5'>
+        <div className='flex shrink-0 items-center gap-1.5' aria-hidden='true'>
+          <span className='h-2.5 w-2.5 animate-bounce rounded-full bg-primary' />
+          <span className='h-2.5 w-2.5 animate-bounce rounded-full bg-primary [animation-delay:180ms]' />
+          <span className='h-2.5 w-2.5 animate-bounce rounded-full bg-primary [animation-delay:360ms]' />
+        </div>
+        <span className='font-black uppercase tracking-wider text-primary text-[11px] animate-pulse flex items-center gap-1.5'>
+          <Brain className='h-3.5 w-3.5 animate-spin duration-1000' />
+          Đang suy luận & phân tích pháp lý…
+        </span>
       </div>
-      <span className='transition-all duration-300 text-main/90 font-semibold italic animate-pulse'>
-        {REASONING_STEPS[stepIndex]}
-      </span>
+
+      <div className='ml-5 rounded-xl border border-primary/25 bg-primary/8 p-3 transition-all duration-300 shadow-2xs'>
+        <p className='font-semibold italic text-main/95 text-xs flex items-center gap-2'>
+          <span className='inline-block h-2 w-2 rounded-full bg-primary animate-ping shrink-0' />
+          <span className='animate-in fade-in slide-in-from-left-2 duration-300'>{currentText}</span>
+        </p>
+      </div>
     </div>
   )
 }
 
-// Render markdown câu trả lời AI (đậm, heading, bảng, danh sách...)
+function ReasoningHeader({ mode }: { mode?: string | null }) {
+  const [isOpen, setIsOpen] = React.useState(false)
+
+  return (
+    <div className='mb-3.5 border-b border-border-secondary/60 pb-3'>
+      <button
+        type='button'
+        onClick={() => setIsOpen(!isOpen)}
+        className='flex items-center gap-2 text-xs font-semibold text-text-description hover:text-primary transition-colors cursor-pointer group'
+      >
+        <div className='flex items-center gap-1.5 rounded-xl bg-background-secondary/80 px-3 py-1.2 border border-border-secondary/80 group-hover:border-primary/40 shadow-2xs transition-all'>
+          <Brain className='h-3.5 w-3.5 text-primary' />
+          <span className='font-extrabold text-main text-[11px]'>
+            {mode === 'deep' ? 'Đã hoàn tất phân tích chuyên sâu (9 bước)' : 'Đã suy luận & đối chiếu căn cứ pháp lý'}
+          </span>
+          <ChevronDown className={cn('h-3.5 w-3.5 transition-transform duration-200 text-text-description', isOpen && 'rotate-180')} />
+        </div>
+      </button>
+
+      {isOpen && (
+        <div className='mt-2.5 rounded-xl border border-border-secondary/60 bg-background-secondary/50 p-3 text-xs space-y-2 animate-in fade-in slide-in-from-top-1 duration-200'>
+          <p className='font-extrabold text-[10px] uppercase tracking-wider text-text-description mb-2 flex items-center gap-1.5'>
+            <Sparkles className='h-3 w-3 text-primary' />
+            Quy trình suy luận & tra cứu đã thực hiện:
+          </p>
+          <div className='space-y-1.5 text-main/90 text-[11px]'>
+            <div className='flex items-center gap-2'>
+              <Check className='h-3.5 w-3.5 text-emerald-500 shrink-0' />
+              <span>Phân tích tình huống, trích xuất dữ kiện & nhóm vấn đề pháp lý</span>
+            </div>
+            <div className='flex items-center gap-2'>
+              <Check className='h-3.5 w-3.5 text-emerald-500 shrink-0' />
+              <span>Tra cứu căn cứ trong cơ sở dữ liệu Văn bản Quy phạm Pháp luật</span>
+            </div>
+            <div className='flex items-center gap-2'>
+              <Check className='h-3.5 w-3.5 text-emerald-500 shrink-0' />
+              <span>Kiểm tra điều kiện áp dụng, hiệu lực văn bản & trích dẫn điều luật</span>
+            </div>
+            <div className='flex items-center gap-2'>
+              <Check className='h-3.5 w-3.5 text-emerald-500 shrink-0' />
+              <span>Tổng hợp đánh giá pháp lý & xây dựng định hướng giải quyết</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function AiMarkdown({ content }: { content: string }) {
   return (
-    <div className='prose prose-sm prose-slate max-w-none text-small text-main leading-relaxed'>
+    <div className='prose prose-sm prose-slate max-w-none text-small leading-relaxed text-main'>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
+        skipHtml
         components={{
-          h1: ({ ...p }) => <h1 className='text-base font-black text-primary mb-2 mt-3' {...p} />,
-          h2: ({ ...p }) => <h2 className='text-sm font-bold text-main mb-1.5 mt-3' {...p} />,
-          h3: ({ ...p }) => <h3 className='text-sm font-bold text-main mb-1 mt-2' {...p} />,
-          p: ({ ...p }) => <p className='mb-2 leading-relaxed' {...p} />,
-          ul: ({ ...p }) => <ul className='list-disc pl-5 mb-2 space-y-1' {...p} />,
-          ol: ({ ...p }) => <ol className='list-decimal pl-5 mb-2 space-y-1' {...p} />,
-          strong: ({ ...p }) => <strong className='font-bold text-main' {...p} />,
-          table: ({ ...p }) => (
-            <div className='overflow-x-auto my-3 rounded-lg border border-border-secondary/60'>
-              <table className='w-full border-collapse text-xs' {...p} />
+          h1: ({ ...props }) => <h1 className='mb-2 mt-3 text-base font-black text-primary' {...props} />,
+          h2: ({ ...props }) => <h2 className='mb-1.5 mt-3 text-sm font-bold text-main' {...props} />,
+          h3: ({ ...props }) => <h3 className='mb-1 mt-2 text-sm font-bold text-main' {...props} />,
+          p: ({ ...props }) => <p className='mb-2 leading-relaxed' {...props} />,
+          ul: ({ ...props }) => <ul className='mb-2 list-disc space-y-1 pl-5' {...props} />,
+          ol: ({ ...props }) => <ol className='mb-2 list-decimal space-y-1 pl-5' {...props} />,
+          strong: ({ ...props }) => <strong className='font-bold text-main' {...props} />,
+          a: ({ href, children, ...props }) => {
+            const safeHref = href?.startsWith('https://') ? href : undefined
+            return safeHref
+              ? <a href={safeHref} target='_blank' rel='noopener noreferrer' {...props}>{children}</a>
+              : <span>{children}</span>
+          },
+          table: ({ ...props }) => (
+            <div className='my-3 overflow-x-auto rounded-lg border border-border-secondary/60'>
+              <table className='w-full border-collapse text-xs' {...props} />
             </div>
           ),
-          th: ({ ...p }) => <th className='border-b border-border-secondary/60 bg-background-secondary/40 p-2 font-bold text-left' {...p} />,
-          td: ({ ...p }) => <td className='border-b border-border-secondary/30 p-2' {...p} />,
+          th: ({ ...props }) => <th className='border-b border-border-secondary/60 bg-background-secondary/40 p-2 text-left font-bold' {...props} />,
+          td: ({ ...props }) => <td className='border-b border-border-secondary/30 p-2' {...props} />
         }}
       >
         {content}
@@ -87,317 +178,256 @@ function AiMarkdown({ content }: { content: string }) {
   )
 }
 
-// Hiển thị căn cứ pháp lý (citations) dạng chip nhỏ dưới câu trả lời
-function Citations({ items }: { items: Citation[] }) {
-  if (!items || items.length === 0) return null
+function Citations({ items }: { items: ChatCitation[] }) {
+  if (!items.length) return null
   return (
-    <div className='flex flex-wrap gap-1.5 mt-2'>
-      {items.map((c, i) => {
-        const label = [c.official_code, c.article_no && `Điều ${c.article_no}`, c.clause_no && `Khoản ${c.clause_no}`]
-          .filter(Boolean)
-          .join(' · ')
-        if (!label) return null
-        return (
-          <span
-            key={i}
-            title={c.quoted_text || ''}
-            className='inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/8 text-primary text-[10px] font-semibold border border-primary/15'
-          >
-            <FileText className='w-3 h-3' aria-hidden='true' />
-            {label}
-          </span>
-        )
-      })}
-    </div>
+    <section className='mt-3 border-t border-border-secondary/50 pt-2' aria-label='Căn cứ pháp lý'>
+      <p className='mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-text-description'>Căn cứ đã sử dụng</p>
+      <div className='flex flex-wrap gap-1.5'>
+        {items.map((citation, index) => {
+          const label = [
+            citation.official_code,
+            citation.article_no && `Điều ${citation.article_no}`,
+            citation.clause_no && `Khoản ${citation.clause_no}`
+          ].filter(Boolean).join(' · ')
+          if (!label) return null
+          return (
+            <span
+              key={`${label}-${index}`}
+              title={citation.quoted_text || undefined}
+              className='inline-flex items-center gap-1 rounded-md border border-primary/15 bg-primary/8 px-2 py-0.5 text-[10px] font-semibold text-primary'
+            >
+              <FileText className='h-3 w-3' aria-hidden='true' />
+              {label}
+            </span>
+          )
+        })}
+      </div>
+    </section>
   )
 }
 
-const STARTER_CATEGORIES = [...CHAT_STARTER_CATEGORIES]
+function BillingSummary({ message }: { message: ChatMessageView }) {
+  const billing = message.billing
+  if (!billing) return null
+  if (billing.status === 'NONE') {
+    return <p className='mt-2 text-[11px] text-text-description'>Cần thêm thông tin để tiếp tục · chưa trừ credit</p>
+  }
+  if (billing.status === 'RELEASED' || billing.status === 'REFUNDED') {
+    return <p className='mt-2 text-[11px] text-text-description'>Yêu cầu chưa hoàn tất · credit đã được hoàn lại</p>
+  }
+  if (billing.status === 'SHADOW') {
+    return <p className='mt-2 text-[11px] text-text-description'>Đang ở chế độ thử nghiệm · chưa trừ credit</p>
+  }
+  return (
+    <p className='mt-2 text-[11px] text-text-description'>
+      Đã dùng {billing.chargedCredits.toLocaleString('vi-VN')} credit · còn {billing.remainingCredits.toLocaleString('vi-VN')}
+    </p>
+  )
+}
 
 export default function ChatMessages({
   messages,
   isLoading,
+  isDetailLoading = false,
   messagesEndRef,
   onSelectCategory,
-  onConfirmDeep,
   onDownloadAnalysis,
-  onSuggestLawyers
+  onSuggestLawyers,
+  isSuggestingLawyers = false,
+  canExportPdf = null,
+  canSuggestLawyer = null
 }: ChatMessagesProps) {
-
-  const { user } = useAuthStore()
+  const user = useAuthStore((state) => state.user)
   const navigate = useNavigate()
+  const [lawyerConsentMessageId, setLawyerConsentMessageId] = React.useState<string | null>(null)
 
-  // "Xem hồ sơ" → mở trang hồ sơ chi tiết của luật sư đó.
-  const handleViewLawyerProfile = (lawyerId: string) => {
-    navigate(ROUTE.USER.LAWYER_DETAIL.replace(':id', lawyerId))
-  }
-
-  // "Liên hệ" → mở khung chat luật sư, soạn sẵn prompt (kèm gợi ý đính kèm hồ sơ PDF).
   const handleContactLawyer = (lawyerName: string) => {
     const prefillMessage =
-      `Xin chào ${lawyerName}, tôi đang gặp một số vấn đề pháp lý và được hệ thống FairInsight ` +
-      `kết nối tới Luật sư. Tôi xin gửi kèm bản tổng hợp hồ sơ vụ việc (PDF) do trợ lý AI phân tích. ` +
-      `Rất mong Luật sư xem giúp và tư vấn hướng xử lý phù hợp. Tôi xin chân thành cảm ơn.`
+      `Xin chào ${lawyerName}, tôi được FairInsight gợi ý liên hệ để được hỗ trợ pháp lý. ` +
+      'Tôi sẽ chủ động chọn những tài liệu và thông tin muốn chia sẻ.'
     navigate(ROUTE.USER.MESSAGES, { state: { lawyerName, prefillMessage } })
   }
 
-  // Câu hỏi gốc của user (tin user ngay trước 1 bubble AI) — dùng để gửi lại khi
-  // bấm "Phân tích sâu".
-  const lastUserBefore = (index: number): string => {
-    for (let i = index - 1; i >= 0; i--) {
-      if (messages[i].sender === 'user') return messages[i].content
-    }
-    return ''
+  if (isDetailLoading) {
+    return (
+      <div className='flex flex-1 flex-col gap-4 overflow-hidden p-4 lg:p-6' aria-label='Đang tải nội dung cuộc trò chuyện'>
+        <div className='h-20 w-2/3 animate-pulse rounded-2xl bg-background-secondary' />
+        <div className='ml-auto h-14 w-1/2 animate-pulse rounded-2xl bg-background-secondary' />
+        <div className='h-32 w-4/5 animate-pulse rounded-2xl bg-background-secondary' />
+      </div>
+    )
   }
 
   return (
-    <div className='flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 min-h-0'>
+    <div className='min-h-0 flex-1 space-y-4 overflow-y-auto p-4 lg:p-6'>
       {messages.length === 0 ? (
-        // Starter
-        <div className='h-full flex flex-col items-center justify-center text-center p-4 max-w-lg mx-auto space-y-4 animate-in fade-in-50 duration-500'>
-          <img src={logo} className='w-20 h-20 object-contain' alt="LegalAI Logo" />
-          <h3 className='text-h3 text-main font-semibold'>Chào mừng đến với Trợ lý Pháp lý AI</h3>
-          <p className='text-small text-text-description leading-relaxed'>
-            Hãy nhập nội dung tình huống pháp lý của bạn ở khung chat bên dưới. Bạn có thể đính kèm các hình ảnh hiện trường, biên bản, hợp đồng liên quan để AI phân tích chi tiết.
+        <div className='mx-auto flex h-full max-w-lg flex-col items-center justify-center space-y-4 p-4 text-center animate-in fade-in-50 duration-500'>
+          <img src={logo} className='h-20 w-20 object-contain' alt='FairInsight' />
+          <h2 className='text-h3 font-semibold text-main'>Chào mừng đến với Trợ lý Pháp lý AI</h2>
+          <p className='text-small leading-relaxed text-text-description'>
+            Hãy mô tả tình huống, các bên liên quan, thời điểm xảy ra, tài liệu bạn đang có và điều bạn muốn được giải quyết.
           </p>
-
-          <div className='flex flex-wrap justify-center gap-2 pt-2 max-w-md mx-auto'>
-            {STARTER_CATEGORIES.map((category) => (
+          <div className='mx-auto flex max-w-md flex-wrap justify-center gap-2 pt-2'>
+            {CHAT_STARTER_CATEGORIES.map((category) => (
               <button
                 key={category}
+                type='button'
                 onClick={() => onSelectCategory?.(category)}
-                className='px-3.5 py-2 rounded-xl text-xs font-semibold bg-background-secondary text-main hover:bg-primary hover:text-white hover:border-primary transition-all duration-200 shadow-sm cursor-pointer'
+                className='cursor-pointer rounded-xl bg-background-secondary px-3.5 py-2 text-xs font-semibold text-main shadow-sm transition-colors hover:bg-primary hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary'
               >
                 {category}
               </button>
             ))}
           </div>
         </div>
-      ) : (
-        messages.map((message, index) => {
-          const isUser = message.sender === 'user'
-          return (
-            <div
-              key={message.id}
-              className={cn(
-                'flex gap-3 animate-in fade-in slide-in-from-bottom-3 duration-250',
-                isUser ? 'ml-auto flex-row-reverse max-w-[90%] lg:max-w-[75%]' : 'max-w-[95%] lg:max-w-[90%] mr-auto'
+      ) : messages.map((message) => {
+        const isUser = message.sender === 'user'
+        const isProcessing = !isUser && message.status === 'processing'
+        const exportReady = !isUser && Boolean(message.content) && message.status !== 'failed'
+        const lawyerReady = !isUser && Boolean(message.content) && message.status !== 'failed'
+        const showActions = !isUser && !isProcessing && Boolean(exportReady || lawyerReady)
+
+        return (
+          <article
+            key={message.id}
+            className={cn(
+              'flex gap-3 animate-in fade-in slide-in-from-bottom-3 duration-250',
+              isUser ? 'ml-auto max-w-[90%] flex-row-reverse lg:max-w-[75%]' : 'mr-auto max-w-[95%] lg:max-w-[90%]'
+            )}
+          >
+            <Avatar className={cn('h-8 w-8 shrink-0 rounded-lg shadow-sm', isUser ? 'bg-info text-white' : 'bg-background-primaryLight text-primary')}>
+              {isUser ? (
+                <AvatarFallback className='border-1.5 border-border-secondary text-xs font-semibold'>
+                  <Avatar className='h-8 w-8'>
+                    <AvatarImage src={user?.avatarUrl || '/images/avatar.png'} alt={user?.fullName || 'Người dùng'} />
+                    <AvatarFallback className='bg-primary font-bold text-white'>{getInitials(user?.fullName || '')}</AvatarFallback>
+                  </Avatar>
+                </AvatarFallback>
+              ) : (
+                <AvatarFallback className='border-1.5 border-border-secondary text-xs font-semibold'>
+                  <Bot className='h-4 w-4 text-primary' aria-hidden='true' />
+                </AvatarFallback>
               )}
-            >
-              {/* Message Avatar */}
-              <Avatar className={cn(
-                'w-8 h-8 rounded-lg shrink-0 shadow-sm',
-                isUser 
-                  ? ' bg-info text-white'
-                  : ' bg-background-primaryLight text-primary'
+            </Avatar>
+
+            <div className='min-w-0 w-full space-y-1.5'>
+              <div className={cn(
+                'rounded-2xl p-4 text-small leading-relaxed text-main',
+                isUser ? 'bg-background-secondary' : 'bg-background-primary',
+                message.status === 'failed' && 'border border-error-primary/30'
               )}>
-                {isUser ? (
-                  <AvatarFallback className='text-xs font-semibold border-border-secondary border-1.5'>
-                    <Avatar
-                      className={cn(
-                        'w-8 h-8',
-                      )}
-                    >
-                      {/* Sử dụng optional chaining an toàn để tránh crash khi chưa có dữ liệu */}
-                      <AvatarImage src='/images/avatar.png' alt={user?.fullName} />
-                      <AvatarFallback className='bg-primary text-white font-bold'>
-                        {getInitials(user?.fullName || '')}
-                      </AvatarFallback>
-                    </Avatar>
-                  </AvatarFallback>
-                ) : (
-                  <AvatarFallback className='text-xs font-semibold border-border-secondary border-1.5'>
-                    <Bot className='w-4 h-4 text-primary' aria-hidden='true' />
-                  </AvatarFallback>
-                )}
-              </Avatar>
+                {isUser
+                  ? <div className='whitespace-pre-line font-sans text-small'>{message.content}</div>
+                  : isProcessing
+                    ? <ProcessingIndicator stage={message.stage} />
+                    : (
+                      <>
+                        <ReasoningHeader mode={message.mode} />
+                        <AiMarkdown content={message.content} />
+                      </>
+                    )}
 
-              {/* Message Content Bubble */}
-              <div className='space-y-1.5 min-w-0 w-full'>
-                <div
-                  className={cn(
-                    'p-4 rounded-2xl text-small leading-relaxed text-main',
-                    isUser
-                      ? 'bg-background-secondary'
-                      : 'bg-background-primary'
-                  )}
-                >
-                  {/* Display text contents — AI: markdown or reasoning animation; user: plain */}
-                  {isUser ? (
-                    <div className='whitespace-pre-line text-small font-sans'>
-                      {message.content}
-                    </div>
-                  ) : message.isLoading ? (
-                    <ReasoningTicker />
-                  ) : (
-                    <AiMarkdown content={message.content} />
-                  )}
+                {!isUser && !isProcessing && <Citations items={message.citations || []} />}
+                {!isUser && !isProcessing && <BillingSummary message={message} />}
 
-                  {/* Căn cứ pháp lý (citations) */}
-                  {!isUser && <Citations items={message.citations || []} />}
-
-                  {/* Nút "Phân tích sâu" khi AI mời chuyển sang reasoning */}
-                  {!isUser && message.deepPending && onConfirmDeep && (
-                    <Button
-                      variant='default'
-                      size='sm'
-                      onClick={() => onConfirmDeep(lastUserBefore(index))}
-                      className='mt-3 text-xs font-semibold text-white gap-1.5'
-                    >
-                      <Sparkles className='w-3.5 h-3.5' aria-hidden='true' />
-                      Phân tích sâu vụ việc này
-                    </Button>
-                  )}
-
-                  {/* 2 nút hành động: tải bản phân tích / gợi ý luật sư.
-                      Hiển thị cho tất cả câu trả lời AI thông thường (Lookup/Reasoning).
-                      Ẩn khi AI đang mời phân tích sâu hoặc đang hỏi ngược (clarification). */}
-                  {!isUser && !message.deepPending && message.mode !== 'clarification' && message.mode !== 'clarify' && (
-                    <div className='mt-3 flex flex-wrap gap-2'>
-                      {onDownloadAnalysis && (
-                        <Button
-                          variant='outline'
-                          size='sm'
-                          onClick={() => onDownloadAnalysis(message.content)}
-                          className='text-xs font-semibold gap-1.5'
-                        >
-                          <Download className='w-3.5 h-3.5' aria-hidden='true' />
-                          Tải bản phân tích (PDF)
-                        </Button>
-                      )}
-                      {onSuggestLawyers && (
-                        <Button
-                          variant='default'
-                          size='sm'
-                          onClick={() => onSuggestLawyers(message.domain)}
-                          className='text-xs font-semibold text-white gap-1.5'
-                        >
-                          <Users className='w-3.5 h-3.5' aria-hidden='true' />
-                          Gợi ý luật sư
-                        </Button>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Attachments rendering inside chat bubble */}
-                  {message.attachments && message.attachments.length > 0 && (
-                    <div className='space-y-2 mt-2'>
-                      <div className='flex flex-wrap gap-2 mt-2'>
-                        {message.attachments.map((att) => (
-                          <div key={att.id}>
-                            {att.type === 'image' ? (
-                              <div className='relative group overflow-hidden rounded-lg max-w-[150px] bg-background-secondary'>
-                                <img
-                                  src={att.url}
-                                  alt={att.name}
-                                  className='h-20 w-full object-cover group-hover:scale-105 transition-transform'
-                                />
-                                <div className='absolute bottom-0 inset-x-0 p-1 bg-black/60 text-xs text-white truncate text-center'>
-                                  {att.name}
-                                </div>
-                              </div>
-                            ) : (
-                              <div className={cn(
-                                'flex items-center gap-2 px-4 py-2 rounded-lg text-xs shadow-sm max-w-[200px] min-w-0',
-                                isUser 
-                                  ? 'bg-background-primary text-main'
-                                  : 'bg-background-secondary text-main'
-                              )}>
-                                <FileText className='w-5 h-5 text-info shrink-0' aria-hidden='true' />
-                                <div className='min-w-0 flex-1 text-left'>
-                                  <p className='font-medium truncate'>{att.name}</p>
-                                  <p className='text-[9px] text-text-description'>{att.size}</p>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Render Lawyer recommendation cards if present */}
-                {message.lawyers && message.lawyers.length > 0 && (
-                  <div className='flex overflow-x-auto gap-4 py-2 w-full xs:max-w-[140px] sm:max-w-[200px] md:max-w-[600px] lg:max-w-[700px] no-scrollbar scroll-smooth'>
-                    {message.lawyers.map((lawyer) => (
-                      <div
-                        key={lawyer.id}
-                        className='flex flex-col items-center p-4 bg-background-primary border border-border-secondary rounded-2xl w-[190px] text-center shadow-sm shrink-0 animate-in fade-in slide-in-from-bottom-2 duration-200'
+                {showActions && (
+                  <div className='mt-3 flex flex-wrap gap-2'>
+                    {onDownloadAnalysis && exportReady && canExportPdf !== false && (
+                      <Button
+                        variant='outline'
+                        size='sm'
+                        onClick={() => onDownloadAnalysis(message)}
+                        className='gap-1.5 text-xs font-semibold'
                       >
-                        {/* Avatar */}
-                        <Avatar className='w-16 h-16 rounded-full shadow-sm mb-3 border border-border-secondary shrink-0'>
-                          <AvatarImage src={lawyer.avatar} alt={lawyer.name} />
-                          <AvatarFallback className='bg-primary text-white font-bold text-lg'>
-                            {getInitials(lawyer.name)}
-                          </AvatarFallback>
-                        </Avatar>
-
-                        {/* Label: Luật sư */}
-                        <span className='text-sm font-semibold tracking-wider text-primary bg-primary/10 px-2.5 py-0.5 rounded-full mb-2'>
-                          Luật sư
-                        </span>
-
-                        {/* Họ và tên */}
-                        <h4 className='text-sm font-bold text-main truncate w-full mb-1'>
-                          {lawyer.name}
-                        </h4>
-
-                        {/* Chuyên mục */}
-                        <p className='text-xs text-text-description line-clamp-2 min-h-[32px] w-full px-1 mb-4 leading-normal'>
-                          {lawyer.specialty}
-                        </p>
-
-                        {/* 2 Buttons */}
-                        <div className='flex flex-col gap-1.5 w-full mt-auto'>
-                          <Button
-                            variant='outline'
-                            size='sm'
-                            onClick={() => handleViewLawyerProfile(lawyer.id)}
-                            className='w-full text-xs font-semibold py-1.5 rounded-lg h-auto'
-                          >
-                            Xem hồ sơ
-                          </Button>
-                          <Button
-                            variant='default'
-                            size='sm'
-                            onClick={() => handleContactLawyer(lawyer.name)}
-                            className='w-full text-xs font-semibold py-1.5 rounded-lg h-auto text-white'
-                          >
-                            Liên hệ
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+                        <Download className='h-3.5 w-3.5' aria-hidden='true' />
+                        Tải bản phân tích (PDF)
+                      </Button>
+                    )}
+                    {onSuggestLawyers && lawyerReady && canSuggestLawyer !== false && (
+                      <Button
+                        variant='default'
+                        size='sm'
+                        onClick={() => setLawyerConsentMessageId(message.id)}
+                        disabled={isSuggestingLawyers}
+                        className='gap-1.5 text-xs font-semibold text-white'
+                      >
+                        <Users className='h-3.5 w-3.5' aria-hidden='true' />
+                        {isSuggestingLawyers ? 'Đang tìm luật sư…' : 'Gợi ý luật sư'}
+                      </Button>
+                    )}
+                    {((exportReady && canExportPdf === false) || (lawyerReady && canSuggestLawyer === false)) && (
+                      <Button
+                        variant='ghost'
+                        size='sm'
+                        onClick={() => navigate(ROUTE.USER.BILLING)}
+                        className='text-xs text-text-description'
+                      >
+                        Xem gói để mở thêm tính năng
+                      </Button>
+                    )}
                   </div>
                 )}
 
-                <p className={cn(
-                  'text-[10px] text-text-description px-4',
-                  isUser && 'text-right'
-                )}>
-                  {message.timestamp}
-                </p>
+                {lawyerConsentMessageId === message.id && (
+                  <div className='mt-3 rounded-xl border border-border-secondary bg-background-secondary/50 p-3'>
+                    <div className='flex gap-2 text-xs text-main'>
+                      <ShieldCheck className='h-4 w-4 shrink-0 text-primary' aria-hidden='true' />
+                      <p>Hệ thống chỉ dùng lĩnh vực pháp lý của báo cáo để tìm luật sư; không tự gửi toàn bộ nội dung trò chuyện.</p>
+                    </div>
+                    {message.handoff?.specialty_codes?.length ? (
+                      <p className='mt-2 text-xs text-text-description'>Nhóm vấn đề: {message.handoff.specialty_codes.join('; ')}</p>
+                    ) : null}
+                    <div className='mt-2 flex gap-2'>
+                      <Button
+                        size='sm'
+                        onClick={() => {
+                          setLawyerConsentMessageId(null)
+                          onSuggestLawyers?.(message)
+                        }}
+                        className='text-xs text-white'
+                      >
+                        Đồng ý tìm luật sư
+                      </Button>
+                      <Button variant='ghost' size='sm' onClick={() => setLawyerConsentMessageId(null)} className='text-xs'>Hủy</Button>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          )
-        })
-      )}
 
-      {/* Waiting AI Loading state bubble */}
+              {message.lawyers && message.lawyers.length > 0 && (
+                <div className='flex w-full gap-4 overflow-x-auto py-2 scroll-smooth md:max-w-[600px] lg:max-w-[700px]'>
+                  {message.lawyers.map((lawyer) => (
+                    <div key={lawyer.id} className='flex w-[210px] shrink-0 flex-col items-center rounded-2xl border border-border-secondary bg-background-primary p-4 text-center shadow-sm'>
+                      <Avatar className='mb-3 h-16 w-16 shrink-0 rounded-full border border-border-secondary shadow-sm'>
+                        <AvatarImage src={lawyer.avatar} alt={lawyer.name} />
+                        <AvatarFallback className='bg-primary text-lg font-bold text-white'>{getInitials(lawyer.name)}</AvatarFallback>
+                      </Avatar>
+                      <h3 className='mb-1 w-full truncate text-sm font-bold text-main'>{lawyer.name}</h3>
+                      <p className='mb-4 min-h-[32px] w-full line-clamp-2 text-xs leading-normal text-text-description'>{lawyer.specialty}</p>
+                      <div className='mt-auto flex w-full flex-col gap-1.5'>
+                        <Button variant='outline' size='sm' onClick={() => navigate(ROUTE.USER.LAWYER_DETAIL.replace(':id', lawyer.id))} className='w-full text-xs font-semibold'>Xem hồ sơ</Button>
+                        <Button size='sm' onClick={() => handleContactLawyer(lawyer.name)} className='w-full text-xs font-semibold text-white'>Liên hệ</Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <p className={cn('px-4 text-[10px] text-text-description', isUser && 'text-right')}>{message.timestamp}</p>
+            </div>
+          </article>
+        )
+      })}
+
       {isLoading && (
-        <div className='flex gap-3 max-w-[75%] mr-auto animate-in fade-in duration-200'>
-          <Avatar className='w-8 h-8 rounded-lg shrink-0 bg-background-primaryLight'>
-            <AvatarFallback className='text-xs font-semibold text-primary'>
-              <Bot className='w-4 h-4 animate-bounce' aria-hidden='true' />
-            </AvatarFallback>
+        <div className='mr-auto flex max-w-[75%] gap-3' aria-live='polite'>
+          <Avatar className='h-8 w-8 shrink-0 rounded-lg bg-background-primaryLight'>
+            <AvatarFallback className='text-xs font-semibold text-primary'><Bot className='h-4 w-4' aria-hidden='true' /></AvatarFallback>
           </Avatar>
-          <div className='bg-background-primary p-4 rounded-2xl text-small text-main'>
-            <ReasoningTicker />
-          </div>
+          <div className='rounded-2xl bg-background-primary p-4 text-small text-main'><ProcessingIndicator /></div>
         </div>
       )}
-      
       <div ref={messagesEndRef} />
     </div>
   )

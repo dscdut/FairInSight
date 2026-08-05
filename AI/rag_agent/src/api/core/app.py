@@ -13,7 +13,6 @@ from src.api.v1.admin_documents import router as admin_documents_router
 from src.api.v1.chat import router as chat_router
 from src.api.v1.documents import router as documents_router
 from src.api.v1.ingest import router as ingest_router
-from src.api.v1.lawyer import router as lawyer_router
 from src.api.v1.lookup import router as lookup_router
 from src.config.settings import settings
 
@@ -61,7 +60,6 @@ def create_app() -> FastAPI:
     app.include_router(admin_documents_router)
     app.include_router(documents_router)
     app.include_router(ingest_router)
-    app.include_router(lawyer_router)
     app.include_router(lookup_router)
 
     @app.get("/health")

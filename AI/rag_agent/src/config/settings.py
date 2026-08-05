@@ -53,6 +53,13 @@ class Settings(BaseSettings):
     # lần, chuyển sang model này trên OLLAMA_BASE_URL (qwen3:8b local, GPU 8GB).
     OLLAMA_FALLBACK_MODEL: str = "qwen3:8b"
     CHAT_RETRIES: int = 3
+    CHAT_TURN_TIMEOUT_S: float = 900.0
+    CHAT_PROCESSING_STALE_S: float = 960.0
+    REQUIRE_CHAT_GATEWAY_HMAC: bool = True
+    FIS_HMAC_KEY_ID: str = "local-v1"
+    FIS_HMAC_EXPECTED_ISSUER: str = "fairinsight-backend"
+    FIS_HMAC_EXPECTED_AUDIENCE: str = "fairinsight-ai"
+    FIS_HMAC_SHARED_SECRET: str = ""
     OLLAMA_EMBED_MODEL: str = "bge-m3"
     EMBEDDING_DIM: int = 1024
     OLLAMA_NUM_CTX: int = 8192

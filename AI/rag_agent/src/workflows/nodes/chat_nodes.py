@@ -111,6 +111,18 @@ async def session_loader(state: ChatState) -> ChatState:
     try:
         async with AsyncSessionLocal() as session:
             msgs = await chat_repo.recent_messages(session, state["session_id"], limit=6)
+            # The compatibility API persists a user message plus an empty processing
+            # assistant row before invoking the graph. They are the current turn,
+            # not conversation history, so do not feed them back to the router.
+            if state.get("external_persistence"):
+                if msgs and msgs[-1].role == "assistant" and msgs[-1].status == "processing":
+                    msgs = msgs[:-1]
+                if (
+                    msgs
+                    and msgs[-1].role == "user"
+                    and msgs[-1].content == state.get("user_message")
+                ):
+                    msgs = msgs[:-1]
             history = [{"role": m.role, "content": m.content} for m in msgs]
             for m in msgs:
                 snap = m.state_snapshot or {}
@@ -653,6 +665,9 @@ async def out_of_scope(state: ChatState) -> ChatState:
 
 async def persist(state: ChatState) -> ChatState:
     """Lưu tin user + assistant + state_snapshot để debug reasoning (design §5)."""
+    if state.get("external_persistence"):
+        state["steps"].append({"node": "persist", "owner": "api_facade"})
+        return state
     msg_type = {
         "out_of_scope": "escalation",
         "abusive": "escalation",

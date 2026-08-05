@@ -12,6 +12,9 @@ import { AnalysisResolver } from './analysis/analysis.resolver';
 import { DraftResolver } from './draft/draft.resolver';
 import { ChatRequestResolver } from './chat-request/chat-request.resolver';
 import { ConsultationResolver } from './consultation/consultation.resolver';
+import { BillingResolver } from './billing/billing.resolver';
+import { InternalBillingResolver } from './internal-billing/internal-billing.resolver';
+import { ChatGatewayResolver } from './chat-gateway/chat-gateway.resolver';
 
 export const ModuleResolver = HandlerResolver
     .builder()
@@ -28,5 +31,8 @@ export const ModuleResolver = HandlerResolver
         AnalysisResolver,
         DraftResolver,
         ChatRequestResolver,
-        ConsultationResolver
+        ConsultationResolver,
+        BillingResolver,
+        InternalBillingResolver,
+        ChatGatewayResolver
     ]);

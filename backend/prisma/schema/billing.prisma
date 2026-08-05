@@ -1,14 +1,330 @@
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model subscriptions {
-  id         String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  user_id    String?   @db.Uuid
-  plan_name  String?   @db.VarChar(255)
-  start_date DateTime? @db.Timestamptz(6)
-  end_date   DateTime? @db.Timestamptz(6)
-  quota      Int?
-  is_active  Boolean?
-  created_at DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at DateTime? @default(now()) @db.Timestamptz(6)
-  deleted_at DateTime? @db.Timestamptz(6)
-  users      users?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "subscriptions_user_id_foreign")
+  id                        String                       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id                   String?                      @db.Uuid
+  plan_name                 String?                      @db.VarChar(255)
+  start_date                DateTime?                    @db.Timestamptz(6)
+  end_date                  DateTime?                    @db.Timestamptz(6)
+  quota                     Int?
+  is_active                 Boolean?
+  created_at                DateTime?                    @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime?                    @default(now()) @db.Timestamptz(6)
+  deleted_at                DateTime?                    @db.Timestamptz(6)
+  plan_version_id           String?                      @db.Uuid
+  scheduled_plan_version_id String?                      @db.Uuid
+  status                    billing_subscription_status? @default(ACTIVE)
+  current_period_start      DateTime?                    @db.Timestamptz(6)
+  current_period_end        DateTime?                    @db.Timestamptz(6)
+  cancel_at_period_end      Boolean                      @default(false)
+  provider                  String?                      @db.VarChar(50)
+  provider_customer_ref     String?                      @db.VarChar(255)
+  provider_subscription_ref String?                      @db.VarChar(255)
+  users                     users?                       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "subscriptions_user_id_foreign")
+  plan_version              billing_plan_versions?       @relation("CurrentSubscriptionPlan", fields: [plan_version_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "subscriptions_plan_version_id_foreign")
+  scheduled_plan_version    billing_plan_versions?       @relation("ScheduledSubscriptionPlan", fields: [scheduled_plan_version_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "subscriptions_scheduled_plan_version_id_foreign")
+
+  @@index([user_id, status, current_period_end], map: "idx_subscriptions_user_status_period")
+}
+
+model billing_plans {
+  id         String                  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  code       String                  @unique @db.VarChar(32)
+  name       String                  @db.VarChar(100)
+  audience   billing_plan_audience   @default(INDIVIDUAL)
+  is_public  Boolean                 @default(true)
+  is_active  Boolean                 @default(true)
+  sort_order Int                     @default(0)
+  created_at DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at DateTime                @default(now()) @db.Timestamptz(6)
+  versions   billing_plan_versions[]
+}
+
+model billing_plan_versions {
+  id               String                      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  plan_id          String                      @db.Uuid
+  version          Int
+  price_vnd        Int
+  billing_interval billing_interval
+  included_credits Int
+  starts_at        DateTime                    @db.Timestamptz(6)
+  ends_at          DateTime?                   @db.Timestamptz(6)
+  is_active        Boolean                     @default(true)
+  created_at       DateTime                    @default(now()) @db.Timestamptz(6)
+  plans            billing_plans               @relation(fields: [plan_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  entitlements     billing_plan_entitlements[]
+  subscriptions           subscriptions[] @relation("CurrentSubscriptionPlan")
+  scheduled_subscriptions subscriptions[] @relation("ScheduledSubscriptionPlan")
+
+  @@unique([plan_id, version])
+  @@index([plan_id, is_active, starts_at, ends_at], map: "idx_plan_versions_effective")
+}
+
+model billing_plan_entitlements {
+  id              String                @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  plan_version_id String                @db.Uuid
+  key             String                @db.VarChar(100)
+  value_json      Json
+  created_at      DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime              @default(now()) @db.Timestamptz(6)
+  plan_version    billing_plan_versions @relation(fields: [plan_version_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([plan_version_id, key])
+}
+
+model billing_rate_cards {
+  id           String                        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  code         String                        @db.VarChar(50)
+  version      Int
+  status       billing_catalog_status        @default(DRAFT)
+  starts_at    DateTime                      @db.Timestamptz(6)
+  ends_at      DateTime?                     @db.Timestamptz(6)
+  created_at   DateTime                      @default(now()) @db.Timestamptz(6)
+  items        billing_rate_card_items[]
+  reservations billing_credit_reservations[]
+  preflights   billing_chat_preflights[]
+
+  @@unique([code, version])
+  @@index([status, starts_at, ends_at], map: "idx_rate_cards_effective")
+}
+
+model billing_rate_card_items {
+  id               String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  rate_card_id     String             @db.Uuid
+  task_class       billing_task_class
+  estimated_min    Int
+  estimated_max    Int
+  units_per_credit Int
+  input_weight     Int                @default(1)
+  output_weight    Int                @default(2)
+  cached_weight    Int                @default(0)
+  created_at       DateTime           @default(now()) @db.Timestamptz(6)
+  rate_card        billing_rate_cards @relation(fields: [rate_card_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([rate_card_id, task_class])
+}
+
+model billing_credit_wallets {
+  id                String                        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  owner_type        billing_owner_type            @default(USER)
+  owner_id          String                        @db.Uuid
+  available_credits Int                           @default(0)
+  reserved_credits  Int                           @default(0)
+  version           Int                           @default(0)
+  created_at        DateTime                      @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime                      @default(now()) @db.Timestamptz(6)
+  lots              billing_credit_lots[]
+  ledger_entries    billing_credit_ledger[]
+  reservations      billing_credit_reservations[]
+
+  @@unique([owner_type, owner_id])
+}
+
+model billing_credit_lots {
+  id               String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  wallet_id        String                 @db.Uuid
+  source           billing_credit_source
+  granted_amount   Int
+  remaining_amount Int
+  expires_at       DateTime?              @db.Timestamptz(6)
+  source_ref       String                 @db.VarChar(255)
+  created_at       DateTime               @default(now()) @db.Timestamptz(6)
+  wallet           billing_credit_wallets @relation(fields: [wallet_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+
+  @@unique([wallet_id, source_ref])
+  @@index([wallet_id, expires_at, created_at], map: "idx_credit_lots_consumption")
+}
+
+model billing_credit_reservations {
+  id              String                     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  wallet_id       String                     @db.Uuid
+  rate_card_id    String                     @db.Uuid
+  turn_id         String                     @unique @db.Uuid
+  task_class      billing_task_class
+  estimated_min   Int
+  reserved_amount Int
+  charged_amount  Int                        @default(0)
+  status          billing_reservation_status @default(ACTIVE)
+  billing_mode    billing_mode               @default(SHADOW)
+  idempotency_key String                     @unique @db.VarChar(255)
+  payload_digest  String                     @db.VarChar(64)
+  expires_at      DateTime                   @db.Timestamptz(6)
+  created_at      DateTime                   @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime                   @default(now()) @db.Timestamptz(6)
+  wallet          billing_credit_wallets     @relation(fields: [wallet_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  rate_card       billing_rate_cards         @relation(fields: [rate_card_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  ledger_entries  billing_credit_ledger[]
+  gateway_turn    billing_chat_turns?
+}
+
+model billing_credit_ledger {
+  id              String                       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  wallet_id       String                       @db.Uuid
+  reservation_id  String?                      @db.Uuid
+  entry_type      billing_ledger_entry_type
+  amount          Int
+  available_after Int
+  reserved_after  Int
+  idempotency_key String                       @unique @db.VarChar(255)
+  source_ref      String?                      @db.VarChar(255)
+  metadata_json   Json?
+  created_at      DateTime                     @default(now()) @db.Timestamptz(6)
+  wallet          billing_credit_wallets       @relation(fields: [wallet_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  reservation     billing_credit_reservations? @relation(fields: [reservation_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+
+  @@index([wallet_id, created_at, id], map: "idx_credit_ledger_wallet_created")
+}
+
+model billing_ai_usage_events {
+  id                  String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  turn_id             String             @db.Uuid
+  session_id          String             @db.Uuid
+  user_id             String?            @db.Uuid
+  workflow_node       String             @db.VarChar(100)
+  task_class          billing_task_class
+  provider            String             @db.VarChar(100)
+  model               String             @db.VarChar(100)
+  status              String             @db.VarChar(50)
+  input_tokens        Int                @default(0)
+  cached_input_tokens Int                @default(0)
+  output_tokens       Int                @default(0)
+  reasoning_tokens    Int                @default(0)
+  latency_ms          Int                @default(0)
+  retry_ordinal       Int                @default(0)
+  fallback_used       Boolean            @default(false)
+  billable            Boolean            @default(false)
+  non_billable_reason String?            @db.VarChar(100)
+  rate_card_version   String             @db.VarChar(100)
+  usage_digest        String             @db.VarChar(64)
+  created_at          DateTime           @default(now()) @db.Timestamptz(6)
+  user                users?             @relation(fields: [user_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@unique([turn_id, workflow_node, retry_ordinal, usage_digest])
+  @@index([user_id, created_at], map: "idx_usage_events_user_created")
+}
+
+model billing_chat_preflights {
+  id                    String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id               String              @db.Uuid
+  idempotency_key       String              @db.VarChar(255)
+  payload_digest        String              @db.VarChar(64)
+  session_id            String?             @db.Uuid
+  task_class            billing_task_class
+  requested_mode        String              @db.VarChar(20)
+  estimated_min         Int
+  estimated_max         Int
+  confirmation_required Boolean             @default(false)
+  allowed               Boolean             @default(true)
+  reason                String?             @db.VarChar(100)
+  rate_card_id          String              @db.Uuid
+  expires_at            DateTime            @db.Timestamptz(6)
+  consumed_at           DateTime?           @db.Timestamptz(6)
+  created_at            DateTime            @default(now()) @db.Timestamptz(6)
+  rate_card             billing_rate_cards  @relation(fields: [rate_card_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  user                  users               @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  turn                  billing_chat_turns?
+
+  @@unique([user_id, idempotency_key])
+  @@index([user_id, expires_at], map: "idx_chat_preflights_owner_expiry")
+}
+
+model billing_chat_turns {
+  id              String                      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id         String                      @db.Uuid
+  preflight_id    String                      @unique @db.Uuid
+  idempotency_key String                      @db.VarChar(255)
+  payload_digest  String                      @db.VarChar(64)
+  session_id      String?                     @db.Uuid
+  reservation_id  String?                     @unique @db.Uuid
+  status          billing_gateway_turn_status @default(RECEIVED)
+  response_json   Json?
+  error_code      String?                     @db.VarChar(100)
+  created_at      DateTime                    @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime                    @default(now()) @db.Timestamptz(6)
+  preflight       billing_chat_preflights     @relation(fields: [preflight_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  reservation     billing_credit_reservations? @relation(fields: [reservation_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  user            users                       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, idempotency_key])
+  @@index([user_id, session_id, created_at], map: "idx_chat_turns_owner_session")
+}
+
+enum billing_plan_audience {
+  INDIVIDUAL
+  ORGANIZATION
+}
+
+enum billing_interval {
+  MONTH
+  YEAR
+  CUSTOM
+}
+
+enum billing_catalog_status {
+  DRAFT
+  ACTIVE
+  RETIRED
+}
+
+enum billing_subscription_status {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+enum billing_owner_type {
+  USER
+  ORGANIZATION
+}
+
+enum billing_credit_source {
+  SUBSCRIPTION
+  PURCHASE
+  ADMIN
+  PROMOTION
+  MIGRATION
+  REFUND
+}
+
+enum billing_task_class {
+  LOOKUP
+  GUIDED_ANALYSIS
+  DEEP_ANALYSIS
+  DOCUMENT_ANALYSIS
+  DRAFTING
+  HANDOFF_PREP
+}
+
+enum billing_reservation_status {
+  ACTIVE
+  SETTLED
+  RELEASED
+  EXPIRED
+}
+
+enum billing_mode {
+  OFF
+  SHADOW
+  ENFORCE
+}
+
+enum billing_ledger_entry_type {
+  GRANT
+  PURCHASE
+  RESERVE
+  RELEASE
+  CHARGE
+  REFUND
+  EXPIRE
+  ADJUSTMENT
+}
+
+enum billing_gateway_turn_status {
+  RECEIVED
+  RUNNING
+  COMPLETED
+  WAITING_USER
+  INSUFFICIENT
+  FAILED
 }

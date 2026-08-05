@@ -103,6 +103,9 @@ model users {
   refresh_tokens           refresh_tokens?
   reports                  reports[]
   subscriptions            subscriptions[]
+  billing_usage_events     billing_ai_usage_events[]
+  billing_chat_preflights  billing_chat_preflights[]
+  billing_chat_turns       billing_chat_turns[]
   users                    users?                   @relation("usersTousers", fields: [referred_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "users_referred_by_foreign")
   other_users              users[]                  @relation("usersTousers")
   roles                    roles?                   @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "users_role_id_foreign")

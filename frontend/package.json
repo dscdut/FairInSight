@@ -12,7 +12,7 @@
     "check:lint": "eslint . --fix",
     "check:prettier": "prettier --write --ignore-unknown \"**/*\" ",
     "check:all": "yarn check:prettier && yarn check:lint && yarn check:type",
-    "prepare": "husky",
+    "prepare": "husky || echo \"husky setup skipped\"",
     "test": "jest"
   },
   "dependencies": {

@@ -1,12 +1,4 @@
-"""Xác thực JWT — verify access_token do BE Node (FairInSight) phát hành.
-
-Dùng CHUNG secret + thuật toán (settings.JWT_SECRET / JWT_ALGORITHM). Token của
-BE Node có payload {id, role, roles}; ta lấy `id` làm user_id cho chat.
-
-OPTIONAL: không có token vẫn cho chat (phiên ẩn danh) — chỉ khi có token mới gắn
-user_id. Token authoritative: nếu token hợp lệ thì user_id lấy từ token, KHÔNG tin
-user_id client tự khai trong body.
-"""
+"""JWT dependencies shared by chat and administrative endpoints."""
 
 from __future__ import annotations
 
@@ -18,52 +10,58 @@ from fastapi import Header, HTTPException
 from src.config.settings import settings
 
 
-def _decode(authorization: Optional[str]) -> Optional[dict]:
-    """Decode + verify JWT từ header. Trả payload dict hoặc None nếu hỏng/sai secret."""
+def _decode(authorization: Optional[str], *, required: bool) -> Optional[dict]:
     if not authorization:
+        if required:
+            raise HTTPException(status_code=401, detail="Missing access token")
         return None
+
     parts = authorization.split()
     if len(parts) != 2 or parts[0].lower() != "bearer":
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+
+    try:
+        return jwt.decode(
+            parts[1],
+            settings.JWT_SECRET,
+            algorithms=[settings.JWT_ALGORITHM],
+        )
+    except jwt.PyJWTError as exc:
+        raise HTTPException(status_code=401, detail="Invalid access token") from exc
+
+
+def user_id_from_token(
+    authorization: Optional[str] = Header(default=None),
+) -> Optional[str]:
+    """Return the authenticated user id, or ``None`` for an anonymous request."""
+    payload = _decode(authorization, required=False)
+    if payload is None:
         return None
-
-    token = parts[1]
-    # Ưu tiên JWT_SECRET trong config, fallback thử 'vjppro' và '123456' để né mâu thuẫn secret giữa Node & Python
-    secrets_to_try = [settings.JWT_SECRET, "vjppro", "123456"]
-    seen = set()
-    unique_secrets = [s for s in secrets_to_try if s and not (s in seen or seen.add(s))]
-
-    for secret in unique_secrets:
-        try:
-            return jwt.decode(token, secret, algorithms=[settings.JWT_ALGORITHM])
-        except jwt.PyJWTError:
-            continue
-    return None
+    user_id = payload.get("id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Access token is missing user id")
+    return str(user_id)
 
 
-def user_id_from_token(authorization: Optional[str] = Header(default=None)) -> Optional[str]:
-    """Lấy user_id (UUID) từ header `Authorization: Bearer <token>`.
-
-    Trả None nếu: không có header / sai định dạng / token hỏng/hết hạn → phiên ẩn danh.
-    """
-    payload = _decode(authorization)
-    return payload.get("id") if payload else None
+def require_user(authorization: Optional[str] = Header(default=None)) -> str:
+    """Require a valid access token containing the authoritative user id."""
+    payload = _decode(authorization, required=True)
+    user_id = payload.get("id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Access token is missing user id")
+    return str(user_id)
 
 
 def require_admin(authorization: Optional[str] = Header(default=None)) -> str:
-    """Dependency: BẮT BUỘC token hợp lệ + role ADMIN. Trả user_id.
-
-    Token BE Node payload {id, role, roles}: role là chuỗi đơn, roles là list. Chấp
-    nhận ADMIN ở 1 trong 2 (BE Node có thể phát kiểu nào). Raise 401 nếu không có
-    token hợp lệ, 403 nếu không phải ADMIN.
-    """
-    payload = _decode(authorization)
-    if not payload:
-        raise HTTPException(status_code=401, detail="Thiếu/không hợp lệ access token")
+    """Require a valid token containing the ADMIN role."""
+    payload = _decode(authorization, required=True)
     roles = payload.get("roles") or []
-    role = payload.get("role")
-    names = {str(r).upper() for r in roles}
-    if role:
-        names.add(str(role).upper())
+    names = {str(role).upper() for role in roles}
+    if payload.get("role"):
+        names.add(str(payload["role"]).upper())
     if "ADMIN" not in names:
-        raise HTTPException(status_code=403, detail="Yêu cầu quyền ADMIN")
-    return payload.get("id")
+        raise HTTPException(status_code=403, detail="Admin role required")
+    user_id = payload.get("id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Access token is missing user id")
+    return str(user_id)

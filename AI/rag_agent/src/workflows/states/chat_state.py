@@ -30,6 +30,7 @@ class ChatState(TypedDict, total=False):
 
     # --- deep reasoning ---
     deep_confirmed: bool             # user đã đồng ý phân tích sâu chưa
+    external_persistence: bool       # API facade lưu turn atomic; graph không ghi trùng
     case_frame: dict                 # khung vụ việc (parties, domains, case_types)
     facts: dict                      # dữ kiện đã biết
     missing_facts: list[dict]        # dữ kiện còn thiếu (+ câu hỏi gợi ý)

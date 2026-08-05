@@ -7,6 +7,14 @@ import {
 import { type UserResponseType } from '@/models/interface/user.interface'
 
 export const LocalStorageEventTarget = new EventTarget()
+const AI_SESSION_TOKEN_PREFIX = 'legal_ai_session_token:'
+
+export const clearAiSessionTokens = () => {
+  for (let index = sessionStorage.length - 1; index >= 0; index -= 1) {
+    const key = sessionStorage.key(index)
+    if (key?.startsWith(AI_SESSION_TOKEN_PREFIX)) sessionStorage.removeItem(key)
+  }
+}
 export const setAccessTokenToLS = (access_token: string) =>
   localStorage.setItem(ACCESS_TOKEN_LOCAL_STORAGE_KEY, access_token)
 
@@ -22,6 +30,7 @@ export const clearLS = () => {
   localStorage.removeItem(ACCESS_TOKEN_LOCAL_STORAGE_KEY)
   localStorage.removeItem(REFRESH_TOKEN_LOCAL_STORAGE_KEY)
   localStorage.removeItem(USER_LOCAL_STORAGE_KEY)
+  clearAiSessionTokens()
   const clearLSEvent = new Event('clearLS')
   LocalStorageEventTarget.dispatchEvent(clearLSEvent)
 }

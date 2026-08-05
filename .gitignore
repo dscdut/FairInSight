@@ -64,3 +64,9 @@ tmp/
 temp/
 test*/
 AI/rag_graph/
+
+
+.agents/
+agent_test/
+rag_agent_temp/
+agent_test_2/

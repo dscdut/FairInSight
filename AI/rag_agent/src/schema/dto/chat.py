@@ -1,23 +1,18 @@
-"""DTO cho API chat."""
+"""Request contract for legal chat."""
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ChatRequest(BaseModel):
-    """Yêu cầu chat từ frontend."""
+    """Client input; user identity is never accepted from the request body."""
 
-    message: str = Field(..., min_length=1, description="Câu hỏi của người dùng")
-    session_id: Optional[str] = Field(
-        default=None, description="ID phiên hội thoại; bỏ trống = phiên mới (ad-hoc)"
-    )
-    user_id: Optional[str] = Field(
-        default=None, description="ID người dùng (UUID); bỏ trống = phiên ẩn danh"
-    )
-    deep_confirmed: bool = Field(
-        default=False,
-        description="User đã xác nhận chuyển sang chế độ phân tích sâu (deep reasoning)",
-    )
+    model_config = ConfigDict(extra="forbid")
+
+    message: str = Field(..., min_length=1, max_length=20_000)
+    session_id: str = Field(..., min_length=1, max_length=36)
+    session_token: Optional[str] = Field(default=None, max_length=128)
+    requested_mode: Literal["auto", "normal", "deep"] = "auto"
