@@ -62,7 +62,7 @@ GovDoc/
 .ask/
 tmp/
 temp/
-test*/
+AI/testGraphDB/
 AI/rag_graph/
 
 
