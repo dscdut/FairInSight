@@ -1,13 +1,5 @@
+import { type ChatSessionView, type ChatMessageView } from '@/models/ai-chat/chat-view.type'
 import { type Lawyer } from '@/models/types/case.types'
-
-// Interfaces
-export interface Attachment {
-  id: string
-  name: string
-  type: 'image' | 'file'
-  url?: string
-  size?: string
-}
 
 export interface Citation {
   official_code?: string
@@ -16,30 +8,24 @@ export interface Citation {
   quoted_text?: string
 }
 
-export interface Message {
+export interface Message extends ChatMessageView {
   id: string
   sender: 'user' | 'ai'
   content: string
   timestamp: string
-  attachments?: Attachment[]
   lawyers?: Lawyer[]
   // --- AI BE ---
-  mode?: string | null          // lookup | deep_reasoning_pending | deep_reasoning | ...
-  citations?: Citation[]
-  domain?: string | null        // lĩnh vực (case_frame.main_domain) → map luật sư
-  // true khi AI mời xác nhận phân tích sâu → hiện nút "Phân tích sâu" ở bubble này
-  deepPending?: boolean
-  // true khi đây là kết luận deep reasoning → hiện 2 nút (tải phân tích / gợi ý luật sư)
-  showPostActions?: boolean
 }
 
-export interface ChatSession {
+export interface ChatSession extends ChatSessionView {
   id: string
   title: string
   date: string
   messages: Message[]
   // session_id do AI BE cấp (giữ ngữ cảnh hội thoại nhiều lượt)
   aiSessionId?: string | null
+  // Chứng minh quyền sở hữu phiên ẩn danh; người dùng có JWT không cần token này.
+  aiSessionToken?: string | null
 }
 
 
@@ -54,14 +40,6 @@ export const INITIAL_SESSIONS: ChatSession[] = [
         sender: 'user',
         content: 'Chào trợ lý, tôi muốn tư vấn về ranh giới đất đai với nhà hàng xóm. Họ xây tường bao lấn sang đất tôi khoảng 10cm dựa theo mốc cắm cũ.',
         timestamp: '10:30',
-        attachments: [
-          {
-            id: 'att-1',
-            name: 'giay_chung_nhan_qsd_dat.pdf',
-            type: 'file',
-            size: '2.4 MB'
-          }
-        ]
       },
       {
         id: 'msg-1-2',

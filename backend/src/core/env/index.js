@@ -24,6 +24,14 @@ export const { CLOUDINARY_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET, CLOUD
     process.env;
 export const SALT_ROUNDS = Number.parseInt(process.env.SALT_ROUNDS, 10);
 export const { SENTRY_DSN, DISCORD_WEBHOOK, DISCORD_BOT_NAME, DISCORD_BOT_AVATAR_URL, CORS_ALLOW } = process.env;
+export const BILLING_MODE = process.env.BILLING_MODE || 'SHADOW';
+export const CHAT_GATEWAY_ENABLED = process.env.CHAT_GATEWAY_ENABLED !== 'false';
+export const TOPUP_ENABLED = process.env.TOPUP_ENABLED === 'true';
+export const ENTERPRISE_ENABLED = process.env.ENTERPRISE_ENABLED === 'true';
+export const {FIS_SERVICE_KEY_ID} = process.env;
+export const {FIS_SERVICE_SECRET} = process.env;
+export const AI_SERVICE_BASE_URL = process.env.AI_SERVICE_BASE_URL || 'http://localhost:8000';
+export const AI_CHAT_TIMEOUT_MS = Number.parseInt(process.env.AI_CHAT_TIMEOUT_MS, 10) || 930000;
 export const DISCORD = {
     WEBHOOK: DISCORD_WEBHOOK,
     BOT_NAME: DISCORD_BOT_NAME,

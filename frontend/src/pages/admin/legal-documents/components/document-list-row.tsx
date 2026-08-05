@@ -1,7 +1,14 @@
 import React from 'react'
 
-import { Eye, Edit2 } from 'lucide-react'
+import { Eye, MoreVertical, Trash2, Edit2 } from 'lucide-react'
 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { cn } from '@/core/lib/utils'
 import { type Law } from '@/models/types/law.type'
 
@@ -10,17 +17,21 @@ import { DOC_TYPE_LABELS } from '../doc-type'
 interface DocumentListRowProps {
   law: Law
   onView: (law: Law) => void
+  onDelete?: (law: Law) => void
   onEdit?: (law: Law) => void
   onToggleStatus?: (law: Law) => void
   readOnly?: boolean
+  isAdmin?: boolean
 }
 
 export const DocumentListRow: React.FC<DocumentListRowProps> = ({
   law,
   onView,
+  onDelete,
   onEdit,
-  onToggleStatus,
+  onToggleStatus: _onToggleStatus,
   readOnly = false,
+  isAdmin = false,
 }) => {
   const formatDate = (dateStr: string) => {
     if (!dateStr) return ''
@@ -40,8 +51,6 @@ export const DocumentListRow: React.FC<DocumentListRowProps> = ({
 
   const latestVer = getLatestVersionName(law)
 
-  // Tên hiển thị = title (tên thuần trong DB) + số hiệu. DB lưu title sạch (không kèm
-  // số hiệu), nhưng cột "Tên văn bản" ghép lại cho đầy đủ như cách VBPL hiển thị.
   const displayName = law.documentNumber
     ? `${law.title} số ${law.documentNumber}`
     : law.title
@@ -49,7 +58,7 @@ export const DocumentListRow: React.FC<DocumentListRowProps> = ({
   return (
     <tr className='hover:bg-background-secondary/20 transition-all duration-200'>
       {/* Tên văn bản */}
-      <td className='px-6 py-5.5'>
+      <td className='px-6 py-4 font-medium'>
         <div className='flex flex-col gap-0.5'>
           <button
             type='button'
@@ -64,8 +73,8 @@ export const DocumentListRow: React.FC<DocumentListRowProps> = ({
         </div>
       </td>
 
-      {/* Loại văn bản — badge phân loại (Luật/Nghị quyết/Thông tư...) */}
-      <td className='px-6 py-5.5 whitespace-nowrap'>
+      {/* Loại văn bản */}
+      <td className='px-6 py-4 text-center whitespace-nowrap'>
         {law.docType && DOC_TYPE_LABELS[law.docType] ? (
           <span className='inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-semibold text-primary bg-primary/10 border border-primary/20'>
             {DOC_TYPE_LABELS[law.docType]}
@@ -75,25 +84,25 @@ export const DocumentListRow: React.FC<DocumentListRowProps> = ({
         )}
       </td>
 
-      {/* Số hiệu — không xuống dòng, luôn nằm gọn 1 dòng */}
-      <td className='px-6 py-5.5 font-semibold text-text-secondary whitespace-nowrap'>
-        {law.documentNumber}
+      {/* Số hiệu */}
+      <td className='px-6 py-4 text-center font-semibold text-text-secondary whitespace-nowrap'>
+        {law.documentNumber || '—'}
       </td>
 
       {/* Ngày hiệu lực */}
-      <td className='px-6 py-5.5 font-semibold text-text-secondary whitespace-nowrap'>
-        {formatDate(law.effectiveDate)}
+      <td className='px-6 py-4 text-center font-semibold text-text-secondary whitespace-nowrap'>
+        {formatDate(law.effectiveDate) || '—'}
       </td>
 
       {/* Version */}
-      <td className='px-6 py-5.5 text-center'>
+      <td className='px-6 py-4 text-center'>
         <span className='inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-semibold text-text-secondary bg-background-secondary border border-border-secondary uppercase'>
           {latestVer}
         </span>
       </td>
 
       {/* Trạng thái */}
-      <td className='px-6 py-5.5 text-center'>
+      <td className='px-6 py-4 text-center'>
         <span
           className={cn(
             'inline-flex items-center justify-center px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide border',
@@ -106,48 +115,52 @@ export const DocumentListRow: React.FC<DocumentListRowProps> = ({
         </span>
       </td>
 
-      {/* Hành động */}
-      <td className='px-6 py-5.5'>
-        <div className='flex items-center justify-center gap-3.5'>
-          {/* View */}
-          <button
-            onClick={() => onView(law)}
-            className='p-1.5 text-text-tertiary hover:text-primary hover:bg-background-secondary rounded-lg transition-all'
-            title='Xem chi tiết & lịch sử phiên bản'
-          >
-            <Eye className='w-4.5 h-4.5' />
-          </button>
-
-          {/* Edit */}
-          {!readOnly && onEdit && (
+      {/* Hành động (3 Chấm Dropdown Menu) */}
+      <td className='px-6 py-4 text-center'>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
             <button
-              onClick={() => onEdit(law)}
-              className='p-1.5 text-text-tertiary hover:text-warning-secondary hover:bg-warning-primary/10 rounded-lg transition-all'
-              title='Chỉnh sửa văn bản'
+              type='button'
+              className='p-1.5 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-background-secondary transition-all cursor-pointer outline-none focus:ring-2 focus:ring-primary/20'
+              title='Tùy chọn thao tác'
             >
-              <Edit2 className='w-4.5 h-4.5' />
+              <MoreVertical className='w-4 h-4' />
             </button>
-          )}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align='end' className='w-44 bg-background-primary border border-border-secondary shadow-lg rounded-xl p-1 z-50'>
+            <DropdownMenuItem
+              onClick={() => onView(law)}
+              className='flex items-center gap-2 px-3 py-2 text-xs font-medium text-text-primary hover:bg-background-secondary rounded-lg cursor-pointer transition-colors'
+            >
+              <Eye className='w-4 h-4 text-text-secondary' />
+              <span>Xem chi tiết</span>
+            </DropdownMenuItem>
 
-          {/* Toggle status Switch */}
-          {!readOnly && onToggleStatus && (
-            <button
-              onClick={() => onToggleStatus(law)}
-              className={cn(
-                'relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border border-transparent transition-colors duration-200 ease-in-out focus:outline-none shadow-inner',
-                law.status === 'ACTIVE' ? 'bg-primary' : 'bg-background-tertiary'
-              )}
-              title={law.status === 'ACTIVE' ? 'Chuyển sang Hết hiệu lực' : 'Chuyển sang Còn hiệu lực'}
-            >
-              <span
-                className={cn(
-                  'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200 ease-in-out',
-                  law.status === 'ACTIVE' ? 'translate-x-4' : 'translate-x-0'
-                )}
-              />
-            </button>
-          )}
-        </div>
+            {!readOnly && onEdit && (
+              <DropdownMenuItem
+                onClick={() => onEdit(law)}
+                className='flex items-center gap-2 px-3 py-2 text-xs font-medium text-text-primary hover:bg-background-secondary rounded-lg cursor-pointer transition-colors'
+              >
+                <Edit2 className='w-4 h-4 text-text-secondary' />
+                <span>Chỉnh sửa</span>
+              </DropdownMenuItem>
+            )}
+
+            {/* CHỈ HIỆN NÚT XÓA NẾU LÀ ADMIN */}
+            {isAdmin && onDelete && (
+              <>
+                <DropdownMenuSeparator className='my-1 border-border-secondary' />
+                <DropdownMenuItem
+                  onClick={() => onDelete(law)}
+                  className='flex items-center gap-2 px-3 py-2 text-xs font-semibold text-error-primary hover:bg-error-primary/10 focus:bg-error-primary/10 focus:text-error-primary rounded-lg cursor-pointer transition-colors'
+                >
+                  <Trash2 className='w-4 h-4' />
+                  <span>Xóa văn bản</span>
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </td>
     </tr>
   )

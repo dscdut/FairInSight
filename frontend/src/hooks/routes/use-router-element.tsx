@@ -39,6 +39,7 @@ const LawyerProfile = lazy(() => import('@/pages/users/lawyer/LawyerProfile'))
 const Appointments = lazy(() => import('@/pages/users/appointments/Appointments'))
 const LawLibraryPage = lazy(() => import('@/pages/law-search/LawLibraryPage'))
 const LawDetail = lazy(() => import('@/pages/law-search/LawDetail'))
+const Billing = lazy(() => import('@/pages/users/billing/Billing'))
 
 // Lawyer Lazy loaded components
 const LawyerDashboard = lazy(() => import('@/pages/lawyers/dashboard/LawyerDashboard'))
@@ -87,6 +88,7 @@ export default function useRoutesElements() {
                 <Route index element={<UserDashboard />} />
                 <Route path={ROUTE.USER.PROFILE} element={<Profile />} />
                 <Route path={ROUTE.USER.CHAT_AI} element={<AIChat />} />
+                <Route path={ROUTE.USER.CHAT_AI_SESSION} element={<AIChat />} />
                 <Route path={ROUTE.USER.MESSAGES} element={<Messages />} />
                 <Route path={ROUTE.USER.TEMPLATE} element={<Template />} />
                 <Route path={ROUTE.USER.LEGAL} element={<LegalAnalysis />} />
@@ -96,6 +98,7 @@ export default function useRoutesElements() {
                 <Route path={ROUTE.USER.REPORT} element={<Report />} />
                 <Route path={ROUTE.USER.INFO} element={<User />} />
                 <Route path={ROUTE.USER.SETTING} element={<Setting />} />
+                <Route path={ROUTE.USER.BILLING} element={<Billing />} />
               </Route>
             )}
           </Route>
@@ -127,6 +130,8 @@ export default function useRoutesElements() {
         <Route element={<ProtectedRoute redirectPath={ROUTE.AUTH.LOGIN} />}>
           <Route path={ROUTE.ADMIN.ROOT} element={<LayoutMain />}>
             <Route path={ROUTE.ADMIN.DASHBOARD} element={<Dashboard />} />
+            <Route path={ROUTE.ADMIN.CHAT_AI} element={<AIChat />} />
+            <Route path={ROUTE.ADMIN.CHAT_AI_SESSION} element={<AIChat />} />
             <Route path={ROUTE.ADMIN.USERS} element={<Users />} />
             <Route path={ROUTE.ADMIN.LEGAL_DOCUMENTS} element={<LegalDocuments />} />
             <Route path={ROUTE.ADMIN.LAW_INSPECT} element={<LawInspect />} />

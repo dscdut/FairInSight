@@ -28,6 +28,11 @@ export const adminSidebarLinks: TSidebarLinks[] = [
     path: ROUTE.ADMIN.DASHBOARD
   },
   {
+    title: 'Phân tích pháp luật',
+    icon: <MessageSquare className='w-5 h-5' />,
+    path: `${ROUTE.ADMIN.ROOT}/${ROUTE.ADMIN.CHAT_AI}`
+  },
+  {
     title: 'Văn bản pháp luật',
     titleKey: 'legal',
     icon: <Scale className='w-5 h-5' />,
@@ -161,6 +166,11 @@ export const userSideBarLinks: TSidebarLinks[] = [
     titleKey: 'report',
     icon: <BarChart3 className='w-5 h-5' />,
     path: ROUTE.USER.REPORT
+  },
+  {
+    title: 'Gói và credit',
+    icon: <CreditCard className='w-5 h-5' />,
+    path: ROUTE.USER.BILLING
   },
   {
     title: 'Trang cá nhân',

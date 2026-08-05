@@ -1,7 +1,7 @@
 import { Module } from 'packages/handler/Module';
-import { TemplateController } from './template.controller';
 import { RecordId } from 'core/common/swagger';
 import { RecordIdInterceptor } from 'core/modules/interceptor/recordId/record-id.interceptor';
+import { TemplateController } from './template.controller';
 
 export const TemplateResolver = Module.builder()
     .addPrefix({

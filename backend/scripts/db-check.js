@@ -5,7 +5,7 @@ const path = require('path');
 
 async function checkAndMigrate() {
     console.log('🔍 Checking database migration status...');
-    
+
     // Ensure Prisma client is generated
     const clientPath = path.join(__dirname, '../node_modules/.prisma/client');
     if (!fs.existsSync(clientPath)) {
@@ -29,7 +29,7 @@ async function checkAndMigrate() {
             try {
                 // Apply/create migrations (interactive in dev, will prompt for name if there are unmigrated changes)
                 execSync('npx prisma migrate dev', { stdio: 'inherit' });
-                
+
                 // Seed the database
                 console.log('🌱 Seeding database...');
                 execSync('npx prisma db seed', { stdio: 'inherit' });

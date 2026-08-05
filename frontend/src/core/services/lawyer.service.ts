@@ -15,7 +15,15 @@ export const createLawyerService = ( client: AxiosInstance ) : LawyerApi => ({
     searchQuery?: string
     sortBy?: string
   }) => {
-    const res = await client.get(API_LAWYER_LISTS_URL, { params })
+    const queryParams = {
+      page: params?.page,
+      size: params?.pageSize,
+      specialization: params?.category,
+      city: params?.city,
+      search: params?.searchQuery,
+      sortByRating: params?.sortBy === 'rating' ? 'true' : undefined
+    }
+    const res = await client.get(API_LAWYER_LISTS_URL, { params: queryParams })
     return res
   },
 

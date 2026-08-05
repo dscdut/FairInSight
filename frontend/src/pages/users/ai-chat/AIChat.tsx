@@ -1,493 +1,888 @@
-import { useState, useRef, useEffect } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import dayjs from 'dayjs'
-import { Settings } from 'lucide-react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { AxiosError } from 'axios'
+import { History } from 'lucide-react'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
+import { hasBillingEntitlement } from '@/api/billingApi'
+import { type ChatHistoryMessage, type ChatSessionDetail, type ChatSessionSummary } from '@/api/chatAiApi'
+import { chatTransport } from '@/api/chatTransport'
+import { fetchRecommendedLawyers } from '@/api/lawyerApi'
+import { Button } from '@/components/ui'
+import { ROUTE } from '@/core/constants/path'
+import { clearAiSessionTokens } from '@/core/shared/storage'
+import { useAuthStore } from '@/core/store/features/auth/authStore'
+import { useMyBilling } from '@/hooks/billing/use-billing'
+import { type ChatMessageView, type ChatSessionView } from '@/models/ai-chat/chat-view.type'
 import {
-  type Attachment,
-  type ChatSession,
-  DEFAULT_SESSION,
-  type Message
-} from '@/_mocks/chat-data-mock'
-import { sendChatAi } from '@/api/chatAiApi'
-import { fetchLawyers } from '@/api/lawyerApi'
-import { formatTime } from '@/core/helpers/date-time'
-import { cn } from '@/core/lib/utils'
+  chatReportId,
+  isLegalPositioningReport,
+  type ChatPreflightResponse
+} from '@/models/ai-chat/contracts'
 import { exportAnalysisPdf } from '@/utils/pdfExport'
 
 import ChatInput, { CHAT_MAX_CHARS } from './components/ChatInput'
 import ChatMessages from './components/ChatMessages'
 import HistorySidebar from './components/HistorySidebar'
+import PlanCreditSummary from './components/PlanCreditSummary'
 
-// Phiên rỗng khởi đầu (không còn mock hội thoại cũ)
-const makeEmptySession = (): ChatSession => ({
-  id: 'session-1',
-  title: 'Yêu cầu phân tích mới',
+const NEW_SESSION_ID = 'new'
+const SESSION_TOKEN_PREFIX = 'legal_ai_session_token:'
+const PROCESSING_POLL_MS = 2000
+
+interface PendingGatewayTurn {
+  message: string
+  sessionId: string
+  idempotencyKey: string
+  preflight: ChatPreflightResponse
+  state: 'confirmation' | 'retry'
+}
+
+const makeEmptySession = (): ChatSessionView => ({
+  id: NEW_SESSION_ID,
+  title: 'Cuộc trò chuyện mới',
   date: '',
   messages: [],
-  aiSessionId: null
+  aiSessionId: null,
+  detailLoaded: true
 })
 
+const sessionTokenKey = (sessionId: string) => `${SESSION_TOKEN_PREFIX}${sessionId}`
+
+const getStoredSessionToken = (sessionId: string): string | null =>
+  sessionStorage.getItem(sessionTokenKey(sessionId))
+
+const formatTime = (value: string | Date) => new Date(value).toLocaleTimeString('vi-VN', {
+  hour: '2-digit',
+  minute: '2-digit'
+})
+
+const toMessage = (message: ChatHistoryMessage): ChatMessageView => ({
+  id: message.id,
+  sender: message.role === 'user' ? 'user' : 'ai',
+  content: message.message?.text || message.content,
+  timestamp: formatTime(message.created_at),
+  mode: message.msg_type,
+  citations: message.citations,
+  status: message.status,
+  availableActions: message.available_actions,
+  report: message.report,
+  handoff: message.handoff,
+  stage: message.stage,
+  billing: message.billing,
+  usage: message.usage
+})
+
+const toSessionSummary = (session: ChatSessionSummary): ChatSessionView => ({
+  id: session.session_id,
+  title: session.title || 'Cuộc trò chuyện chưa đặt tên',
+  date: session.updated_at,
+  messages: [],
+  aiSessionId: session.session_id,
+  aiSessionToken: getStoredSessionToken(session.session_id),
+  lastMessageStatus: session.last_message_status,
+  detailLoaded: false
+})
+
+const toSessionDetail = (session: ChatSessionDetail): ChatSessionView => ({
+  ...toSessionSummary(session),
+  messages: session.messages.map(toMessage),
+  aiSessionToken: session.session_token ?? getStoredSessionToken(session.session_id),
+  detailLoaded: true
+})
+
+const titleFromMessage = (message: string) => {
+  const normalized = message.trim()
+  return normalized.length > 44 ? `${normalized.slice(0, 44)}…` : normalized
+}
+
+const safeErrorMessage = (error: unknown, fallback: string) => {
+  if (!(error instanceof AxiosError)) return fallback
+  const status = error.response?.status
+  if (status === 401) return 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
+  if (status === 402) return 'Bạn không đủ credit cho yêu cầu này.'
+  if (status === 403 || status === 404) return 'Không tìm thấy cuộc trò chuyện hoặc bạn không có quyền truy cập.'
+  if (status === 409) return 'Cuộc trò chuyện đang xử lý một yêu cầu khác.'
+  if (status === 413) return 'Nội dung vượt quá giới hạn cho phép.'
+  if (status === 422) return 'Nội dung gửi lên chưa hợp lệ. Vui lòng kiểm tra lại.'
+  if (status === 429) return 'Bạn gửi yêu cầu quá nhanh. Vui lòng chờ một chút rồi thử lại.'
+  if (status === 503) return 'Dịch vụ AI tạm thời chưa sẵn sàng. Yêu cầu này không bị tính phí.'
+  return fallback
+}
+
+const apiErrorCode = (error: unknown): string | null => {
+  if (!(error instanceof AxiosError)) return null
+  const body = error.response?.data as { code?: string; error?: { code?: string } } | undefined
+  return body?.code ?? body?.error?.code ?? null
+}
+
+const shouldReuseGatewayAttempt = (error: unknown, code: string | null) => {
+  if (code === 'TURN_IN_PROGRESS') return true
+  if (!(error instanceof AxiosError)) return true
+  const response = error.response
+  if (!response) return true
+  const terminalCodes = [
+    'AI_PROVIDER_UNAVAILABLE',
+    'AI_CONTRACT_INVALID',
+    'CHAT_GATEWAY_DISABLED',
+    'CHAT_GATEWAY_AUTH_UNAVAILABLE',
+    'RATE_CARD_UNAVAILABLE',
+    'PREFLIGHT_EXPIRED',
+    'IDEMPOTENCY_CONFLICT'
+  ]
+  if (terminalCodes.includes(code || '')) return false
+  if ([401, 403, 503].includes(response.status)) return false
+  return true
+}
+
 export default function AIChat() {
-  const [sessions, setSessions] = useState<ChatSession[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('legal_ai_chat_sessions')
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved)
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            // Dọn phiên rỗng tích lũy (do bấm "tạo mới" nhiều lần): giữ TỐI ĐA 1 phiên rỗng.
-            const nonEmpty = parsed.filter((s: ChatSession) => s.messages.length > 0)
-            const oneEmpty = parsed.find((s: ChatSession) => s.messages.length === 0)
-            const cleaned = oneEmpty ? [oneEmpty, ...nonEmpty] : nonEmpty
-            return cleaned.length > 0 ? cleaned : [makeEmptySession()]
-          }
-        } catch (e) {
-          console.error('Failed to parse sessions from localStorage', e)
-        }
-      }
-    }
-    return [makeEmptySession()]
-  })
-  const [activeSessionId, setActiveSessionId] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      const savedId = localStorage.getItem('legal_ai_active_session_id')
-      if (savedId) return savedId
-    }
-    return 'session-1'
-  })
-  const [inputText, setInputText] = useState<string>('')
-  const [attachments, setAttachments] = useState<Attachment[]>([])
-  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [sessions, setSessions] = useState<ChatSessionView[]>([])
+  const [newSession, setNewSession] = useState<ChatSessionView>(makeEmptySession)
+  const [inputText, setInputText] = useState('')
+  const [draftInputs, setDraftInputs] = useState<Record<string, string>>({})
+  const [historyState, setHistoryState] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null)
+  const [processingSessionId, setProcessingSessionId] = useState<string | null>(null)
+  const [isSuggestingLawyers, setIsSuggestingLawyers] = useState(false)
+  const [pageError, setPageError] = useState<string | null>(null)
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false)
+  const [isPreflighting, setIsPreflighting] = useState(false)
+  const [pendingGatewayTurn, setPendingGatewayTurn] = useState<PendingGatewayTurn | null>(null)
 
   const location = useLocation()
   const navigate = useNavigate()
-
-  // UI responsive control
-  const [isHistoryOpen, setIsHistoryOpen] = useState<boolean>(false)
-
-  // AI query configurations
-  const [topK, setTopK] = useState<number>(5)
-  const [docSummary, setDocSummary] = useState<string>('')
-  const [legalDomain, setLegalDomain] = useState<string>('All')
-  const [isActiveOnly, setIsActiveOnly] = useState<boolean>(true)
-  const [isConfigOpen, setIsConfigOpen] = useState<boolean>(false)
+  const { sessionId } = useParams<{ sessionId: string }>()
+  const userId = useAuthStore((state) => state.user?.userId)
+  const activeSessionId = sessionId ?? NEW_SESSION_ID
+  const chatBasePath = location.pathname.startsWith(`${ROUTE.ADMIN.ROOT}/`)
+    ? `${ROUTE.ADMIN.ROOT}/${ROUTE.ADMIN.CHAT_AI}`
+    : ROUTE.USER.CHAT_AI
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const inFlightSessionIdsRef = useRef<Set<string>>(new Set())
+  const detailGenerationRef = useRef(0)
+  const submitLockRef = useRef(false)
+  const previousUserIdRef = useRef<string | undefined>(userId)
+  const { data: billing = null, refetch: refreshBilling } = useMyBilling()
 
-  // Get active session
-  const activeSession = sessions.find((s) => s.id === activeSessionId) || sessions[0] || DEFAULT_SESSION
+  const activeSession = useMemo(
+    () => activeSessionId === NEW_SESSION_ID
+      ? newSession
+      : sessions.find((item) => item.id === activeSessionId) ?? {
+          ...makeEmptySession(),
+          id: activeSessionId,
+          title: 'Đang tải cuộc trò chuyện…',
+          detailLoaded: false
+        },
+    [activeSessionId, newSession, sessions]
+  )
 
-  // Auto-scroll to bottom of chat
+  const isPersistedProcessing = activeSession.lastMessageStatus === 'processing'
+  const isCurrentSessionLoading =
+    processingSessionId === activeSessionId ||
+    detailLoadingId === activeSessionId ||
+    isPersistedProcessing
+
+  const loadSessionList = useCallback(async () => {
+    setHistoryState('loading')
+    try {
+      const items = await chatTransport.listSessions()
+      setSessions((previous) => items.map((item) => {
+        const summary = toSessionSummary(item)
+        const loaded = previous.find((session) => session.id === item.session_id)
+        return loaded?.detailLoaded
+          ? {
+              ...summary,
+              messages: loaded.messages,
+              aiSessionToken: loaded.aiSessionToken,
+              detailLoaded: true
+            }
+          : summary
+      }))
+      setHistoryState('ready')
+    } catch {
+      setHistoryState('error')
+    }
+  }, [])
+
+  const refreshSession = useCallback(async (
+    id: string,
+    options: { apply?: boolean; signal?: AbortSignal } = {}
+  ): Promise<ChatSessionView> => {
+    const detail = await chatTransport.getSession(id, getStoredSessionToken(id), options.signal)
+    if (detail.session_token) sessionStorage.setItem(sessionTokenKey(id), detail.session_token)
+    const mapped = toSessionDetail(detail)
+    if (options.apply !== false) {
+      setSessions((previous) => {
+        const index = previous.findIndex((item) => item.id === id)
+        if (index === -1) return [...previous, mapped]
+        return previous.map((item) => item.id === id ? mapped : item)
+      })
+    }
+    return mapped
+  }, [])
+
+  useEffect(() => {
+    if (previousUserIdRef.current !== userId) {
+      detailGenerationRef.current += 1
+      clearAiSessionTokens()
+      setSessions([])
+      setNewSession(makeEmptySession())
+      previousUserIdRef.current = userId
+    }
+    if (userId) void loadSessionList()
+  }, [loadSessionList, userId])
+
+  useEffect(() => {
+    if (!sessionId || inFlightSessionIdsRef.current.has(sessionId)) return
+    const generation = ++detailGenerationRef.current
+    const controller = new AbortController()
+    let timer: ReturnType<typeof setTimeout> | undefined
+
+    const load = async () => {
+      setDetailLoadingId(sessionId)
+      setPageError(null)
+      try {
+        const detail = await refreshSession(sessionId, { apply: false, signal: controller.signal })
+        if (controller.signal.aborted || detailGenerationRef.current !== generation) return
+        setSessions((previous) => {
+          const index = previous.findIndex((item) => item.id === sessionId)
+          if (index === -1) return [...previous, detail]
+          return previous.map((item) => item.id === sessionId ? detail : item)
+        })
+        if (detail.lastMessageStatus === 'processing') {
+          timer = setTimeout(load, PROCESSING_POLL_MS)
+        }
+      } catch (error) {
+        if (controller.signal.aborted || detailGenerationRef.current !== generation) return
+        const message = safeErrorMessage(error, 'Không tải được cuộc trò chuyện. Vui lòng thử lại.')
+        setPageError(message)
+        if (error instanceof AxiosError && [403, 404].includes(error.response?.status ?? 0)) {
+          setSessions((previous) => previous.filter((item) => item.id !== sessionId))
+          navigate(chatBasePath, { replace: true })
+        }
+      } finally {
+        if (!controller.signal.aborted && detailGenerationRef.current === generation) {
+          setDetailLoadingId((current) => current === sessionId ? null : current)
+        }
+      }
+    }
+
+    void load()
+    return () => {
+      controller.abort()
+      if (timer) clearTimeout(timer)
+    }
+  }, [chatBasePath, navigate, refreshSession, sessionId])
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [activeSessionId, activeSession.messages.length, isLoading])
+  }, [activeSessionId, activeSession.messages.length, processingSessionId])
 
-  // Save sessions to localStorage on changes
   useEffect(() => {
-    localStorage.setItem('legal_ai_chat_sessions', JSON.stringify(sessions))
-  }, [sessions])
+    if (!location.state?.newChat) return
+    navigate(chatBasePath, { replace: true, state: {} })
+    setNewSession(makeEmptySession())
+    setInputText('')
+  }, [chatBasePath, location.state, navigate])
 
-  // Save activeSessionId to localStorage on changes
-  useEffect(() => {
-    localStorage.setItem('legal_ai_active_session_id', activeSessionId)
-  }, [activeSessionId])
-
-  // Format date helper
-  const getCurrentFormattedDate = () => {
-    const now = new Date()
-    return `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
-  }
-
-  // Handle Mock File Attachments
-  const handleAttach = (files: FileList | null, type: 'file' | 'image') => {
-    if (files && files.length > 0) {
-      const selectedFiles = Array.from(files)
-      const newAttachments: Attachment[] = selectedFiles.map((file) => {
-        const sizeMB = (file.size / (1024 * 1024)).toFixed(1) + ' MB'
-        return {
-          id: `att-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          name: file.name,
-          type,
-          size: sizeMB,
-          url: type === 'image' ? URL.createObjectURL(file) : undefined
-        }
-      })
-      setAttachments((prev) => [...prev, ...newAttachments])
-    }
-  }
-
-  // Remove Attachment
-  const handleRemoveAttachment = (id: string) => {
-    setAttachments((prev) => prev.filter((att) => att.id !== id))
-  }
-
-  // Start a new clean session (client state only)
-  const handleNewChat = () => {
-    // Chống spam: đã có sẵn 1 phiên RỖNG (chưa chat gì) → dùng lại nó, không tạo thêm.
-    const emptySession = sessions.find((s) => s.messages.length === 0)
-    if (emptySession) {
-      setActiveSessionId(emptySession.id)
-      setInputText('')
-      setAttachments([])
+  const handleSelectSession = (newId: string) => {
+    if (newId === activeSessionId) {
       setIsHistoryOpen(false)
       return
     }
-    const newId = `session-${Date.now()}`
-    const newSession: ChatSession = {
-      id: newId,
-      title: 'Yêu cầu phân tích mới',
-      date: getCurrentFormattedDate(),
-      messages: []
-    }
-    setSessions((prev) => [newSession, ...prev])
-    setActiveSessionId(newId)
-    setInputText('')
-    setAttachments([])
+    detailGenerationRef.current += 1
+    setDraftInputs((previous) => ({ ...previous, [activeSessionId]: inputText }))
+    setInputText(draftInputs[newId] || '')
+    setPageError(null)
+    navigate(`${chatBasePath}/${newId}`)
     setIsHistoryOpen(false)
   }
 
-  // Khi điều hướng vào với cờ newChat (vd: bấm "Phân tích pháp lý" ở dashboard),
-  // luôn tạo một cuộc trò chuyện mới thay vì mở lại phiên cũ.
-  useEffect(() => {
-    if (location.state?.newChat) {
-      handleNewChat()
-      // Xoá state để F5/back không tạo phiên mới lặp lại.
-      navigate(location.pathname, { replace: true, state: {} })
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.state])
-
-  // Delete a session from history
-  const handleDeleteSession = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation()
-    const remaining = sessions.filter((s) => s.id !== id)
-    setSessions(remaining)
-    if (activeSessionId === id) {
-      if (remaining.length > 0) {
-        setActiveSessionId(remaining[0].id)
-      } else {
-        // Create an empty session
-        const now = dayjs()
-        const fallbackId = 'session-fallback'
-        setSessions([
-          {
-            id: fallbackId,
-            title: 'Yêu cầu phân tích mới',
-            date: formatTime(now, 'HH:mm``') || '00:00',
-            messages: []
-          }
-        ])
-        setActiveSessionId(fallbackId)
-      }
-    }
+  const handleNewChat = () => {
+    detailGenerationRef.current += 1
+    setDraftInputs((previous) => ({ ...previous, [activeSessionId]: inputText }))
+    setNewSession(makeEmptySession())
+    setInputText(draftInputs[NEW_SESSION_ID] || '')
+    setPageError(null)
+    navigate(chatBasePath)
+    setIsHistoryOpen(false)
   }
 
-  // Sessions are saved automatically to localStorage, so manual save is obsolete
+  const handleDeleteSession = async (id: string, event: React.MouseEvent) => {
+    event.stopPropagation()
+    try {
+      await chatTransport.deleteSession(id, getStoredSessionToken(id))
+      sessionStorage.removeItem(sessionTokenKey(id))
+      setSessions((previous) => previous.filter((session) => session.id !== id))
+      if (activeSessionId === id) handleNewChat()
+    } catch (error) {
+      setPageError(safeErrorMessage(error, 'Không xóa được cuộc trò chuyện.'))
+    }
+  }
 
   const handleSelectStarterCategory = (category: string) => {
-    if (category === 'Tôi không chắc lĩnh vực') {
-      setInputText('Tôi cần tư vấn pháp lý về tình huống sau: ')
-    } else {
-      setInputText(`Tôi cần tư vấn về lĩnh vực ${category}: `)
-    }
-    // Focus the chat message input textarea
-    const textareaEl = document.getElementById('chat-message-input')
-    if (textareaEl) {
-      textareaEl.focus()
-    }
+    setInputText(category === 'Tôi không chắc lĩnh vực'
+      ? 'Tôi cần tư vấn pháp lý về tình huống sau: '
+      : `Tôi cần tư vấn về lĩnh vực ${category}: `)
+    requestAnimationFrame(() => document.getElementById('chat-message-input')?.focus())
   }
 
-  // Gọi AI BE thật. deepConfirmed=true khi user bấm "Phân tích sâu" (gửi lại câu
-  // tình huống với cờ để vào luồng reasoning).
-  const callAi = async (messageContent: string, userAttachments: Attachment[], deepConfirmed: boolean) => {
-    const timestamp = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
-
-    const newUserMsg: Message = {
-      id: `msg-user-${Date.now()}`,
+  const callDirectAi = async (messageContent: string) => {
+    let targetSessionId = sessionId
+    let sessionToken = targetSessionId ? getStoredSessionToken(targetSessionId) : null
+    const now = new Date()
+    const optimisticUser: ChatMessageView = {
+      id: `local-user-${crypto.randomUUID()}`,
       sender: 'user',
       content: messageContent,
-      timestamp,
-      attachments: userAttachments
+      timestamp: formatTime(now)
+    }
+    const pendingId = `local-processing-${crypto.randomUUID()}`
+    const optimisticAssistant: ChatMessageView = {
+      id: pendingId,
+      sender: 'ai',
+      content: '',
+      timestamp: formatTime(now),
+      mode: 'analysis',
+      status: 'processing',
+      stage: 'received',
+      availableActions: []
     }
 
-    // Thêm tin user + auto đặt tên phiên theo câu đầu
-    setSessions((prev) =>
-      prev.map((s) => {
-        if (s.id !== activeSessionId) return s
-        const newTitle = s.title === 'Yêu cầu phân tích mới' && messageContent.trim()
-          ? (messageContent.trim().length > 30 ? messageContent.trim().slice(0, 30) + '...' : messageContent.trim())
-          : s.title
-        return { ...s, title: newTitle, messages: [...s.messages, newUserMsg] }
+    setPageError(null)
+    if (!targetSessionId) {
+      setNewSession({
+        ...makeEmptySession(),
+        title: titleFromMessage(messageContent),
+        messages: [optimisticUser, optimisticAssistant],
+        lastMessageStatus: 'processing'
       })
-    )
-    setIsLoading(true)
+      setProcessingSessionId(NEW_SESSION_ID)
+      let created
+      try {
+        created = await chatTransport.createSession()
+      } catch (error) {
+        setInputText(messageContent)
+        setNewSession((previous) => ({
+          ...previous,
+          lastMessageStatus: 'failed',
+          messages: previous.messages.map((message) => message.id === pendingId
+            ? { ...message, status: 'failed', content: safeErrorMessage(error, 'Không tạo được cuộc trò chuyện. Vui lòng thử lại.') }
+            : message)
+        }))
+        setProcessingSessionId(null)
+        return
+      }
+
+      targetSessionId = created.session_id
+      sessionToken = created.session_token
+      if (sessionToken) sessionStorage.setItem(sessionTokenKey(targetSessionId), sessionToken)
+      const createdSession: ChatSessionView = {
+        id: targetSessionId,
+        title: titleFromMessage(messageContent),
+        date: created.created_at,
+        messages: [optimisticUser, optimisticAssistant],
+        aiSessionId: targetSessionId,
+        aiSessionToken: sessionToken,
+        lastMessageStatus: 'processing',
+        detailLoaded: true
+      }
+      inFlightSessionIdsRef.current.add(targetSessionId)
+      setSessions((previous) => [createdSession, ...previous.filter((item) => item.id !== targetSessionId)])
+      setProcessingSessionId(targetSessionId)
+      navigate(`${chatBasePath}/${targetSessionId}`, { replace: true })
+    } else {
+      setSessions((previous) => {
+        const updated = previous.map((item) => item.id === targetSessionId
+          ? {
+              ...item,
+              title: ['Yêu cầu phân tích mới', 'Cuộc trò chuyện mới'].includes(item.title)
+                ? titleFromMessage(messageContent)
+                : item.title,
+              lastMessageStatus: 'processing' as const,
+              detailLoaded: true,
+              messages: [...item.messages, optimisticUser, optimisticAssistant]
+            }
+          : item)
+        const active = updated.find((item) => item.id === targetSessionId)
+        return active ? [active, ...updated.filter((item) => item.id !== targetSessionId)] : updated
+      })
+      setProcessingSessionId(targetSessionId)
+    }
+
+    if (!targetSessionId) return
 
     try {
-      const res = await sendChatAi({
+      const response = await chatTransport.send({
         message: messageContent,
-        session_id: activeSession.aiSessionId ?? null,
-        deep_confirmed: deepConfirmed,
+        session_id: targetSessionId,
+        session_token: sessionToken
       })
-
-      const aiMessage: Message = {
-        id: `msg-ai-${Date.now()}`,
+      const assistantMessage: ChatMessageView = {
+        id: response.assistant_message_id,
         sender: 'ai',
-        content: res.answer || '(Không có nội dung trả về)',
-        timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-        mode: res.mode,
-        citations: res.citations,
-        domain: res.domain,
-        deepPending: res.mode === 'deep_reasoning_pending',
-        // Sau khi reasoning ra kết luận (deep_reasoning) → hiện 2 nút hành động.
-        showPostActions: res.mode === 'deep_reasoning',
+        content: response.message?.text || response.answer || 'Hệ thống chưa trả về nội dung.',
+        timestamp: formatTime(new Date()),
+        mode: response.mode,
+        citations: response.citations,
+        status: response.status,
+        availableActions: response.available_actions,
+        report: response.report,
+        handoff: response.handoff,
+        stage: response.stage,
+        billing: response.billing,
+        usage: response.usage
       }
-
-      setSessions((prev) =>
-        prev.map((s) =>
-          s.id === activeSessionId
-            ? { ...s, aiSessionId: res.session_id, messages: [...s.messages, aiMessage] }
-            : s
-        )
-      )
-    } catch (err) {
-      const errMessage: Message = {
-        id: `msg-ai-err-${Date.now()}`,
-        sender: 'ai',
-        content: `⚠️ Xin lỗi, hệ thống AI đang gặp sự cố. Bạn thử lại sau giúp nhé.\n\n_(${err instanceof Error ? err.message : 'lỗi không xác định'})_`,
-        timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+      setSessions((previous) => previous.map((item) => item.id === targetSessionId
+        ? {
+            ...item,
+            aiSessionId: response.session_id,
+            aiSessionToken: response.session_token,
+            lastMessageStatus: response.status,
+            messages: item.messages.map((message) => message.id === pendingId ? assistantMessage : message)
+          }
+        : item))
+      await refreshSession(targetSessionId)
+      if (response.billing) void refreshBilling()
+      void loadSessionList()
+    } catch (error) {
+      try {
+        await refreshSession(targetSessionId)
+      } catch {
+        const errorText = safeErrorMessage(error, 'Hệ thống AI đang gặp sự cố. Vui lòng thử lại sau.')
+        setSessions((previous) => previous.map((item) => item.id === targetSessionId
+          ? {
+              ...item,
+              lastMessageStatus: 'failed',
+              messages: item.messages.map((message) => message.id === pendingId
+                ? { ...message, status: 'failed', content: errorText }
+                : message)
+            }
+          : item))
       }
-      setSessions((prev) =>
-        prev.map((s) =>
-          s.id === activeSessionId ? { ...s, messages: [...s.messages, errMessage] } : s
-        )
-      )
     } finally {
-      setIsLoading(false)
+      inFlightSessionIdsRef.current.delete(targetSessionId)
+      setProcessingSessionId((current) => current === targetSessionId ? null : current)
     }
   }
 
-  // Submit Prompt to AI
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!inputText.trim() && attachments.length === 0) return
-    if (isLoading) return
-    if (inputText.length > CHAT_MAX_CHARS) return // guard cuối: chặn cứng nếu lách được UI
+  const runGatewayTurn = async (attempt: PendingGatewayTurn) => {
+    if (!chatTransport.sendTurn) return
+    const initialSessionId = attempt.sessionId
+    const timestamp = formatTime(new Date())
+    const optimisticUser: ChatMessageView = {
+      id: `local-user-${crypto.randomUUID()}`,
+      sender: 'user',
+      content: attempt.message,
+      timestamp
+    }
+    const pendingId = `local-processing-${crypto.randomUUID()}`
+    const optimisticAssistant: ChatMessageView = {
+      id: pendingId,
+      sender: 'ai',
+      content: '',
+      timestamp,
+      mode: 'analysis',
+      status: 'processing',
+      stage: 'received',
+      availableActions: []
+    }
 
-    const messageContent = inputText
-    const userAttachments = [...attachments]
+    setPendingGatewayTurn(null)
     setInputText('')
-    setAttachments([])
-    await callAi(messageContent, userAttachments, false)
-  }
+    setPageError(null)
+    if (initialSessionId) {
+      setSessions((previous) => {
+        const updated = previous.map((item) => item.id === initialSessionId
+          ? {
+              ...item,
+              title: ['Yêu cầu phân tích mới', 'Cuộc trò chuyện mới'].includes(item.title)
+                ? titleFromMessage(attempt.message)
+                : item.title,
+              lastMessageStatus: 'processing' as const,
+              messages: [...item.messages, optimisticUser, optimisticAssistant]
+            }
+          : item)
+        const active = updated.find((item) => item.id === initialSessionId)
+        return active ? [active, ...updated.filter((item) => item.id !== initialSessionId)] : updated
+      })
+      setProcessingSessionId(initialSessionId)
+    } else {
+      setNewSession({
+        ...makeEmptySession(),
+        title: titleFromMessage(attempt.message),
+        messages: [optimisticUser, optimisticAssistant],
+        lastMessageStatus: 'processing'
+      })
+      setProcessingSessionId(NEW_SESSION_ID)
+    }
 
-  // User bấm "Phân tích sâu" sau khi AI mời → gửi lại câu hỏi gốc với deep_confirmed
-  const handleConfirmDeep = async (originalQuestion: string) => {
-    if (isLoading) return
-    await callAi(originalQuestion, [], true)
-  }
-
-  // Tải bản phân tích về máy dạng PDF — client-side (html2pdf), không cần BE.
-  const handleDownloadAnalysis = async (content: string) => {
     try {
-      await exportAnalysisPdf(content, { title: 'Bản phân tích pháp lý' })
-    } catch (err) {
-      console.error('Xuất PDF lỗi', err)
+      const response = await chatTransport.sendTurn({
+        preflightId: attempt.preflight.preflightId,
+        message: attempt.message,
+        sessionId: initialSessionId,
+        sessionToken: null,
+        confirmedMaxCredits: attempt.preflight.confirmationRequired
+          ? attempt.preflight.estimatedCredits.max
+          : null
+      }, attempt.idempotencyKey)
+      const targetSessionId = response.session_id
+      const assistantMessage: ChatMessageView = {
+        id: response.assistant_message_id,
+        sender: 'ai',
+        content: response.message?.text || response.answer || 'Hệ thống chưa trả về nội dung.',
+        timestamp: formatTime(new Date()),
+        mode: response.mode,
+        citations: response.citations,
+        status: response.status,
+        availableActions: response.available_actions,
+        report: response.report,
+        handoff: response.handoff,
+        stage: response.stage,
+        billing: response.billing,
+        usage: response.usage
+      }
+
+      if (initialSessionId) {
+        setSessions((previous) => previous.map((item) => item.id === initialSessionId
+          ? {
+              ...item,
+              id: targetSessionId,
+              aiSessionId: targetSessionId,
+              aiSessionToken: response.session_token,
+              lastMessageStatus: response.status,
+              messages: item.messages.map((message) => message.id === pendingId ? assistantMessage : message)
+            }
+          : item))
+      } else {
+        const createdSession: ChatSessionView = {
+          id: targetSessionId,
+          title: titleFromMessage(attempt.message),
+          date: new Date().toISOString(),
+          messages: [optimisticUser, assistantMessage],
+          aiSessionId: targetSessionId,
+          aiSessionToken: response.session_token,
+          lastMessageStatus: response.status,
+          detailLoaded: true
+        }
+        if (response.session_token) sessionStorage.setItem(sessionTokenKey(targetSessionId), response.session_token)
+        setSessions((previous) => [createdSession, ...previous.filter((item) => item.id !== targetSessionId)])
+        setNewSession(makeEmptySession())
+        navigate(`${chatBasePath}/${targetSessionId}`, { replace: true })
+      }
+
+      await refreshSession(targetSessionId)
+      if (response.billing) void refreshBilling()
+      void loadSessionList()
+    } catch (error) {
+      const errorText = safeErrorMessage(error, 'Yêu cầu chưa hoàn tất. Bạn có thể thử lại an toàn với cùng mã yêu cầu.')
+      const code = apiErrorCode(error)
+      setPageError(errorText)
+      setInputText(attempt.message)
+      setPendingGatewayTurn(shouldReuseGatewayAttempt(error, code)
+        ? { ...attempt, state: 'retry' }
+        : null)
+      if (initialSessionId) {
+        setSessions((previous) => previous.map((item) => item.id === initialSessionId
+          ? {
+              ...item,
+              lastMessageStatus: 'failed',
+              messages: item.messages.map((message) => message.id === pendingId
+                ? { ...message, status: 'failed', content: errorText }
+                : message)
+            }
+          : item))
+      } else {
+        setNewSession((previous) => ({
+          ...previous,
+          lastMessageStatus: 'failed',
+          messages: previous.messages.map((message) => message.id === pendingId
+            ? { ...message, status: 'failed', content: errorText }
+            : message)
+        }))
+      }
+    } finally {
+      setProcessingSessionId((current) => current === (initialSessionId ?? NEW_SESSION_ID) ? null : current)
     }
   }
 
-  // Gợi ý luật sư: gọi Node BE lấy luật sư THẬT theo lĩnh vực → render card vào 1 tin AI mới.
-  const handleSuggestLawyers = async (domain?: string | null) => {
-    if (isLoading) return
-    setIsLoading(true)
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
+    const messageContent = inputText.trim()
+    if (!messageContent || isCurrentSessionLoading || submitLockRef.current || inputText.length > CHAT_MAX_CHARS) return
+    submitLockRef.current = true
     try {
-      const lawyers = await fetchLawyers(domain)
-      const aiMessage: Message = {
-        id: `msg-lawyers-${Date.now()}`,
+      if (chatTransport.supportsPreflight && chatTransport.preflight) {
+        setPendingGatewayTurn(null)
+        setIsPreflighting(true)
+        let targetSessionId = sessionId
+        if (!targetSessionId) {
+          const created = await chatTransport.createSession()
+          targetSessionId = created.session_id
+          if (created.session_token) {
+            sessionStorage.setItem(sessionTokenKey(targetSessionId), created.session_token)
+          }
+          const createdSession: ChatSessionView = {
+            id: targetSessionId,
+            title: titleFromMessage(messageContent),
+            date: created.created_at,
+            messages: [],
+            aiSessionId: targetSessionId,
+            aiSessionToken: created.session_token,
+            lastMessageStatus: null,
+            detailLoaded: true
+          }
+          setSessions((previous) => [createdSession, ...previous.filter((item) => item.id !== targetSessionId)])
+          setNewSession(makeEmptySession())
+          navigate(`${chatBasePath}/${targetSessionId}`, { replace: true })
+        }
+        const idempotencyKey = crypto.randomUUID()
+        const preflight = await chatTransport.preflight({
+          sessionId: targetSessionId,
+          message: messageContent,
+          attachments: [],
+          requestedMode: 'auto'
+        }, idempotencyKey)
+        if (!preflight.allowed) {
+          setPageError(preflight.reason === 'INSUFFICIENT_CREDITS'
+            ? 'Bạn không đủ credit cho yêu cầu này. Hãy chỉnh câu hỏi hoặc xem các gói sử dụng.'
+            : 'Yêu cầu hiện chưa thể xử lý.')
+          return
+        }
+        const attempt: PendingGatewayTurn = {
+          message: messageContent,
+          sessionId: targetSessionId,
+          idempotencyKey,
+          preflight,
+          state: preflight.confirmationRequired ? 'confirmation' : 'retry'
+        }
+        if (preflight.confirmationRequired) {
+          setPendingGatewayTurn(attempt)
+          return
+        }
+        setDraftInputs((previous) => ({ ...previous, [activeSessionId]: '' }))
+        await runGatewayTurn(attempt)
+      } else {
+        setInputText('')
+        setDraftInputs((previous) => ({ ...previous, [activeSessionId]: '' }))
+        await callDirectAi(messageContent)
+      }
+    } catch (error) {
+      setPageError(safeErrorMessage(error, 'Không thể kiểm tra yêu cầu lúc này. Vui lòng thử lại.'))
+    } finally {
+      setIsPreflighting(false)
+      submitLockRef.current = false
+    }
+  }
+
+  const continueGatewayTurn = async () => {
+    if (!pendingGatewayTurn || submitLockRef.current) return
+    submitLockRef.current = true
+    setDraftInputs((previous) => ({ ...previous, [activeSessionId]: '' }))
+    try {
+      await runGatewayTurn(pendingGatewayTurn)
+    } finally {
+      submitLockRef.current = false
+    }
+  }
+
+  const handleInputChange = (value: string) => {
+    if (pendingGatewayTurn && value !== pendingGatewayTurn.message) setPendingGatewayTurn(null)
+    setInputText(value)
+  }
+
+  const handleDownloadAnalysis = async (message: ChatMessageView) => {
+    try {
+      let markdownToExport = message.content
+      let titleToExport = activeSession?.title || 'Bản phân tích pháp lý'
+
+      const reportId = chatReportId(message.report)
+      if (reportId && activeSessionId !== NEW_SESSION_ID) {
+        try {
+          const report = isLegalPositioningReport(message.report)
+            ? message.report
+            : await chatTransport.getReport(
+              reportId,
+              activeSessionId,
+              getStoredSessionToken(activeSessionId)
+            )
+          if (report?.rendered_markdown) {
+            markdownToExport = report.rendered_markdown
+          }
+          if (report?.title) {
+            titleToExport = report.title
+          }
+        } catch (err) {
+          console.warn('Không thể lấy canonical report, sẽ dùng nội dung câu trả lời trực tiếp:', err)
+        }
+      }
+
+      if (!markdownToExport) {
+        throw new Error('Nội dung không khả dụng để xuất PDF.')
+      }
+
+      await exportAnalysisPdf(markdownToExport, { title: titleToExport })
+    } catch (error) {
+      console.error('Lỗi khi xuất PDF:', error)
+      setPageError('Không thể xuất PDF lúc này. Vui lòng thử lại.')
+    }
+  }
+
+  const handleSuggestLawyers = async (message: ChatMessageView) => {
+    if (isSuggestingLawyers || activeSessionId === NEW_SESSION_ID) return
+
+    let specialties = message.handoff?.specialty_codes ?? (
+      isLegalPositioningReport(message.report)
+        ? message.report.issue_analyses.map((item) => String(item['issue'] ?? '')).filter(Boolean)
+        : []
+    )
+
+    if (!specialties.length) {
+      const text = `${activeSession?.title || ''} ${message.content}`.toLowerCase()
+      const detected: string[] = []
+      if (/lao động|nghỉ việc|mất việc|trợ cấp|sa thải|lương|hợp đồng lao động|thôi việc/.test(text)) detected.push('Lao động')
+      if (/doanh nghiệp|công ty|tái cơ cấu|cổ phần|hội đồng|thành viên|doanh nhân/.test(text)) detected.push('Doanh nghiệp')
+      if (/đất đai|nhà đất|bất động sản|sổ đỏ|quyền sử dụng đất|nhà ở/.test(text)) detected.push('Đất đai')
+      if (/ly hôn|hôn nhân|tài sản chung|cấp dưỡng|gia đình|kết hôn/.test(text)) detected.push('Hôn nhân')
+      if (/hình sự|tội|vi phạm|khởi tố|bị cáo|công an|án phí/.test(text)) detected.push('Hình sự')
+
+      specialties = detected.length > 0 ? detected : ['Lao động', 'Doanh nghiệp', 'Dân sự']
+    }
+
+    setIsSuggestingLawyers(true)
+    try {
+      const lawyers = await fetchRecommendedLawyers(specialties)
+      const recommendation: ChatMessageView = {
+        id: `local-lawyers-${crypto.randomUUID()}`,
         sender: 'ai',
         content: lawyers.length
-          ? 'Dưới đây là các luật sư phù hợp mà mình tìm thấy cho bạn:'
-          : 'Hiện chưa có luật sư phù hợp trong hệ thống. Bạn thử lại sau nhé.',
-        timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-        lawyers,
+          ? 'Dưới đây là các luật sư có chuyên môn phù hợp với tình huống của bạn. Bạn nên xem hồ sơ trước khi liên hệ.'
+          : 'Hiện chưa tìm thấy luật sư phù hợp. Bạn có thể thử lại sau.',
+        timestamp: formatTime(new Date()),
+        lawyers
       }
-      setSessions((prev) =>
-        prev.map((s) =>
-          s.id === activeSessionId ? { ...s, messages: [...s.messages, aiMessage] } : s
-        )
-      )
-    } catch (err) {
-      const errMessage: Message = {
-        id: `msg-lawyers-err-${Date.now()}`,
-        sender: 'ai',
-        content: `⚠️ Không lấy được danh sách luật sư.\n\n_(${err instanceof Error ? err.message : 'lỗi không xác định'})_`,
-        timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-      }
-      setSessions((prev) =>
-        prev.map((s) =>
-          s.id === activeSessionId ? { ...s, messages: [...s.messages, errMessage] } : s
-        )
-      )
+      setSessions((previous) => previous.map((item) => item.id === activeSessionId
+        ? { ...item, messages: [...item.messages, recommendation] }
+        : item))
+    } catch (error) {
+      setPageError(safeErrorMessage(error, 'Không thể tải danh sách luật sư lúc này.'))
     } finally {
-      setIsLoading(false)
+      setIsSuggestingLawyers(false)
     }
   }
 
   return (
-    <div className='flex flex-col h-[calc(100vh-100px)] w-full overflow-hidden animate-in fade-in-50 duration-300'>
-      {/* Save Session Dialog is removed because saving is now automatic */}
-
-      {/* Main Split Layout: 8-2 or 7-3 */}
-      <div className='flex flex-1 h-full min-h-0 overflow-hidden rounded-xl shadow-sm relative'>
-        
-        {/* LEFT COLUMN: Main Chat Component (75% / 80%) */}
-        <div className='flex flex-col flex-1 h-full min-w-0 min-h-0 bg-transparent relative z-10'>
-
-          {/* Header & AI Configuration Bar */}
-          <div className='flex items-center justify-between px-6 py-4 bg-background-primary border-b border-border-secondary shadow-sm'>
-            <div className='flex items-center gap-2'>
-              <span className='w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse' />
-              <h2 className='text-sm font-bold text-main'>{activeSession.title}</h2>
+    <div className='flex h-[calc(100vh-100px)] w-full flex-col overflow-hidden animate-in fade-in-50 duration-300'>
+      <div className='relative flex min-h-0 flex-1 overflow-hidden rounded-xl shadow-sm'>
+        <main className='relative z-10 flex h-full min-h-0 min-w-0 flex-1 flex-col bg-transparent'>
+          <header className='flex items-center justify-between border-b border-border-secondary bg-background-primary px-4 py-3 shadow-sm lg:px-6'>
+            <div className='min-w-0'>
+              <h1 className='truncate text-sm font-bold text-main'>{activeSession.title}</h1>
+              <p className='mt-0.5 text-[11px] text-text-description'>Nội dung chỉ được tải theo cuộc trò chuyện đang mở.</p>
             </div>
-            
-            <button
-              onClick={() => setIsConfigOpen(!isConfigOpen)}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border shadow-sm cursor-pointer',
-                isConfigOpen 
-                  ? 'bg-primary text-white border-primary' 
-                  : 'bg-background-secondary text-main border-border-secondary hover:bg-background-secondary/80'
-              )}
-            >
-              <Settings className='w-3.5 h-3.5' />
-              <span>Cấu hình AI</span>
-            </button>
-          </div>
+            <div className='flex items-center gap-2'>
+              <div className='sm:hidden'><PlanCreditSummary /></div>
+              <Button
+                variant='ghost'
+                size='icon'
+                onClick={() => setIsHistoryOpen(true)}
+                aria-label='Mở lịch sử trò chuyện'
+                className='lg:hidden'
+              >
+                <History className='h-4 w-4' aria-hidden='true' />
+              </Button>
+            </div>
+          </header>
 
-          {/* Collapsible Configuration Panel */}
-          {isConfigOpen && (
-            <div className='p-6 bg-background-primary border-b border-border-secondary grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-top duration-300'>
-              {/* Top K */}
-              <div className='space-y-2'>
-                <div className='flex justify-between items-center'>
-                  <label className='text-xs font-bold text-main'>Số tài liệu truy vấn (Top K)</label>
-                  <span className='text-[10px] font-bold text-primary px-2 py-0.5 bg-primary/10 rounded-md'>{topK}</span>
-                </div>
-                <input
-                  type='range'
-                  min='1'
-                  max='20'
-                  value={topK}
-                  onChange={(e) => setTopK(Number(e.target.value))}
-                  className='w-full accent-primary h-1 bg-background-secondary rounded-lg appearance-none cursor-pointer'
-                />
-                <p className='text-[10px] text-text-description'>Số đoạn văn bản pháp quy liên quan nhất được trích xuất.</p>
-              </div>
+          {pageError && (
+            <div role='alert' className='mx-4 mt-3 rounded-lg border border-error-primary/30 bg-error-primary/5 px-3 py-2 text-xs text-error-primary'>
+              {pageError}
+            </div>
+          )}
 
-              {/* Legal Domain */}
-              <div className='space-y-2'>
-                <label className='text-xs font-bold text-main block'>Lĩnh vực pháp lý</label>
-                <select
-                  value={legalDomain}
-                  onChange={(e) => setLegalDomain(e.target.value)}
-                  className='w-full px-3 py-2 text-xs rounded-xl bg-background-secondary border border-border-secondary font-semibold text-main outline-none focus:border-primary transition-all'
+          <ChatMessages
+            messages={activeSession.messages}
+            isLoading={isCurrentSessionLoading && !activeSession.messages.some((message) => message.status === 'processing')}
+            isDetailLoading={detailLoadingId === activeSessionId && !activeSession.detailLoaded}
+            messagesEndRef={messagesEndRef}
+            onSelectCategory={handleSelectStarterCategory}
+            onDownloadAnalysis={handleDownloadAnalysis}
+            onSuggestLawyers={handleSuggestLawyers}
+            isSuggestingLawyers={isSuggestingLawyers}
+            canExportPdf={hasBillingEntitlement(billing, 'can_export_pdf')}
+            canSuggestLawyer={hasBillingEntitlement(billing, 'can_use_lawyer_handoff')}
+          />
+
+          {pendingGatewayTurn && (
+            <div className='mx-3 mb-2 rounded-xl border border-primary/25 bg-primary/5 p-3 lg:mx-4' role='status'>
+              <p className='text-sm font-semibold text-main'>
+                {pendingGatewayTurn.state === 'retry'
+                  ? 'Yêu cầu trước chưa nhận được kết quả xác nhận.'
+                  : pendingGatewayTurn.preflight.displayName}
+              </p>
+              <p className='mt-1 text-xs text-text-description'>
+                {pendingGatewayTurn.state === 'retry'
+                  ? 'Thử lại sẽ dùng đúng mã yêu cầu cũ để tránh tạo lượt chat hoặc trừ credit hai lần.'
+                  : `Dự kiến ${pendingGatewayTurn.preflight.estimatedCredits.min}–${pendingGatewayTurn.preflight.estimatedCredits.max} credit · hiện có ${pendingGatewayTurn.preflight.availableCredits}.`}
+              </p>
+              <div className='mt-2 flex gap-2'>
+                <Button size='sm' onClick={() => void continueGatewayTurn()} className='text-xs text-white'>
+                  {pendingGatewayTurn.state === 'retry' ? 'Thử lại an toàn' : 'Tiếp tục'}
+                </Button>
+                <Button
+                  variant='ghost'
+                  size='sm'
+                  onClick={() => {
+                    setInputText(pendingGatewayTurn.message)
+                    setPendingGatewayTurn(null)
+                  }}
+                  className='text-xs'
                 >
-                  <option value='All'>Tất cả lĩnh vực</option>
-                  <option value='lao_dong'>Luật Lao Động</option>
-                  <option value='dan_su'>Luật Dân Sự</option>
-                  <option value='hinh_su'>Luật Hình Sự</option>
-                  <option value='hanh_chinh'>Luật Hành Chính</option>
-                </select>
-                <p className='text-[10px] text-text-description'>Giới hạn phạm vi tìm kiếm luật của trợ lý AI.</p>
-              </div>
-
-              {/* Is Active Only */}
-              <div className='space-y-2 flex flex-col justify-between h-[52px]'>
-                <div className='flex items-center justify-between pt-1'>
-                  <label className='text-xs font-bold text-main cursor-pointer' htmlFor='active-only-toggle'>
-                    Chỉ văn bản còn hiệu lực
-                  </label>
-                  <input
-                    id='active-only-toggle'
-                    type='checkbox'
-                    checked={isActiveOnly}
-                    onChange={(e) => setIsActiveOnly(e.target.checked)}
-                    className='w-4 h-4 rounded text-primary border-border-secondary focus:ring-primary accent-primary cursor-pointer'
-                  />
-                </div>
-                <p className='text-[10px] text-text-description'>
-                  Bỏ qua các văn bản, thông tư pháp lý đã hết hiệu lực thi hành.
-                </p>
-              </div>
-
-              {/* Document Summary (doc_summary) */}
-              <div className='space-y-2 md:col-span-3'>
-                <label className='text-xs font-bold text-main block'>Tóm tắt bối cảnh văn bản (doc_summary)</label>
-                <textarea
-                  value={docSummary}
-                  onChange={(e) => setDocSummary(e.target.value)}
-                  placeholder='Nhập tóm tắt văn bản pháp lý hoặc bối cảnh hợp đồng (nếu có) để AI tham chiếu bổ sung...'
-                  rows={2}
-                  className='w-full p-3 text-xs rounded-xl bg-background-secondary border border-border-secondary font-medium text-main outline-none focus:border-primary transition-all resize-none placeholder-text-tertiary'
-                />
-                <p className='text-[10px] text-text-description'>Thông tin này sẽ được đính kèm vào truy vấn RAG để tăng độ chính xác của ngữ cảnh.</p>
+                  Chỉnh câu hỏi
+                </Button>
               </div>
             </div>
           )}
 
-          {/* Messages Scrollable Container */}
-          <ChatMessages
-            messages={activeSession.messages}
-            isLoading={isLoading}
-            messagesEndRef={messagesEndRef}
-            onSelectCategory={handleSelectStarterCategory}
-            onConfirmDeep={handleConfirmDeep}
-            onDownloadAnalysis={handleDownloadAnalysis}
-            onSuggestLawyers={handleSuggestLawyers}
-          />
-
-          {/* Form Input Area */}
           <ChatInput
             inputText={inputText}
-            setInputText={setInputText}
-            attachments={attachments}
-            onRemoveAttachment={handleRemoveAttachment}
-            onAttach={handleAttach}
+            setInputText={handleInputChange}
             onSubmit={handleSubmit}
-            isLoading={isLoading}
+            isLoading={isCurrentSessionLoading || isPreflighting}
           />
-        </div>
+        </main>
 
-        {/* RIGHT COLUMN: Conversation History (20% / 30%) */}
-        {/* Desktop Sidebar Panel */}
         <HistorySidebar
           sessions={sessions}
           activeSessionId={activeSessionId}
-          setActiveSessionId={setActiveSessionId}
+          setActiveSessionId={handleSelectSession}
           onNewChat={handleNewChat}
           onDeleteSession={handleDeleteSession}
-          className='hidden lg:flex w-[260px] xl:w-[300px] border-l border-border-secondary'
+          loadState={historyState}
+          onRetry={loadSessionList}
+          className='hidden w-[260px] border-l border-border-secondary lg:flex xl:w-[300px]'
         />
 
-        {/* MOBILE SLIDE-OVER DRAWER FOR HISTORY */}
         {isHistoryOpen && (
           <>
-            {/* Drawer Backdrop Overlay */}
             <button
-              className='fixed inset-0 z-40 bg-black/40 lg:hidden w-full h-full border-0'
+              aria-label='Đóng lịch sử'
+              className='fixed inset-0 z-40 h-full w-full border-0 bg-black/40 lg:hidden'
               onClick={() => setIsHistoryOpen(false)}
             />
-            {/* Drawer Sidebar */}
             <HistorySidebar
               sessions={sessions}
               activeSessionId={activeSessionId}
-              setActiveSessionId={setActiveSessionId}
+              setActiveSessionId={handleSelectSession}
               onNewChat={handleNewChat}
               onDeleteSession={handleDeleteSession}
+              loadState={historyState}
+              onRetry={loadSessionList}
               onCloseMobile={() => setIsHistoryOpen(false)}
-              showCloseButton={true}
-              className='fixed top-0 left-0 bottom-0 z-50 w-[280px] border-r border-border-secondary shadow-2xl animate-in slide-in-from-left duration-300 lg:hidden'
+              showCloseButton
+              className='fixed inset-y-0 left-0 z-50 w-[280px] border-r border-border-secondary shadow-2xl animate-in slide-in-from-left duration-300 lg:hidden'
             />
           </>
         )}

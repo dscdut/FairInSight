@@ -1,13 +1,41 @@
 import html2pdf from 'html2pdf.js'
 import { marked } from 'marked'
 
-// Xuất bản phân tích pháp lý (markdown) ra file PDF tiếng Việt.
+const escapeHtml = (value: string) => value
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#039;')
+
+const sanitizeRenderedMarkdown = (html: string) => {
+  const template = document.createElement('template')
+  template.innerHTML = html
+  template.content.querySelectorAll('script,style,iframe,object,embed,link,meta,img,svg,form,input,button').forEach((node) => node.remove())
+  template.content.querySelectorAll('*').forEach((element) => {
+    for (const attribute of Array.from(element.attributes)) {
+      const name = attribute.name.toLowerCase()
+      if (name.startsWith('on') || ['style', 'src', 'srcdoc'].includes(name)) {
+        element.removeAttribute(attribute.name)
+      }
+    }
+    if (element instanceof HTMLAnchorElement) {
+      const href = element.getAttribute('href') || ''
+      if (!href.startsWith('https://')) element.removeAttribute('href')
+      element.setAttribute('rel', 'noopener noreferrer')
+    }
+  })
+  return template.innerHTML
+}
+
+// Chỉ nhận rendered_markdown lấy từ canonical report theo report_id; không dùng
+// trực tiếp nội dung bong bóng chat làm nguồn dữ liệu PDF.
 // Render markdown -> HTML có style -> html2pdf. Dùng font hệ thống (Times) cho
 // dấu tiếng Việt chuẩn; chữ thật (chọn/copy được trong PDF).
 export async function exportAnalysisPdf(markdown: string, opts?: { title?: string }) {
   const title = opts?.title || 'Bản phân tích pháp lý'
   const dateStr = new Date().toLocaleString('vi-VN')
-  const bodyHtml = await marked.parse(markdown)
+  const bodyHtml = sanitizeRenderedMarkdown(await marked.parse(markdown))
 
   const container = document.createElement('div')
   container.innerHTML = `
@@ -27,7 +55,7 @@ export async function exportAnalysisPdf(markdown: string, opts?: { title?: strin
       .pdf-root .footer { margin-top: 22px; padding-top: 10px; border-top: 1px solid #ccc; font-style: italic; font-size: 11px; color: #555; }
     </style>
     <div class="pdf-root">
-      <h1>${title}</h1>
+      <h1>${escapeHtml(title)}</h1>
       <div class="meta">FairInSight · Trợ lý Pháp lý AI · ${dateStr}</div>
       <hr />
       ${bodyHtml}

@@ -2,6 +2,7 @@ import { Menu } from 'lucide-react'
 
 import { ThemeToggle } from '@/components/theme/theme-toogle'
 import useToggleSideBar from '@/core/store/features/sidebar'
+import PlanCreditSummary from '@/pages/users/ai-chat/components/PlanCreditSummary'
 
 import Messages from './messages'
 import Notifications from './notifications'
@@ -25,6 +26,7 @@ export default function UserTopBar() {
       </div>
 
       <div className='flex gap-3 items-center'>
+        <div className='hidden sm:block'><PlanCreditSummary /></div>
         <Notifications />
         <Messages />
         <div className='transition-all duration-200 hover:scale-105'>

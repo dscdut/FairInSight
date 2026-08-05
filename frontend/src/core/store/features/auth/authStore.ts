@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 
+import { queryClient } from '@/app/providers/query-provider'
 import { getPersistedAuth } from '@/core/shared/auth'
 import { clearTokenRefresh, scheduleTokenRefresh } from '@/core/shared/auth-refresh'
 import { clearLS, setToken } from '@/core/shared/storage'
@@ -52,6 +53,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
   logout: () => {
     clearTokenRefresh() // hủy timer proactive
     clearLS()
+    queryClient.clear()
     set({
       ...initialState
     })

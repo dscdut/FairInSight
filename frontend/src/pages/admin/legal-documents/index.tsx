@@ -12,6 +12,7 @@ import { useAuthStore } from '@/core/store/features/auth/authStore'
 import { useIngestStore } from '@/core/store/features/ingest/useIngestStore'
 import { type Law } from '@/models/types/law.type'
 
+import { DeleteConfirmModal } from './components/delete-confirm-modal'
 import { DocumentDetailDrawer } from './components/document-detail-drawer'
 import { DocumentFilters } from './components/document-filters'
 import { DocumentFormDrawer, type FormSubmitData } from './components/document-form-drawer'
@@ -55,6 +56,11 @@ export default function LegalDocumentsPage() {
 
   // Drawer thêm văn bản (CHỈ admin) — nạp KB qua backend_reasoning (lawAiApi.confirmLaw)
   const [isFormOpen, setIsFormOpen] = useState(false)
+
+  // Confirm Delete Modal (CHỈ admin)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [activeLawForDelete, setActiveLawForDelete] = useState<Law | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Nạp KB chạy NỀN: confirm mất ~9 phút (full ingest LLM). Đóng drawer ngay rồi đẩy job
   // vào ingest store — bảng "Tiến trình nạp" dưới list theo dõi (sống cả khi rời trang).
@@ -209,6 +215,40 @@ export default function LegalDocumentsPage() {
     setIsDetailOpen(true)
   }
 
+  // Mở modal xác nhận xóa — chặn nếu không phải admin (phòng vệ FE).
+  const handleDeleteClick = (law: Law) => {
+    if (!isAdmin) {
+      alert('Bạn không có quyền thực hiện thao tác xóa.')
+      return
+    }
+    setActiveLawForDelete(law)
+    setIsDeleteModalOpen(true)
+  }
+
+  // Thực thi xóa triệt để (gọi API deleteLaw)
+  const handleConfirmDelete = async () => {
+    if (!isAdmin || !activeLawForDelete) return
+    const deletedId = activeLawForDelete.id
+    setIsDeleting(true)
+    try {
+      await lawAiApi.deleteLaw(deletedId)
+      // 1. Xóa tức thì khỏi state UI (0ms) -> Hàng biến mất lập tức, không đơ web
+      setLaws((prev) => prev.filter((l) => l.id !== deletedId))
+      setAllLaws((prev) => (prev ? prev.filter((l) => l.id !== deletedId) : null))
+
+      // 2. Đóng modal xóa
+      setIsDeleteModalOpen(false)
+      setActiveLawForDelete(null)
+
+      // 3. Xóa cache & nạp lại ngầm
+      reload()
+    } catch (err) {
+      alert(`⚠️ Lỗi xóa văn bản: ${err instanceof Error ? err.message : 'Lỗi không xác định'}`)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   // Mở form thêm văn bản — chặn nếu không phải admin (phòng vệ FE).
   const handleAddNewClick = () => {
     if (!isAdmin) return
@@ -291,6 +331,8 @@ export default function LegalDocumentsPage() {
             <DocumentListTable
               laws={pagedLaws}
               onView={handleViewClick}
+              onDelete={isAdmin ? handleDeleteClick : undefined}
+              isAdmin={isAdmin}
               readOnly={true}
             />
 
@@ -373,6 +415,17 @@ export default function LegalDocumentsPage() {
           onClose={() => setIsFormOpen(false)}
           onSubmit={handleFormSubmit}
           law={null}
+        />
+      )}
+
+      {/* Modal xác nhận xóa văn bản — chỉ render cho admin */}
+      {isAdmin && (
+        <DeleteConfirmModal
+          isOpen={isDeleteModalOpen}
+          law={activeLawForDelete}
+          isDeleting={isDeleting}
+          onClose={() => setIsDeleteModalOpen(false)}
+          onConfirm={handleConfirmDelete}
         />
       )}
     </main>

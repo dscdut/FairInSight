@@ -108,7 +108,7 @@ export default function Appointments() {
   }
 
   return (
-    <div className='p-4 space-y-6 mx-auto text-left'>
+    <div className='w-full max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-8 space-y-6 text-left'>
       {/* Title Header */}
       <div className='flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border-secondary pb-5'>
         <div>
@@ -194,7 +194,7 @@ export default function Appointments() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
             transition={{ duration: 0.25 }}
-            className='grid grid-cols-1 md:grid-cols-2 gap-4'
+            className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 w-full'
           >
             {filteredRequests.map((req) => (
               <div
@@ -290,9 +290,9 @@ export default function Appointments() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className='flex flex-col items-center justify-center py-16 px-4 bg-background-secondary border border-border-primary border-dashed rounded-xl text-center'
+            className='w-full flex flex-col items-center justify-center py-20 px-6 bg-background-secondary/60 border border-border-primary border-dashed rounded-2xl text-center min-h-[300px]'
           >
-            <AlertCircle className='w-10 h-10 text-text-tertiary mb-3 animate-pulse' />
+            <AlertCircle className='w-12 h-12 text-text-tertiary mb-3 animate-pulse' />
             <p className='text-sm text-text-secondary font-medium'>
               {t('common.appointments.noRequests')}
             </p>

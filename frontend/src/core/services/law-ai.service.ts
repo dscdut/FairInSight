@@ -220,5 +220,13 @@ export const lawAiApi = {
   async updateLaw(id: string, payload: UpdateLawPayload): Promise<Law> {
     const res = (await aiClient.patch(`/documents/${id}`, payload)) as AiDocument
     return mapAiToLaw(res)
+  },
+
+  // DELETE /api/v1/documents/{id} — Xóa triệt để văn bản (Purge cả Cloudinary + DB).
+  async deleteLaw(id: string): Promise<{ status: string; message: string }> {
+    const res = (await aiClient.delete(`/documents/${id}`, {
+      timeout: 120000 // 2 phút — đủ biên cho văn bản lớn có hàng trăm Điều/Khoản & Cloudinary destroy
+    })) as { status: string; message: string }
+    return res
   }
 }

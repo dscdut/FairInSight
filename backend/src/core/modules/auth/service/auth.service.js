@@ -334,8 +334,13 @@ class Service {
             location: user.location ?? null,
             roleName: user.roles?.name ? user.roles.name.toUpperCase() : null,
             status,
-            subscriptions: user.subscriptions
-                ? { planName: user.subscriptions.plan_name ?? null }
+            subscriptions: user.subscriptions?.[0]
+                ? {
+                    planName: user.subscriptions[0].plan_version?.plans?.name
+                        ?? user.subscriptions[0].plan_name
+                        ?? null,
+                    planCode: user.subscriptions[0].plan_version?.plans?.code ?? null,
+                }
                 : undefined,
             createdAt: user.created_at ?? undefined,
         };

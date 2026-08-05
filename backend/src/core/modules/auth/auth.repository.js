@@ -9,7 +9,13 @@ const PROFILE_SELECT = {
     date_of_birth: true,
     location: true,
     subscriptions: {
-        select: { plan_name: true },
+        where: { deleted_at: null },
+        orderBy: { created_at: 'desc' },
+        take: 1,
+        select: {
+            plan_name: true,
+            plan_version: { select: { plans: { select: { code: true, name: true } } } },
+        },
     },
     roles: {
         select: { name: true },

@@ -85,7 +85,12 @@ export class AppBundle {
         /**
          * Setup basic express
          */
-        this.app.use(express.json({ limit: '50mb' }));
+        this.app.use(express.json({
+            limit: '50mb',
+            verify: (req, res, buffer) => {
+                req.rawBody = Buffer.from(buffer);
+            },
+        }));
         this.app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 
         /**

@@ -1,7 +1,7 @@
 import { LawyerService } from '../../modules/lawyer/services/lawyer.service';
 import { ValidHttpResponse } from '../../../packages/handler/response/validHttp.response';
 import { parsePaginationAndFilters } from '../../utils';
-import { UpdateLawyerProfileDto } from '../../modules/lawyer/dto';
+import { CreateLawyerDto, UpdateLawyerProfileDto } from '../../modules/lawyer/dto';
 
 class Controller {
     constructor() {
@@ -14,7 +14,7 @@ class Controller {
      */
     listLawyers = async req => {
         const { page, size, filter } = parsePaginationAndFilters(req.query, {
-            allowedFilters: ['specialization', 'city', 'minRating', 'search'],
+            allowedFilters: ['specialization', 'city', 'minRating', 'search', 'sortByRating'],
         });
 
         const data = await this.service.listLawyers({ page, size, filter });
@@ -28,6 +28,29 @@ class Controller {
     findById = async req => {
         const data = await this.service.getLawyerById(req.params.id);
         return ValidHttpResponse.toOkResponse(data);
+    };
+
+    recommend = async req => {
+        const data = await this.service.recommend({
+            specialties: req.query.specialties,
+            limit: req.query.limit,
+        });
+        return ValidHttpResponse.toOkResponse(data);
+    };
+
+    createLawyer = async req => {
+        const data = await this.service.createLawyer(CreateLawyerDto(req.body));
+        return ValidHttpResponse.toCreatedResponse(data);
+    };
+
+    adminUpdateProfile = async req => {
+        const data = await this.service.adminUpdateProfile(req.params.id, UpdateLawyerProfileDto(req.body));
+        return ValidHttpResponse.toOkResponse(data);
+    };
+
+    deleteLawyer = async req => {
+        await this.service.deleteLawyer(req.params.id);
+        return ValidHttpResponse.toOkResponse({ message: 'Lawyer deleted successfully' });
     };
 
     /**
