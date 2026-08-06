@@ -6,29 +6,36 @@ on:
       - dev
     paths:
       - "backend/**"
+      - ".github/workflows/backend-deploy.yml"
 
   workflow_dispatch:
 
 jobs:
   deploy:
-    runs-on: self-hosted
+    runs-on: [self-hosted, fairinsight-be]
 
     steps:
-      - name: Deploy backend
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Verify server runtime files
+        run: |
+          test -f /opt/fairinsight/backend/.env
+          test -f /opt/fairinsight/backend/docker-compose.yml
+
+      - name: Build backend image
         env:
           PUPPETEER_SKIP_DOWNLOAD: true
+        run: docker build -t fairinsight-backend:dev ./backend
+
+      - name: Restart backend container
+        working-directory: /opt/fairinsight/backend
+        run: docker compose up -d --force-recreate
+
+      - name: Verify backend container
         run: |
-          cd /home/deploy/apps/FairInSight
-
-          git pull origin dev
-
-          cd backend
-
-          npm ci
-
-          npm run build --if-present
-
-          pm2 restart api --update-env
+          docker inspect -f '{{.State.Running}}' fairinsight-backend | grep true
+          docker ps --filter name=fairinsight-backend
 
       - name: Notify success deployment
         run: echo "Deployment complete"
