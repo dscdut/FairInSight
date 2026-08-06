@@ -18,10 +18,23 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Verify server runtime files
+      - name: Prepare server runtime files
         run: |
+          mkdir -p /opt/fairinsight/backend/uploads
           test -f /opt/fairinsight/backend/.env
-          test -f /opt/fairinsight/backend/docker-compose.yml
+          cat > /opt/fairinsight/backend/docker-compose.yml <<'YAML'
+          services:
+            backend:
+              image: fairinsight-backend:dev
+              container_name: fairinsight-backend
+              restart: unless-stopped
+              env_file:
+                - ./.env
+              ports:
+                - "3000:3000"
+              volumes:
+                - ./uploads:/app/src/core/uploads
+          YAML
 
       - name: Build backend image
         env:
