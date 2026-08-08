@@ -10,6 +10,7 @@ import { AuthRepository } from '../auth.repository';
 import { BcryptService } from './bcrypt.service';
 import { JwtService } from './jwt.service';
 import { UnAuthorizedException, DuplicateException, BadRequestException } from '../../../../packages/httpException';
+import { UserActionType } from 'core/common/enum';
 
 class Service {
     constructor() {
@@ -90,16 +91,17 @@ class Service {
             fullName: user.full_name,
             roleName: user.roles?.name ? user.roles.name.toUpperCase() : null,
             avatarUrl: user.avatar_url ?? null,
-            avatar: user.avatar_url ?? null,
             status,
             phone: user.phone ?? null,
             location: user.location ?? null,
         };
-
+        
         if (user.banned_by) {
-            userData.banned_at = user.updated_at?.toISOString() || null;
-            userData.bannedAt = user.updated_at?.toISOString() || null;
-            userData.reason = user.ban_reason ?? null;
+            userData.status = UserActionType.BANNED;
+            userData.bannedAt = user.banned_at;
+            userData.banReason = user.ban_reason;
+        } else {
+            userData.status = UserActionType.ACTIVE;
         }
 
         const targetUserId = userId ?? user.id;
@@ -195,7 +197,7 @@ class Service {
 
         return {
             data: {
-                password_reset_token: passwordResetToken,
+                passwordResetToken: passwordResetToken,
             }
         };
     }
