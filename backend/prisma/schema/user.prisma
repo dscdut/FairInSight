@@ -32,7 +32,6 @@ model lawyer_details {
   lawyer_experiences    lawyer_experiences[]
   lawyer_specialties    lawyer_specialties[]
   ratings               ratings[]
-  reports               reports[]
   consultationProcesses consultation_processes[]
 }
 
@@ -101,7 +100,11 @@ model users {
   messages                 messages[]
   ratings                  ratings[]
   refresh_tokens           refresh_tokens?
-  reports                  reports[]
+  submitted_reports        reports[]                 @relation("reporter_reports")
+  target_reports           reports[]                 @relation("target_reports")
+  assigned_reports         reports[]                 @relation("assigned_reports")
+  resolved_reports         reports[]                 @relation("resolved_reports")
+  report_messages          report_messages[]         @relation("report_message_sender")
   subscriptions            subscriptions[]
   billing_usage_events     billing_ai_usage_events[]
   billing_chat_preflights  billing_chat_preflights[]

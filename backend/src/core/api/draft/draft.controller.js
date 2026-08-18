@@ -26,7 +26,7 @@ class Controller {
         const userId = req.user.payload.id;
         const draftId = req.params.id;
         const dto = UpdateDraftDto(req.body);
-        const data = await this.service.updateDraft(userId, draftId, dto);
+        const data = await this.draftService.updateDraft(userId, draftId, dto);
         return ValidHttpResponse.toOkResponse(data);
     };
 

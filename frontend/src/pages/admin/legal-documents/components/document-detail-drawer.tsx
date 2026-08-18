@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 
 
-import axios from 'axios'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, History, Clock, Save } from 'lucide-react'
 import { createPortal } from 'react-dom'
@@ -194,8 +193,7 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
       ])
 
       const clientId = 'client-' + Math.random().toString(36).substring(2, 9)
-      const aiBase = config.aiBaseUrl || 'http://localhost:8000/api/v1'
-      const wsBase = aiBase.replace(/^http/, 'ws')
+      const wsBase = config.legalCorpusBaseUrl.replace(/^http/, 'ws')
       const wsUrl = `${wsBase}/ws/progress/${clientId}`
       const socket = new WebSocket(wsUrl)
 
@@ -215,27 +213,20 @@ export const DocumentDetailDrawer: React.FC<DocumentDetailDrawerProps> = ({
       }
 
       try {
-        // Step 1: Upload to Cloudinary
+        // Step 1: Preview through the legal corpus gateway.
         setPdfProgress((prev) => prev.map((item) => item.step === 'upload' ? { ...item, status: 'running' } : item))
 
-        const uploadRes = await lawApi.uploadFile(file)
-        const secureUrl = uploadRes.url
-        setSourceUrl(secureUrl)
-        setPdfProgress((prev) => prev.map((item) => item.step === 'upload' ? { ...item, status: 'completed' } : item))
-
-        // Step 2: Post to GovDoc Backend
-        const importFormData = new FormData()
-        importFormData.append('file', file)
-        importFormData.append('doc_type', 'luat')
-        importFormData.append('clientId', clientId)
-
-        const importRes = await axios.post(
-          `${aiBase}/import`,
-          importFormData,
-          { headers: { 'Content-Type': 'multipart/form-data' } }
+        const preview = await lawAiApi.previewLaw(file, clientId)
+        setSourceUrl(preview.cloudinary_url || null)
+        setPdfProgress((prev) =>
+          prev.map((item) =>
+            ['upload', 'scan', 'summarize'].includes(item.step)
+              ? { ...item, status: 'completed' }
+              : item
+          )
         )
 
-        const text = importRes.data.summary || importRes.data.rawText || 'Đã trích xuất và phân tích thành công tài liệu luật.'
+        const text = preview.summary || 'Đã trích xuất và phân tích thành công tài liệu luật.'
 
         setUploadedFile({
           name: file.name,

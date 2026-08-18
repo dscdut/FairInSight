@@ -21,7 +21,7 @@ import {
 } from '@/models/ai-chat/contracts'
 
 export interface ChatTransport {
-  readonly kind: 'direct-ai' | 'node-gateway'
+  readonly kind: 'ai-proxy' | 'node-gateway'
   readonly supportsPreflight: boolean
   createSession(): Promise<ChatSessionCreateResponse>
   listSessions(): Promise<ChatSessionSummary[]>
@@ -33,8 +33,8 @@ export interface ChatTransport {
   sendTurn?(request: ChatGatewayTurnRequest, idempotencyKey: string): Promise<ChatAiResponse>
 }
 
-class DirectAiChatTransport implements ChatTransport {
-  readonly kind = 'direct-ai' as const
+class AiProxyChatTransport implements ChatTransport {
+  readonly kind = 'ai-proxy' as const
   readonly supportsPreflight = false
 
   createSession = createChatSession
@@ -76,8 +76,8 @@ class NodeGatewayChatTransport implements ChatTransport {
   }
 }
 
-// Gateway là mặc định để Node giữ quyền quyết định entitlement/credit. Direct-AI
-// chỉ là rollback local có chủ đích qua VITE_CHAT_GATEWAY_ENABLED=false.
+// Billing gateway is the default so Node owns entitlement/credit decisions.
+// The fallback still goes through Node's /ai proxy; it only skips billing preflight.
 export const chatTransport: ChatTransport = config.chatGatewayEnabled
   ? new NodeGatewayChatTransport()
-  : new DirectAiChatTransport()
+  : new AiProxyChatTransport()

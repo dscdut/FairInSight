@@ -3,6 +3,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { ArrowLeft, Star, ShieldCheck, DollarSign, MapPin, Mail, Phone, CheckCircle2 } from 'lucide-react'
 import { useParams, useNavigate } from 'react-router-dom'
 
+import ReportDialog from '@/components/reports/ReportDialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -439,6 +440,12 @@ export default function LawyerProfile() {
             <Button className='w-full' onClick={() => setIsContactModalOpen(true)}>
               Yêu cầu tư vấn
             </Button>
+            <ReportDialog
+              type='LAWYER'
+              targetUserId={id || null}
+              targetLabel={detail.name}
+              triggerLabel='Báo cáo luật sư'
+            />
             
             <p className='text-[11px] text-text-description text-center leading-relaxed'>
               Gửi yêu cầu để đặt lịch và nhận thông tin phản hồi từ luật sư trong vòng 24 giờ làm việc.

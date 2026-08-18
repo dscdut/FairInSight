@@ -7,9 +7,12 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { hasBillingEntitlement } from '@/api/billingApi'
 import { type ChatHistoryMessage, type ChatSessionDetail, type ChatSessionSummary } from '@/api/chatAiApi'
 import { chatTransport } from '@/api/chatTransport'
+import { analyzeContractDocx, type ContractAnalysisResponse } from '@/api/contractAnalysisApi'
 import { fetchRecommendedLawyers } from '@/api/lawyerApi'
+import ReportDialog from '@/components/reports/ReportDialog'
 import { Button } from '@/components/ui'
 import { ROUTE } from '@/core/constants/path'
+import { cn } from '@/core/lib/utils'
 import { clearAiSessionTokens } from '@/core/shared/storage'
 import { useAuthStore } from '@/core/store/features/auth/authStore'
 import { useMyBilling } from '@/hooks/billing/use-billing'
@@ -29,6 +32,7 @@ import PlanCreditSummary from './components/PlanCreditSummary'
 const NEW_SESSION_ID = 'new'
 const SESSION_TOKEN_PREFIX = 'legal_ai_session_token:'
 const PROCESSING_POLL_MS = 2000
+type ChatMode = 'legal' | 'contract'
 
 interface PendingGatewayTurn {
   message: string
@@ -96,6 +100,41 @@ const titleFromMessage = (message: string) => {
   return normalized.length > 44 ? `${normalized.slice(0, 44)}…` : normalized
 }
 
+const formatContractAnalysisAnswer = (result: ContractAnalysisResponse) => {
+  const moduleA = result.module_a
+  const moduleB = result.module_b
+  const summary = moduleA.clean_context?.summary ?? {}
+  const ragWarnings = result.rag_evidence?.warnings?.length
+    ? `\n\n## Cảnh báo RAG\n${result.rag_evidence.warnings.map((item) => `- ${item}`).join('\n')}`
+    : ''
+  const llmWarnings = result.llm_review?.warnings?.length
+    ? `\n\n## Cảnh báo LLM\n${result.llm_review.warnings.map((item) => `- ${item}`).join('\n')}`
+    : ''
+  const fallbackReport = [
+    '# Kết quả kiểm tra hợp đồng',
+    '',
+    '## 1. Hợp đồng đang được kiểm tra',
+    `- **Tệp**: ${result.filename}`,
+    `- **Dữ liệu đã đọc**: ${summary.party_count ?? moduleA.parties.length} bên, ${summary.clause_count ?? moduleA.clauses.length} điều khoản, ${summary.obligation_count ?? moduleA.obligations.length} nghĩa vụ.`,
+    '',
+    '## 2. Rủi ro nổi bật',
+    ...(moduleA.risk_candidates.length
+      ? moduleA.risk_candidates.slice(0, 8).map((risk) => `- \`${risk.source_clause_id || 'chưa rõ'}\` ${risk.title}: ${risk.detail}`)
+      : ['- Chưa phát hiện rủi ro nổi bật ở bước đọc tự động.']),
+    '',
+    '## 3. Nhóm pháp luật cần đối chiếu',
+    ...(moduleB?.legal_search_plan?.length
+      ? moduleB.legal_search_plan.map((item) => `- ${item.topic}: ${item.reason || item.query || 'Cần tra cứu thêm.'}`)
+      : ['- Chưa có kế hoạch tra luật.'])
+  ].join('\n')
+
+  return [
+    result.module_c?.report_markdown || fallbackReport,
+    ragWarnings,
+    llmWarnings
+  ].filter(Boolean).join('\n')
+}
+
 const safeErrorMessage = (error: unknown, fallback: string) => {
   if (!(error instanceof AxiosError)) return fallback
   const status = error.response?.status
@@ -148,6 +187,9 @@ export default function AIChat() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
   const [isPreflighting, setIsPreflighting] = useState(false)
   const [pendingGatewayTurn, setPendingGatewayTurn] = useState<PendingGatewayTurn | null>(null)
+  const [chatMode, setChatMode] = useState<ChatMode>('legal')
+  const [selectedContractFile, setSelectedContractFile] = useState<File | null>(null)
+  const [isAnalyzingContract, setIsAnalyzingContract] = useState(false)
 
   const location = useLocation()
   const navigate = useNavigate()
@@ -181,7 +223,8 @@ export default function AIChat() {
   const isCurrentSessionLoading =
     processingSessionId === activeSessionId ||
     detailLoadingId === activeSessionId ||
-    isPersistedProcessing
+    isPersistedProcessing ||
+    isAnalyzingContract
 
   const loadSessionList = useCallback(async () => {
     setHistoryState('loading')
@@ -328,7 +371,166 @@ export default function AIChat() {
     requestAnimationFrame(() => document.getElementById('chat-message-input')?.focus())
   }
 
-  const callDirectAi = async (messageContent: string) => {
+  const updateActiveLocalMessages = (
+    updater: (messages: ChatMessageView[]) => ChatMessageView[],
+    options: { title?: string; status?: ChatSessionView['lastMessageStatus'] } = {}
+  ) => {
+    if (activeSessionId === NEW_SESSION_ID) {
+      setNewSession((previous) => ({
+        ...previous,
+        title: options.title ?? previous.title,
+        lastMessageStatus: options.status ?? previous.lastMessageStatus,
+        messages: updater(previous.messages)
+      }))
+      return
+    }
+    setSessions((previous) => previous.map((item) => item.id === activeSessionId
+      ? {
+          ...item,
+          title: options.title ?? item.title,
+          lastMessageStatus: options.status ?? item.lastMessageStatus,
+          detailLoaded: true,
+          messages: updater(item.messages)
+        }
+      : item))
+  }
+
+  const handleContractFileChange = (file: File | null) => {
+    if (!file) {
+      setSelectedContractFile(null)
+      return
+    }
+    if (!file.name.toLowerCase().endsWith('.docx')) {
+      setPageError('Chế độ phân tích hợp đồng hiện chỉ nhận file DOCX.')
+      setSelectedContractFile(null)
+      return
+    }
+    setPageError(null)
+    setSelectedContractFile(file)
+  }
+
+  const handleContractSubmit = async (messageContent: string) => {
+    if (!selectedContractFile) {
+      setPageError('Vui lòng đính kèm file DOCX trước khi phân tích hợp đồng.')
+      return
+    }
+
+    const now = formatTime(new Date())
+    const pendingId = `local-contract-processing-${crypto.randomUUID()}`
+    const userMessage: ChatMessageView = {
+      id: `local-contract-user-${crypto.randomUUID()}`,
+      sender: 'user',
+      content: `${messageContent}\n\nTệp hợp đồng: ${selectedContractFile.name}`,
+      timestamp: now
+    }
+    const pendingMessage: ChatMessageView = {
+      id: pendingId,
+      sender: 'ai',
+      content: '',
+      timestamp: now,
+      mode: 'contract',
+      status: 'processing',
+      stage: 'received'
+    }
+
+    setInputText('')
+    setPageError(null)
+    setIsAnalyzingContract(true)
+
+    let targetSessionId = activeSessionId === NEW_SESSION_ID ? null : activeSessionId
+    let targetSessionToken = activeSession.aiSessionToken ?? null
+    const targetTitle = activeSession.title === 'Cuộc trò chuyện mới'
+      ? titleFromMessage(messageContent)
+      : activeSession.title
+    const updateTargetMessages = (
+      updater: (messages: ChatMessageView[]) => ChatMessageView[],
+      status: ChatSessionView['lastMessageStatus']
+    ) => {
+      if (targetSessionId) {
+        setSessions((previous) => previous.map((item) => item.id === targetSessionId
+          ? {
+              ...item,
+              title: targetTitle,
+              lastMessageStatus: status,
+              detailLoaded: true,
+              messages: updater(item.messages)
+            }
+          : item))
+        return
+      }
+      updateActiveLocalMessages(updater, { title: targetTitle, status })
+    }
+
+    try {
+      if (!targetSessionId) {
+        const created = await chatTransport.createSession()
+        targetSessionId = created.session_id
+        targetSessionToken = created.session_token ?? null
+        if (targetSessionToken) {
+          sessionStorage.setItem(sessionTokenKey(targetSessionId), targetSessionToken)
+        }
+        const createdSession: ChatSessionView = {
+          id: targetSessionId,
+          title: targetTitle,
+          date: created.created_at,
+          messages: [userMessage, pendingMessage],
+          aiSessionId: targetSessionId,
+          aiSessionToken: targetSessionToken,
+          lastMessageStatus: 'processing',
+          detailLoaded: true
+        }
+        setSessions((previous) => [createdSession, ...previous.filter((item) => item.id !== targetSessionId)])
+        setNewSession(makeEmptySession())
+        navigate(`${chatBasePath}/${targetSessionId}`, { replace: true })
+      } else {
+        updateTargetMessages((messages) => [...messages, userMessage, pendingMessage], 'processing')
+      }
+
+      const result = await analyzeContractDocx({
+        file: selectedContractFile,
+        question: messageContent,
+        useLlm: true,
+        enableRag: false,
+        sessionId: targetSessionId,
+        sessionToken: targetSessionToken
+      })
+      if (result.session_id && result.session_id !== targetSessionId) {
+        targetSessionId = result.session_id
+      }
+      const answerMessage: ChatMessageView = {
+        id: result.assistant_message_id || `local-contract-answer-${crypto.randomUUID()}`,
+        sender: 'ai',
+        content: formatContractAnalysisAnswer(result),
+        timestamp: formatTime(new Date()),
+        mode: 'contract',
+        status: 'completed',
+        usage: result.llm_review?.usage as ChatMessageView['usage']
+      }
+      if (result.session_token && result.session_id) {
+        sessionStorage.setItem(sessionTokenKey(result.session_id), result.session_token)
+      }
+      updateTargetMessages(
+        (messages) => messages.map((item) => item.id === pendingId ? answerMessage : item),
+        'completed'
+      )
+      void loadSessionList()
+    } catch (error) {
+      const errorText = error instanceof Error
+        ? error.message
+        : 'Không phân tích được hợp đồng. Vui lòng thử lại.'
+      updateTargetMessages(
+        (messages) => messages.map((item) => item.id === pendingId
+          ? { ...item, status: 'failed', content: errorText }
+          : item),
+        'failed'
+      )
+      setPageError(errorText)
+    } finally {
+      setIsAnalyzingContract(false)
+    }
+  }
+
+  const callAiProxyWithoutPreflight = async (messageContent: string) => {
     let targetSessionId = sessionId
     let sessionToken = targetSessionId ? getStoredSessionToken(targetSessionId) : null
     const now = new Date()
@@ -614,6 +816,10 @@ export default function AIChat() {
     if (!messageContent || isCurrentSessionLoading || submitLockRef.current || inputText.length > CHAT_MAX_CHARS) return
     submitLockRef.current = true
     try {
+      if (chatMode === 'contract') {
+        await handleContractSubmit(messageContent)
+        return
+      }
       if (chatTransport.supportsPreflight && chatTransport.preflight) {
         setPendingGatewayTurn(null)
         setIsPreflighting(true)
@@ -667,7 +873,7 @@ export default function AIChat() {
       } else {
         setInputText('')
         setDraftInputs((previous) => ({ ...previous, [activeSessionId]: '' }))
-        await callDirectAi(messageContent)
+        await callAiProxyWithoutPreflight(messageContent)
       }
     } catch (error) {
       setPageError(safeErrorMessage(error, 'Không thể kiểm tra yêu cầu lúc này. Vui lòng thử lại.'))
@@ -783,6 +989,35 @@ export default function AIChat() {
               <p className='mt-0.5 text-[11px] text-text-description'>Nội dung chỉ được tải theo cuộc trò chuyện đang mở.</p>
             </div>
             <div className='flex items-center gap-2'>
+              <div className='hidden rounded-lg border border-border-secondary bg-background-secondary p-1 sm:inline-flex'>
+                <button
+                  type='button'
+                  onClick={() => setChatMode('legal')}
+                  disabled={isCurrentSessionLoading || isPreflighting}
+                  className={cn(
+                    'rounded-md px-3 py-1.5 text-xs font-semibold transition-colors',
+                    chatMode === 'legal' ? 'bg-primary text-white shadow-sm' : 'text-text-description hover:text-main'
+                  )}
+                >
+                  Chat pháp luật
+                </button>
+                <button
+                  type='button'
+                  onClick={() => setChatMode('contract')}
+                  disabled={isCurrentSessionLoading || isPreflighting}
+                  className={cn(
+                    'rounded-md px-3 py-1.5 text-xs font-semibold transition-colors',
+                    chatMode === 'contract' ? 'bg-primary text-white shadow-sm' : 'text-text-description hover:text-main'
+                  )}
+                >
+                  Hợp đồng
+                </button>
+              </div>
+              <ReportDialog
+                type='SYSTEM'
+                triggerLabel='Báo cáo lỗi'
+                triggerClassName='hidden h-8 text-xs sm:inline-flex'
+              />
               <div className='sm:hidden'><PlanCreditSummary /></div>
               <Button
                 variant='ghost'
@@ -801,6 +1036,33 @@ export default function AIChat() {
               {pageError}
             </div>
           )}
+
+          <div className='border-b border-border-secondary bg-background-primary px-4 py-2 sm:hidden'>
+            <div className='inline-flex w-full rounded-lg border border-border-secondary bg-background-secondary p-1'>
+              <button
+                type='button'
+                onClick={() => setChatMode('legal')}
+                disabled={isCurrentSessionLoading || isPreflighting}
+                className={cn(
+                  'flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors',
+                  chatMode === 'legal' ? 'bg-primary text-white shadow-sm' : 'text-text-description'
+                )}
+              >
+                Chat pháp luật
+              </button>
+              <button
+                type='button'
+                onClick={() => setChatMode('contract')}
+                disabled={isCurrentSessionLoading || isPreflighting}
+                className={cn(
+                  'flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors',
+                  chatMode === 'contract' ? 'bg-primary text-white shadow-sm' : 'text-text-description'
+                )}
+              >
+                Hợp đồng
+              </button>
+            </div>
+          </div>
 
           <ChatMessages
             messages={activeSession.messages}
@@ -851,6 +1113,9 @@ export default function AIChat() {
             setInputText={handleInputChange}
             onSubmit={handleSubmit}
             isLoading={isCurrentSessionLoading || isPreflighting}
+            mode={chatMode}
+            selectedFile={selectedContractFile}
+            onFileChange={handleContractFileChange}
           />
         </main>
 

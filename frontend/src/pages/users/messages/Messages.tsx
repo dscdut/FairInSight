@@ -4,6 +4,7 @@ import axios from 'axios'
 import { Search, Send, ArrowLeft, MessageCircle, FileText, Clock, Download, AlertCircle, ChevronRight, Phone, Video, Sparkles, MonitorUp, Pin } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 
+import ReportDialog from '@/components/reports/ReportDialog'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -711,6 +712,13 @@ export default function Messages() {
                 </div>
               </div>
               <div className='flex items-center gap-3 shrink-0'>
+                <ReportDialog
+                  type='LAWYER'
+                  targetUserId={activeProcess.lawyer_details?.user_id || activeProcess.lawyer_details?.users?.id || null}
+                  targetLabel={activeProcess.lawyer_details?.users?.full_name || 'luật sư'}
+                  triggerLabel='Báo cáo luật sư'
+                  triggerClassName='h-8 text-xs'
+                />
                 {activeStage === 'CHATTING' && (
                   <div className='flex items-center gap-1.5 border-r border-border-secondary pr-3 mr-1.5'>
                     <button

@@ -11,6 +11,7 @@ import app from '../index';
 import { PORT } from '../env';
 import { logger } from '../../packages/logger';
 import { initSocket } from '../socket';
+import { initAiProgressWebSocket } from '../modules/ai-gateway';
 
 const dubugHelper = debug('prisma:server');
 
@@ -47,6 +48,7 @@ app.set('port', port);
 
 const server = http.createServer(app);
 initSocket(server);
+initAiProgressWebSocket(server);
 /**
  * Event listener for HTTP server "error" event.
  */

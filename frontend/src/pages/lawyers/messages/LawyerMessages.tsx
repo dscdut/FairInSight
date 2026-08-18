@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Search, ArrowLeft, MessageCircle, AlertCircle, ChevronRight, Phone, Video, Sparkles, MonitorUp, RotateCcw } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 
+import ReportDialog from '@/components/reports/ReportDialog'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -795,6 +796,13 @@ export default function LawyerMessages() {
                 </div>
               </div>
               <div className='flex items-center gap-3 shrink-0'>
+                <ReportDialog
+                  type='USER'
+                  targetUserId={activeProcess.users?.id || activeProcess.user_id || null}
+                  targetLabel={activeProcess.users?.full_name || 'người dùng'}
+                  triggerLabel='Báo cáo người dùng'
+                  triggerClassName='h-8 text-xs'
+                />
                 {activeStage === 'CHATTING' && (
                   <div className='flex items-center gap-1.5 border-r border-border-secondary pr-3 mr-1.5'>
                     <button

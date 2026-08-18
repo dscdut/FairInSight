@@ -19,6 +19,8 @@ export interface UserDocument {
 
 const API_DOCUMENTS = '/documents'
 const API_DOCUMENT_DETAIL = (id: string) => `/documents/${id}`
+const API_DRAFTS = '/drafts'
+const API_DRAFT_DETAIL = (id: string) => `/drafts/${id}`
 
 export const createDocumentApi = (client: AxiosInstance) => ({
   async listDocuments(): Promise<UserDocument[]> {
@@ -44,7 +46,25 @@ export const createDocumentApi = (client: AxiosInstance) => ({
     templateId: string
     content: Record<string, unknown>
   }): Promise<UserDocument> {
-    const res = (await client.post('/drafts', data)) as UserDocument
+    const res = (await client.post(API_DRAFTS, data)) as UserDocument
+    return res
+  },
+  async listDrafts(): Promise<UserDocument[]> {
+    const res = (await client.get(API_DRAFTS)) as UserDocument[]
+    return res || []
+  },
+  async getDraftById(id: string): Promise<UserDocument> {
+    const res = (await client.get(API_DRAFT_DETAIL(id))) as UserDocument
+    return res
+  },
+  async updateDraft(id: string, data: {
+    content: Record<string, unknown>
+  }): Promise<UserDocument> {
+    const res = (await client.put(API_DRAFT_DETAIL(id), data)) as UserDocument
+    return res
+  },
+  async deleteDraft(id: string): Promise<unknown> {
+    const res = (await client.delete(API_DRAFT_DETAIL(id))) as unknown
     return res
   },
   async deleteDocument(id: string): Promise<unknown> {

@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { useEffect, useRef } from 'react'
 
-import { FileDown, Scale, Send } from 'lucide-react'
+import { FileDown, FileText, Paperclip, Scale, Send, X } from 'lucide-react'
 
 import { Button, Textarea } from '@/components/ui'
 import { cn } from '@/core/lib/utils'
@@ -16,6 +16,9 @@ interface ChatInputProps {
   setInputText: (text: string) => void
   onSubmit: (e: React.FormEvent) => void
   isLoading: boolean
+  mode?: 'legal' | 'contract'
+  selectedFile?: File | null
+  onFileChange?: (file: File | null) => void
   onRequestLawyer?: () => void
   onExportPdf?: () => void
   showSuggestions?: boolean
@@ -26,11 +29,15 @@ export default function ChatInput({
   setInputText,
   onSubmit,
   isLoading,
+  mode = 'legal',
+  selectedFile = null,
+  onFileChange,
   onRequestLawyer,
   onExportPdf,
   showSuggestions = false
 }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Auto-grow textarea height based on content length
   useEffect(() => {
@@ -45,6 +52,8 @@ export default function ChatInput({
   const charCount = inputText.length
   const overLimit = charCount > CHAT_MAX_CHARS
   const nearLimit = charCount >= CHAT_WARN_CHARS
+  const contractMode = mode === 'contract'
+  const canSubmit = Boolean(inputText.trim()) && !overLimit && (!contractMode || Boolean(selectedFile))
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -84,6 +93,44 @@ export default function ChatInput({
         </div>
       )}
 
+      {contractMode && (
+        <div className='mb-2 flex min-w-0 flex-wrap items-center gap-2'>
+            <input
+              ref={fileInputRef}
+              type='file'
+              accept='.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+              className='hidden'
+              onChange={(event) => onFileChange?.(event.target.files?.[0] ?? null)}
+            />
+            <Button
+              type='button'
+              variant='outline'
+              size='sm'
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading}
+              className='gap-1.5 text-xs'
+            >
+              <Paperclip className='h-3.5 w-3.5' aria-hidden='true' />
+              Đính kèm DOCX
+            </Button>
+            {selectedFile && (
+              <span className='inline-flex min-w-0 max-w-[220px] items-center gap-1.5 rounded-md border border-primary/20 bg-primary/5 px-2 py-1 text-xs font-medium text-main'>
+                <FileText className='h-3.5 w-3.5 shrink-0 text-primary' aria-hidden='true' />
+                <span className='truncate'>{selectedFile.name}</span>
+                <button
+                  type='button'
+                  onClick={() => onFileChange?.(null)}
+                  disabled={isLoading}
+                  className='rounded p-0.5 text-text-description hover:bg-background-secondary hover:text-main'
+                  aria-label='Bỏ tệp hợp đồng'
+                >
+                  <X className='h-3 w-3' aria-hidden='true' />
+                </button>
+              </span>
+            )}
+        </div>
+      )}
+
       {/* Input Form Box */}
       <form onSubmit={onSubmit} className='relative flex items-end gap-2'>
         <div
@@ -105,7 +152,9 @@ export default function ChatInput({
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={isLoading}
-            placeholder='Mô tả vụ việc pháp lý hoặc đặt câu hỏi pháp luật tại đây…'
+            placeholder={contractMode
+              ? 'Đính kèm DOCX và hỏi điều bạn muốn kiểm tra trong hợp đồng...'
+              : 'Mô tả vụ việc pháp lý hoặc đặt câu hỏi pháp luật tại đây...'}
             className='min-h-[44px] w-full bg-transparent border-0 ring-0 focus-visible:ring-0 shadow-none py-3 px-3 leading-relaxed text-sm resize-none overflow-y-auto'
             rows={1}
           />
@@ -115,12 +164,12 @@ export default function ChatInput({
         <Button
           type='submit'
           loading={isLoading}
-          disabled={isLoading || !inputText.trim() || overLimit}
+          disabled={isLoading || !canSubmit}
           aria-busy={isLoading}
           aria-label='Gửi tin nhắn'
           className={cn(
             'h-11 w-11 rounded-xl font-medium shrink-0 shadow-sm transition-all flex items-center gap-2 duration-300 focus-visible:ring-1 focus-visible:ring-info focus-visible:outline-none',
-            inputText.trim() && !overLimit
+            canSubmit
               ? 'bg-primary text-white hover:bg-primary/50 shadow-md hover:scale-[1.02]'
               : 'bg-background-secondary text-text-description'
           )}
@@ -141,6 +190,12 @@ export default function ChatInput({
           {overLimit
             ? `Câu hỏi quá dài (${charCount.toLocaleString('vi-VN')}/${CHAT_MAX_CHARS.toLocaleString('vi-VN')} ký tự). Vui lòng rút ngắn để gửi.`
             : `${charCount.toLocaleString('vi-VN')}/${CHAT_MAX_CHARS.toLocaleString('vi-VN')} ký tự`}
+        </p>
+      )}
+
+      {contractMode && !selectedFile && (
+        <p className='mt-1.5 text-center text-xs text-text-description'>
+          Chế độ hợp đồng cần một file DOCX và câu hỏi đi kèm.
         </p>
       )}
 
