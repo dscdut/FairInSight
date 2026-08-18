@@ -1,6 +1,5 @@
-// Axios client cho AI backend_reasoning (cổng 8000). Tách khỏi axiosClient (Node :3000)
-// để trang tra cứu văn bản (/legal) lấy luật từ AI/Supabase. Tự unwrap .data +
-// gắn Bearer token như client chính, VÀ tự refresh token khi 401 (token Node sống 15m).
+// Axios client cho các API AI qua Node BE. FE không gọi AI service trực tiếp;
+// Node proxy tại /ai giữ một origin/auth boundary, rồi gọi AI phía sau.
 import axios, { HttpStatusCode } from 'axios'
 
 import config from '@/core/configs/env'
@@ -11,8 +10,8 @@ import {
   getRefreshTokenFromLS
 } from '@/core/shared/storage'
 
-// Hàng đợi refresh: nhiều request 401 cùng lúc → chỉ refresh 1 lần, các request khác
-// chờ token mới rồi retry (giống axios-client.ts của Node).
+// Hàng đợi refresh: nhiều request 401 cùng lúc chỉ refresh 1 lần,
+// các request khác chờ token mới rồi retry.
 let isRefreshing = false
 let failedQueue: { resolve: (value?: unknown) => void; reject: (reason?: unknown) => void }[] = []
 
@@ -65,10 +64,10 @@ aiClient.interceptors.response.use(
         const refresh_token = getRefreshTokenFromLS()
         if (!refresh_token) {
           processQueue(new Error('Phiên đăng nhập hết hạn, vui lòng đăng nhập lại'), null)
-          forceLogout() // không còn refresh token → đá về /login
+          forceLogout()
           return Promise.reject(error)
         }
-        
+
         const accessToken = await doRefresh()
         originalRequest.headers.Authorization = `Bearer ${accessToken}`
         processQueue(null, accessToken)

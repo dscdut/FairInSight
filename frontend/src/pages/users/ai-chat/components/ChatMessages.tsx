@@ -54,17 +54,32 @@ const REASONING_CYCLES = [
   'Đang kiểm chứng nhận định, kiểm tra trích dẫn & hoàn thiện bản báo cáo…'
 ]
 
-function ProcessingIndicator({ stage }: { stage?: ChatWorkflowStage | null }) {
+const CONTRACT_REASONING_CYCLES = [
+  'Đã nhận file DOCX và câu hỏi đi kèm…',
+  'Đang đọc nội dung hợp đồng, bảng và các đoạn văn bản chính…',
+  'Đang tách dữ liệu sạch: các bên, vai trò, điều khoản, nghĩa vụ và mốc thời gian…',
+  'Đang kiểm tra dẫn chiếu nội bộ, phụ lục, điều khoản móc nối và quan hệ giữa các bên…',
+  'Đang nhận diện rủi ro: thiếu điều khoản, mơ hồ, bất lợi hoặc cần đối chiếu luật…',
+  'Đang chọn nhóm vấn đề pháp lý cần kiểm tra theo pháp luật Việt Nam…',
+  'Đang tổng hợp nhận xét, khuyến nghị sửa và cảnh báo phần cần luật sư xem thêm…'
+]
+
+function ProcessingIndicator({ stage, mode }: { stage?: ChatWorkflowStage | null; mode?: string | null }) {
   const [cycleIndex, setCycleIndex] = React.useState(0)
+  const isContract = mode === 'contract'
+  const cycles = isContract ? CONTRACT_REASONING_CYCLES : REASONING_CYCLES
 
   React.useEffect(() => {
     const timer = setInterval(() => {
-      setCycleIndex((prev) => (prev + 1) % REASONING_CYCLES.length)
+      setCycleIndex((prev) => (prev + 1) % cycles.length)
     }, 2800)
     return () => clearInterval(timer)
-  }, [])
+  }, [cycles.length])
 
-  const currentText = (stage && STAGE_LABELS[stage]) || REASONING_CYCLES[cycleIndex]
+  const safeIndex = cycleIndex % cycles.length
+  const currentText = isContract
+    ? cycles[safeIndex]
+    : (stage && STAGE_LABELS[stage]) || cycles[safeIndex]
 
   return (
     <div
@@ -80,7 +95,7 @@ function ProcessingIndicator({ stage }: { stage?: ChatWorkflowStage | null }) {
         </div>
         <span className='font-black uppercase tracking-wider text-primary text-[11px] animate-pulse flex items-center gap-1.5'>
           <Brain className='h-3.5 w-3.5 animate-spin duration-1000' />
-          Đang suy luận & phân tích pháp lý…
+          {isContract ? 'Đang phân tích hợp đồng…' : 'Đang suy luận & phân tích pháp lý…'}
         </span>
       </div>
 
@@ -96,6 +111,7 @@ function ProcessingIndicator({ stage }: { stage?: ChatWorkflowStage | null }) {
 
 function ReasoningHeader({ mode }: { mode?: string | null }) {
   const [isOpen, setIsOpen] = React.useState(false)
+  const isContract = mode === 'contract'
 
   return (
     <div className='mb-3.5 border-b border-border-secondary/60 pb-3'>
@@ -107,7 +123,9 @@ function ReasoningHeader({ mode }: { mode?: string | null }) {
         <div className='flex items-center gap-1.5 rounded-xl bg-background-secondary/80 px-3 py-1.2 border border-border-secondary/80 group-hover:border-primary/40 shadow-2xs transition-all'>
           <Brain className='h-3.5 w-3.5 text-primary' />
           <span className='font-extrabold text-main text-[11px]'>
-            {mode === 'deep' ? 'Đã hoàn tất phân tích chuyên sâu (9 bước)' : 'Đã suy luận & đối chiếu căn cứ pháp lý'}
+            {isContract
+              ? 'Đã phân tích hợp đồng và đối chiếu vấn đề cần kiểm tra'
+              : mode === 'deep' ? 'Đã hoàn tất phân tích chuyên sâu (9 bước)' : 'Đã suy luận & đối chiếu căn cứ pháp lý'}
           </span>
           <ChevronDown className={cn('h-3.5 w-3.5 transition-transform duration-200 text-text-description', isOpen && 'rotate-180')} />
         </div>
@@ -117,26 +135,47 @@ function ReasoningHeader({ mode }: { mode?: string | null }) {
         <div className='mt-2.5 rounded-xl border border-border-secondary/60 bg-background-secondary/50 p-3 text-xs space-y-2 animate-in fade-in slide-in-from-top-1 duration-200'>
           <p className='font-extrabold text-[10px] uppercase tracking-wider text-text-description mb-2 flex items-center gap-1.5'>
             <Sparkles className='h-3 w-3 text-primary' />
-            Quy trình suy luận & tra cứu đã thực hiện:
+            {isContract ? 'Quy trình phân tích hợp đồng đã thực hiện:' : 'Quy trình suy luận & tra cứu đã thực hiện:'}
           </p>
-          <div className='space-y-1.5 text-main/90 text-[11px]'>
-            <div className='flex items-center gap-2'>
-              <Check className='h-3.5 w-3.5 text-emerald-500 shrink-0' />
-              <span>Phân tích tình huống, trích xuất dữ kiện & nhóm vấn đề pháp lý</span>
+          {isContract ? (
+            <div className='space-y-1.5 text-main/90 text-[11px]'>
+              <div className='flex items-center gap-2'>
+                <Check className='h-3.5 w-3.5 text-emerald-500 shrink-0' />
+                <span>Đọc DOCX, tách bảng, điều khoản và thông tin nền của hợp đồng</span>
+              </div>
+              <div className='flex items-center gap-2'>
+                <Check className='h-3.5 w-3.5 text-emerald-500 shrink-0' />
+                <span>Trích xuất các bên, quan hệ, nghĩa vụ, tiền, thời hạn và dẫn chiếu nội bộ</span>
+              </div>
+              <div className='flex items-center gap-2'>
+                <Check className='h-3.5 w-3.5 text-emerald-500 shrink-0' />
+                <span>Chọn nhóm điều khoản cần kiểm tra pháp lý và lập kế hoạch đối chiếu luật</span>
+              </div>
+              <div className='flex items-center gap-2'>
+                <Check className='h-3.5 w-3.5 text-emerald-500 shrink-0' />
+                <span>Tổng hợp rủi ro, điểm cần sửa và khuyến nghị theo ngữ cảnh doanh nghiệp</span>
+              </div>
             </div>
-            <div className='flex items-center gap-2'>
-              <Check className='h-3.5 w-3.5 text-emerald-500 shrink-0' />
-              <span>Tra cứu căn cứ trong cơ sở dữ liệu Văn bản Quy phạm Pháp luật</span>
+          ) : (
+            <div className='space-y-1.5 text-main/90 text-[11px]'>
+              <div className='flex items-center gap-2'>
+                <Check className='h-3.5 w-3.5 text-emerald-500 shrink-0' />
+                <span>Phân tích tình huống, trích xuất dữ kiện & nhóm vấn đề pháp lý</span>
+              </div>
+              <div className='flex items-center gap-2'>
+                <Check className='h-3.5 w-3.5 text-emerald-500 shrink-0' />
+                <span>Tra cứu căn cứ trong cơ sở dữ liệu Văn bản Quy phạm Pháp luật</span>
+              </div>
+              <div className='flex items-center gap-2'>
+                <Check className='h-3.5 w-3.5 text-emerald-500 shrink-0' />
+                <span>Kiểm tra điều kiện áp dụng, hiệu lực văn bản & trích dẫn điều luật</span>
+              </div>
+              <div className='flex items-center gap-2'>
+                <Check className='h-3.5 w-3.5 text-emerald-500 shrink-0' />
+                <span>Tổng hợp đánh giá pháp lý & xây dựng định hướng giải quyết</span>
+              </div>
             </div>
-            <div className='flex items-center gap-2'>
-              <Check className='h-3.5 w-3.5 text-emerald-500 shrink-0' />
-              <span>Kiểm tra điều kiện áp dụng, hiệu lực văn bản & trích dẫn điều luật</span>
-            </div>
-            <div className='flex items-center gap-2'>
-              <Check className='h-3.5 w-3.5 text-emerald-500 shrink-0' />
-              <span>Tổng hợp đánh giá pháp lý & xây dựng định hướng giải quyết</span>
-            </div>
-          </div>
+          )}
         </div>
       )}
     </div>
@@ -320,7 +359,7 @@ export default function ChatMessages({
                 {isUser
                   ? <div className='whitespace-pre-line font-sans text-small'>{message.content}</div>
                   : isProcessing
-                    ? <ProcessingIndicator stage={message.stage} />
+                    ? <ProcessingIndicator stage={message.stage} mode={message.mode} />
                     : (
                       <>
                         <ReasoningHeader mode={message.mode} />

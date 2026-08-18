@@ -278,7 +278,7 @@ export const DocumentFormDrawer: React.FC<DocumentFormDrawerProps> = ({
     // Cố mở WS để nhận progress thật nếu BE đã hỗ trợ; lỗi thì bỏ qua (giả lập).
     let socket: WebSocket | null = null
     try {
-      const wsBase = config.aiBaseUrl.replace(/^http/, 'ws')
+      const wsBase = config.legalCorpusBaseUrl.replace(/^http/, 'ws')
       socket = new WebSocket(`${wsBase}/ws/progress/${clientId}`)
       socket.onmessage = (event) => {
         try {

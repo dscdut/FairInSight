@@ -14,20 +14,79 @@ model ratings {
 }
 
 model reports {
-  target_user_id String         @db.Uuid
-  reporter_id    String         @db.Uuid
-  reason         String
-  status         report_status? @default(PENDING)
-  created_at     DateTime?      @default(now()) @db.Timestamptz(6)
-  updated_at     DateTime?      @default(now()) @db.Timestamptz(6)
-  deleted_at     DateTime?      @db.Timestamptz(6)
-  lawyer_details lawyer_details @relation(fields: [reporter_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "reports_reporter_id_foreign")
-  users          users          @relation(fields: [target_user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "reports_target_user_id_foreign")
+  id                String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  reporter_id       String            @db.Uuid
+  target_user_id    String?           @db.Uuid
+  type              report_type
+  category          report_category
+  custom_reason     String?
+  description       String
+  status            report_status     @default(OPEN)
+  priority          report_priority   @default(NORMAL)
+  assigned_admin_id String?           @db.Uuid
+  resolved_by       String?           @db.Uuid
+  resolved_at       DateTime?         @db.Timestamptz(6)
+  created_at        DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime          @default(now()) @db.Timestamptz(6)
+  deleted_at        DateTime?         @db.Timestamptz(6)
+  reporter          users             @relation("reporter_reports", fields: [reporter_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "reports_reporter_id_foreign")
+  target_user       users?            @relation("target_reports", fields: [target_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "reports_target_user_id_foreign")
+  assigned_admin    users?            @relation("assigned_reports", fields: [assigned_admin_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "reports_assigned_admin_id_foreign")
+  resolver          users?            @relation("resolved_reports", fields: [resolved_by], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "reports_resolved_by_foreign")
+  messages          report_messages[]
 
-  @@id([target_user_id, reporter_id])
+  @@index([reporter_id])
+  @@index([target_user_id])
+  @@index([status])
+  @@index([type])
+}
+
+model report_messages {
+  id          String                     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  report_id   String                     @db.Uuid
+  sender_id   String?                    @db.Uuid
+  sender_role report_message_sender_role
+  message     String
+  attachments Json?
+  created_at  DateTime                   @default(now()) @db.Timestamptz(6)
+  deleted_at  DateTime?                  @db.Timestamptz(6)
+  reports     reports                    @relation(fields: [report_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "report_messages_report_id_foreign")
+  sender      users?                     @relation("report_message_sender", fields: [sender_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "report_messages_sender_id_foreign")
+
+  @@index([report_id])
+  @@index([sender_id])
+}
+
+enum report_type {
+  SYSTEM
+  LAWYER
+  USER
+}
+
+enum report_category {
+  HARASSMENT
+  UNPROFESSIONAL_BEHAVIOR
+  FRAUD
+  TECHNICAL_ERROR
+  PAYMENT_ERROR
+  FEATURE_ERROR
+  OTHER
 }
 
 enum report_status {
-  PENDING
+  OPEN
+  IN_REVIEW
   RESOLVED
+}
+
+enum report_priority {
+  LOW
+  NORMAL
+  HIGH
+}
+
+enum report_message_sender_role {
+  REPORTER
+  ADMIN
+  SYSTEM
 }

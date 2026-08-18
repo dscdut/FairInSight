@@ -33,6 +33,10 @@ const LegalAnalysis = lazy(() => import('@/pages/users/legal-analysis/LegalAnaly
 const Report = lazy(() => import('@/pages/users/report/Report'))
 const Setting = lazy(() => import('@/pages/users/setting/Setting'))
 const Template = lazy(() => import('@/pages/users/template/Template'))
+const Draft = lazy(() => import('@/pages/users/draft/Draft'))
+const DraftEdit = lazy(() => import('@/pages/users/draft/DraftEdit'))
+const Reports = lazy(() => import('@/pages/reports/Reports'))
+const ReportDetail = lazy(() => import('@/pages/reports/ReportDetail'))
 const User = lazy(() => import('@/pages/users/user/User'))
 const LawyerList = lazy(() => import('@/pages/users/lawyer/LawyerList'))
 const LawyerProfile = lazy(() => import('@/pages/users/lawyer/LawyerProfile'))
@@ -47,6 +51,7 @@ const LawyerAppointments = lazy(() => import('@/pages/lawyers/appointments/Lawye
 const LawyerMessages = lazy(() => import('@/pages/lawyers/messages/LawyerMessages'))
 const LawyerProfileEdit = lazy(() => import('@/pages/lawyers/profile/LawyerProfileEdit'))
 const LawyerSettings = lazy(() => import('@/pages/lawyers/setting/LawyerSettings'))
+const AdminReports = lazy(() => import('@/pages/admin/reports/AdminReports'))
 
 
 export default function useRoutesElements() {
@@ -91,11 +96,15 @@ export default function useRoutesElements() {
                 <Route path={ROUTE.USER.CHAT_AI_SESSION} element={<AIChat />} />
                 <Route path={ROUTE.USER.MESSAGES} element={<Messages />} />
                 <Route path={ROUTE.USER.TEMPLATE} element={<Template />} />
+                <Route path={ROUTE.USER.DRAFT} element={<Draft />} />
+                <Route path={ROUTE.USER.DRAFT_EDIT} element={<DraftEdit />} />
                 <Route path={ROUTE.USER.LEGAL} element={<LegalAnalysis />} />
                 <Route path={ROUTE.USER.LAWYER} element={<LawyerList />} />
                 <Route path={ROUTE.USER.LAWYER_DETAIL} element={<LawyerProfile />} />
                 <Route path={ROUTE.USER.APPOINTMENT} element={<Appointments />} />
                 <Route path={ROUTE.USER.REPORT} element={<Report />} />
+                <Route path={ROUTE.USER.REPORTS} element={<Reports />} />
+                <Route path={ROUTE.USER.REPORT_DETAIL} element={<ReportDetail />} />
                 <Route path={ROUTE.USER.INFO} element={<User />} />
                 <Route path={ROUTE.USER.SETTING} element={<Setting />} />
                 <Route path={ROUTE.USER.BILLING} element={<Billing />} />
@@ -112,6 +121,7 @@ export default function useRoutesElements() {
               <Route path={ROUTE.LAWYER.DASHBOARD} element={<LawyerDashboard />} />
               <Route path={ROUTE.LAWYER.APPOINTMENT} element={<LawyerAppointments />} />
               <Route path={ROUTE.LAWYER.MESSAGES} element={<LawyerMessages />} />
+              <Route path={ROUTE.LAWYER.REPORTS} element={<Reports />} />
               <Route path={ROUTE.LAWYER.PROFILE} element={<LawyerProfileEdit />} />
               <Route path={ROUTE.LAWYER.SETTING} element={<LawyerSettings />} />
             </Route>
@@ -133,6 +143,7 @@ export default function useRoutesElements() {
             <Route path={ROUTE.ADMIN.CHAT_AI} element={<AIChat />} />
             <Route path={ROUTE.ADMIN.CHAT_AI_SESSION} element={<AIChat />} />
             <Route path={ROUTE.ADMIN.USERS} element={<Users />} />
+            <Route path={ROUTE.ADMIN.REPORTS} element={<AdminReports />} />
             <Route path={ROUTE.ADMIN.LEGAL_DOCUMENTS} element={<LegalDocuments />} />
             <Route path={ROUTE.ADMIN.LAW_INSPECT} element={<LawInspect />} />
             <Route path={ROUTE.ADMIN.ANALYTICS.ROOT} element={<span>Analytics</span>} />

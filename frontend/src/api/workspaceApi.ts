@@ -1,10 +1,11 @@
+import config from '@/core/configs/env'
 import { getAccessTokenFromLS } from '@/core/shared/storage'
 import { useAuthStore } from '@/core/store/features/auth/authStore'
 import  { type Message, type ReasoningLevel, type WorkspaceData, type StoredDocument, type UserProfile, type Citation } from '@/types/workspace'
 import { makeId } from '@/utils/id'
 
 export function getApiBase() {
-  return import.meta.env.VITE_AI_API_URL || 'http://localhost:8000/api/v1'
+  return config.aiBaseUrl
 }
 
 export function getToken(): string | null {

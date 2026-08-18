@@ -15,6 +15,8 @@ import { ConsultationResolver } from './consultation/consultation.resolver';
 import { BillingResolver } from './billing/billing.resolver';
 import { InternalBillingResolver } from './internal-billing/internal-billing.resolver';
 import { ChatGatewayResolver } from './chat-gateway/chat-gateway.resolver';
+import { AiGatewayResolver } from './ai-gateway';
+import { ReportsResolver } from './reports';
 
 export const ModuleResolver = HandlerResolver
     .builder()
@@ -34,5 +36,7 @@ export const ModuleResolver = HandlerResolver
         ConsultationResolver,
         BillingResolver,
         InternalBillingResolver,
-        ChatGatewayResolver
+        ChatGatewayResolver,
+        AiGatewayResolver,
+        ReportsResolver
     ]);

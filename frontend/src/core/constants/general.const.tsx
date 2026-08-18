@@ -1,20 +1,21 @@
 import {
+  AlertTriangle,
   BarChart3,
   Calendar,
   CreditCard,
   FileText,
   Home,
   Mail,
+  MessageCircle,
   MessageSquare,
   Network,
   PieChart,
   Scale,
+  Settings,
   TrendingUp,
-  Users,
-  UserCheck,
-  MessageCircle,
   User,
-  Settings
+  UserCheck,
+  Users
 } from 'lucide-react'
 
 import { ROUTE } from '@/core/constants/path'
@@ -48,7 +49,7 @@ export const adminSidebarLinks: TSidebarLinks[] = [
     title: 'Quản lý người dùng',
     titleKey: 'users',
     icon: <Users className='w-5 h-5' />,
-    path: ROUTE.ADMIN.USERS,
+    path: ROUTE.ADMIN.USERS
   },
   {
     title: 'Phân tích',
@@ -114,7 +115,7 @@ export const adminSidebarLinks: TSidebarLinks[] = [
   {
     title: 'Báo cáo',
     icon: <TrendingUp className='w-5 h-5' />,
-    path: 'reports',
+    path: ROUTE.ADMIN.REPORTS
   }
 ]
 
@@ -144,6 +145,11 @@ export const userSideBarLinks: TSidebarLinks[] = [
     path: ROUTE.USER.TEMPLATE
   },
   {
+    title: 'Bản nháp',
+    icon: <FileText className='w-5 h-5' />,
+    path: ROUTE.USER.DRAFT
+  },
+  {
     title: 'Văn bản pháp luật',
     titleKey: 'legal',
     icon: <Scale className='w-5 h-5' />,
@@ -162,21 +168,20 @@ export const userSideBarLinks: TSidebarLinks[] = [
     path: ROUTE.USER.APPOINTMENT
   },
   {
+    title: 'Gói và credit',
+    icon: <CreditCard className='w-5 h-5' />,
+    path: ROUTE.USER.BILLING
+  },
+  {
     title: 'Quản lý báo cáo',
     titleKey: 'report',
     icon: <BarChart3 className='w-5 h-5' />,
     path: ROUTE.USER.REPORT
   },
   {
-    title: 'Gói và credit',
-    icon: <CreditCard className='w-5 h-5' />,
-    path: ROUTE.USER.BILLING
-  },
-  {
-    title: 'Trang cá nhân',
-    titleKey: 'profile',
-    icon: <User className='w-5 h-5' />,
-    path: ROUTE.PROFILE.ROOT
+    title: 'Trung tâm báo cáo',
+    icon: <AlertTriangle className='w-5 h-5' />,
+    path: ROUTE.USER.REPORTS
   }
 ]
 
@@ -198,6 +203,11 @@ export const lawyerSideBarLinks: TSidebarLinks[] = [
     titleKey: 'messages',
     icon: <MessageCircle className='w-5 h-5' />,
     path: `${ROUTE.LAWYER.ROOT}/${ROUTE.LAWYER.MESSAGES}`
+  },
+  {
+    title: 'Trung tâm báo cáo',
+    icon: <AlertTriangle className='w-5 h-5' />,
+    path: `${ROUTE.LAWYER.ROOT}/${ROUTE.LAWYER.REPORTS}`
   },
   {
     title: 'Hồ sơ chuyên môn',
