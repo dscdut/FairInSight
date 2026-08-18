@@ -32,7 +32,10 @@ export const initAiProgressWebSocket = server => {
 
     server.on('upgrade', (req, socket, head) => {
         const clientId = parseClientId(req.url);
-        if (!clientId) return;
+        if (!clientId) {
+            socket.destroy();
+            return;
+        }
         wss.handleUpgrade(req, socket, head, ws => {
             wss.emit('connection', ws, req, clientId);
         });

@@ -52,6 +52,7 @@ export interface ReportItem {
   assignedAdmin: ReportUser | null
   resolver: ReportUser | null
   messages: ReportMessage[]
+  messageCount?: number
 }
 
 export interface ReportPage {

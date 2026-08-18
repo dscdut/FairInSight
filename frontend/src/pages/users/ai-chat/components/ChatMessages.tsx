@@ -76,9 +76,10 @@ function ProcessingIndicator({ stage, mode }: { stage?: ChatWorkflowStage | null
     return () => clearInterval(timer)
   }, [cycles.length])
 
+  const safeIndex = cycleIndex % cycles.length
   const currentText = isContract
-    ? cycles[cycleIndex]
-    : (stage && STAGE_LABELS[stage]) || cycles[cycleIndex]
+    ? cycles[safeIndex]
+    : (stage && STAGE_LABELS[stage]) || cycles[safeIndex]
 
   return (
     <div

@@ -70,6 +70,10 @@ export default function ReportDialog({
   const TriggerIcon = triggerIcon === 'plus' ? Plus : AlertTriangle
 
   const submit = async () => {
+    if (type !== 'SYSTEM' && !targetUserId) {
+      toastifyCommon.error('Không xác định được đối tượng cần báo cáo.')
+      return
+    }
     if (category === 'OTHER' && !customReason.trim()) {
       toastifyCommon.error('Vui lòng nhập lý do khác.')
       return

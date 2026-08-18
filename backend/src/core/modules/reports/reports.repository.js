@@ -41,6 +41,11 @@ const listInclude = {
             sender: { select: userSelect },
         },
     },
+    _count: {
+        select: {
+            messages: { where: { deleted_at: null } },
+        },
+    },
 };
 
 class Repository {

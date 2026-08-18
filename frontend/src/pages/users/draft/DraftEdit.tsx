@@ -117,6 +117,9 @@ export default function DraftEdit() {
             <div key={key} className='space-y-1'>
               <label className='text-sm font-medium text-text-secondary'>{key}</label>
               <input
+                type='text'
+                name={key}
+                aria-label={key}
                 className='w-full rounded-md border border-border-secondary bg-background-primary px-3 py-2'
                 value={value}
                 onChange={(event) => handleChange(key, event.target.value)}

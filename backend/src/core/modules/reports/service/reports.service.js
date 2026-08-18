@@ -120,6 +120,7 @@ const mapReport = report => ({
     assignedAdmin: mapUser(report.assigned_admin),
     resolver: mapUser(report.resolver),
     messages: (report.messages || []).map(mapMessage),
+    messageCount: report._count?.messages ?? report.messages?.length ?? 0,
 });
 
 class Service {

@@ -132,7 +132,7 @@ export default function Reports() {
                 </div>
                 <div className='flex items-center gap-1 text-sm text-text-description'>
                   <MessageSquare className='h-4 w-4' />
-                  {report.messages?.length || 0}
+                  {report.messageCount ?? report.messages?.length ?? 0}
                 </div>
               </div>
             </button>
